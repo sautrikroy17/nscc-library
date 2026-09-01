@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: nscc-library-api
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    disk:
+      name: library-db
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: DB_PATH
+        value: /app/data/library.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production
