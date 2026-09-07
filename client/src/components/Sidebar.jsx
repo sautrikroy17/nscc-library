@@ -112,13 +112,13 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
 
       {/* ── Mobile Bottom Nav ── */}
       <nav className="bottom-nav mobile-only">
-        {items.slice(0, 5).map(item => (
+        {items.map(item => (
           <button
             key={item.id}
             className={`bottom-nav-item ${activePage === item.id ? 'active' : ''}`}
             onClick={() => setActivePage(item.id)}
           >
-            <span className="bottom-nav-icon" style={{ fontSize: 20 }}>{item.icon}</span>
+            <span className="bottom-nav-icon" style={{ fontSize: 18 }}>{item.icon}</span>
             <span className="bottom-nav-label">{item.label.split(' ')[0]}</span>
           </button>
         ))}
