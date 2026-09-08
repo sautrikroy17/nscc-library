@@ -7,7 +7,8 @@ import {
   ShieldCheck, 
   Sparkles, 
   LogOut,
-  Radio
+  Radio,
+  Headphones
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
@@ -17,6 +18,7 @@ import { playClick } from '../utils/audio';
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['librarian', 'student'] },
   { id: 'catalog', label: 'Catalog', icon: BookOpen, roles: ['librarian', 'student'] },
+  { id: 'study', label: 'Study Haven', icon: Headphones, roles: ['librarian', 'student'], badge: 'FOCUS' },
   { id: 'scanner', label: 'QR Scanner', icon: QrCode, roles: ['librarian'], badge: 'LIVE' },
   { id: 'transactions', label: 'Transactions', icon: ArrowLeftRight, roles: ['librarian', 'student'] },
   { id: 'admin', label: 'Admin Hub', icon: ShieldCheck, roles: ['librarian'] },

@@ -20,12 +20,14 @@ import Scanner from './pages/Scanner';
 import Transactions from './pages/Transactions';
 import AdminPanel from './pages/AdminPanel';
 import AIAssistant from './pages/AIAssistant';
+import StudyRoom from './pages/StudyRoom';
 import BrandLogo from './components/BrandLogo';
 import { isSoundEnabled, toggleSound, playClick } from './utils/audio';
 
 const PAGE_METADATA = {
   dashboard:    { title: 'Operational Command Dashboard', subtitle: 'Live telemetry, book circulation metrics, and overdue tracking' },
   catalog:      { title: 'Central Book Repository', subtitle: 'Browse, search, generate QR codes, and manage library inventory' },
+  study:        { title: 'LibraX Study Haven', subtitle: 'Aesthetic virtual focus room with ambient soundscapes, themes & Pomodoro' },
   scanner:      { title: 'Live QR Vision Scanner', subtitle: 'Hardware camera feed with laser reticle for instant checkout & return' },
   transactions: { title: 'Circulation Ledger', subtitle: 'Auditable record of all book loans, returns, and penalty calculations' },
   admin:        { title: 'Administrative Control Hub', subtitle: 'Overdue resolution, fine collection, rapid checkout, and ledger export' },
@@ -152,6 +154,7 @@ export default function App() {
     switch (activePage) {
       case 'dashboard':    return <Dashboard onNavigate={setActivePage} />;
       case 'catalog':      return <Catalog />;
+      case 'study':        return <StudyRoom />;
       case 'scanner':      return user.role === 'librarian' ? <Scanner /> : <Catalog />;
       case 'transactions': return <Transactions />;
       case 'admin':        return user.role === 'librarian' ? <AdminPanel /> : <Catalog />;
