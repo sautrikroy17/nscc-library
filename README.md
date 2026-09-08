@@ -23,7 +23,20 @@ A full-stack, AI-powered library management system engineered for NSCC @ SRM IST
 - **AI Autofill**: Enter a book title and AI fills in author, ISBN, category, description
 - **QR Code Generator**: Generate + download + print shelf labels for any book
 
-### 🔄 Transactions
+### 🎧 LibraX Study Haven (Virtual Focus & Co-Study Room)
+- **Aesthetic Circular Pomodoro Timer**: Preset modes for Deep Focus (25m), Flow Sprint (50m), Short Break (5m), and Zen Meditation (15m).
+- **5 Dynamic Visual Study Themes**:
+  - `Obsidian Cyber`: High-tech emerald & obsidian glass.
+  - `Matcha Zen`: Organic tea leaf tones & calming botanical ambiance.
+  - `Midnight Cafe`: Warm amber espresso glow with cozy lofi accents.
+  - `Cosmic Nebula`: Deep violet stellar space aesthetic.
+  - `Glacial Arctic`: Crisp cyan frost with clean, arctic lines.
+- **Synthesized Ambient Soundscapes**: 100% client-side Web Audio API audio synthesis (Rain on Glass, 432Hz Binaural Alpha Waves, Crackling Fireplace Hearth, and Tibetan Singing Bowl gong). Zero external audio asset dependencies.
+- **Target Goal Anchor**: Set custom study milestones with celebratory checkmark animations.
+- **Live Co-Study Presence**: Virtual co-studying roster simulating peer study streaks from SRM IST departments (CSE, ECE).
+- **Zen Full-Screen Mode**: Distraction-free, edge-to-edge ambient focus immersion.
+
+### 🔄 Transactions Ledger
 - Paginated transaction log with search and status filter (all / issued / returned / overdue)
 - Auto-calculated fine display (₹5/day overdue)
 - Student view: only shows their own transactions
