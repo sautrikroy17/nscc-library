@@ -24,11 +24,11 @@ import { playClick } from '../utils/audio';
 const STUDENT_NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'catalog', label: 'Browse Books', icon: BookOpen },
-  { id: 'search', label: 'Search', icon: Search },
+  { id: 'scanner', label: 'QR Scanner & Passes', icon: QrCode },
   { id: 'borrowings', label: 'My Borrowings', icon: Bookmark },
+  { id: 'search', label: 'Search', icon: Search },
   { id: 'history', label: 'History', icon: Clock },
   { id: 'wishlist', label: 'Wishlist', icon: Heart },
-  { id: 'notifications', label: 'Notifications', icon: Bell, hasDot: true },
   { id: 'study', label: 'Study Haven', icon: Headphones },
   { id: 'ai', label: 'Alexandria AI', icon: Sparkles },
   { id: 'settings', label: 'Settings', icon: Settings },

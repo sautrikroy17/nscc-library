@@ -102,18 +102,18 @@ export const localStore = {
   listBooks(params = {}) {
     let list = getItems(STORAGE_KEYS.BOOKS, INITIAL_BOOKS);
     const { category, search, available, sort } = params;
+    const query = (search || params.q || '').trim().toLowerCase();
 
     if (category && category !== 'All') {
       list = list.filter(b => b.category.toLowerCase() === category.toLowerCase());
     }
-    if (search) {
-      const q = search.toLowerCase();
+    if (query) {
       list = list.filter(b => 
-        b.title.toLowerCase().includes(q) ||
-        b.author.toLowerCase().includes(q) ||
-        b.id.toLowerCase().includes(q) ||
-        b.category.toLowerCase().includes(q) ||
-        (b.isbn && b.isbn.toLowerCase().includes(q))
+        (b.title && b.title.toLowerCase().includes(query)) ||
+        (b.author && b.author.toLowerCase().includes(query)) ||
+        (b.id && b.id.toLowerCase().includes(query)) ||
+        (b.category && b.category.toLowerCase().includes(query)) ||
+        (b.isbn && b.isbn.toLowerCase().includes(query))
       );
     }
     if (available === 'true' || available === true) {
@@ -195,18 +195,18 @@ export const localStore = {
   listTransactions(params = {}) {
     let list = getItems(STORAGE_KEYS.TRANSACTIONS, INITIAL_TRANSACTIONS);
     const { status, search, borrower_reg, book_id } = params;
+    const q = (search || params.q || '').trim().toLowerCase();
 
     if (status && status !== 'all') {
       list = list.filter(t => t.status === status);
     }
     if (borrower_reg) {
-      list = list.filter(t => t.borrower_reg.toUpperCase() === borrower_reg.toUpperCase());
+      list = list.filter(t => t.borrower_reg && t.borrower_reg.toUpperCase() === borrower_reg.toUpperCase());
     }
     if (book_id) {
-      list = list.filter(t => t.book_id.toLowerCase() === book_id.toLowerCase());
+      list = list.filter(t => t.book_id && t.book_id.toLowerCase() === book_id.toLowerCase());
     }
-    if (search) {
-      const q = search.toLowerCase();
+    if (q) {
       list = list.filter(t => 
         (t.book_title && t.book_title.toLowerCase().includes(q)) ||
         (t.borrower_name && t.borrower_name.toLowerCase().includes(q)) ||

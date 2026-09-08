@@ -7,7 +7,8 @@ import {
   Search, 
   Bell,
   BookOpen,
-  X
+  X,
+  QrCode
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 import { stats as statsApi } from './api';
@@ -227,6 +228,30 @@ export default function App() {
               ⌘ K
             </span>
           </div>
+
+          {/* Dedicated QR Scanner Quick Action */}
+          <button
+            onClick={() => { playClick(); setActivePage('scanner'); }}
+            title="Open QR Scanner & Digital Student Pass"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '7px 14px',
+              borderRadius: 8,
+              background: activePage === 'scanner' ? '#10b981' : 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              color: activePage === 'scanner' ? '#080c14' : '#10b981',
+              fontWeight: 700,
+              fontSize: 12.5,
+              cursor: 'pointer',
+              transition: 'all 150ms',
+              boxShadow: activePage === 'scanner' ? '0 0 16px rgba(16, 185, 129, 0.5)' : '0 0 10px rgba(16, 185, 129, 0.15)'
+            }}
+          >
+            <QrCode size={15} strokeWidth={2.5} />
+            <span>QR Scanner</span>
+          </button>
 
           {/* Right User Profile Pill & Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
