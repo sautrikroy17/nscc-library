@@ -79,6 +79,15 @@ export const books = {
       return localStore.listBooks(params);
     }
   },
+  getAll: async (params) => {
+    try {
+      const res = await books.list(params);
+      return Array.isArray(res) ? res : (res.books || []);
+    } catch (err) {
+      const res = localStore.listBooks(params);
+      return Array.isArray(res) ? res : (res.books || []);
+    }
+  },
   get: async (id) => {
     try {
       return await request('GET', `/books/${id}`);
@@ -124,6 +133,15 @@ export const transactions = {
     } catch (err) {
       console.warn('API /transactions unavailable, using local-first engine');
       return localStore.listTransactions(params);
+    }
+  },
+  getAll: async (params) => {
+    try {
+      const res = await transactions.list(params);
+      return Array.isArray(res) ? res : (res.transactions || []);
+    } catch (err) {
+      const res = localStore.listTransactions(params);
+      return Array.isArray(res) ? res : (res.transactions || []);
     }
   },
   get: async (id) => {

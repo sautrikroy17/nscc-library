@@ -327,15 +327,17 @@ export default function Scanner() {
     const cleanId = rawId.trim().toUpperCase();
 
     try {
-      const allBooks = await booksApi.getAll();
+      const rawBooks = await booksApi.getAll();
+      const allBooks = Array.isArray(rawBooks) ? rawBooks : (rawBooks?.books || []);
       const matched = allBooks.find(b => b.id.toUpperCase() === cleanId || b.isbn === cleanId || b.title.toLowerCase().includes(cleanId.toLowerCase()));
 
       if (matched) {
         playSuccessChime();
         toast.success(`Identified: ${matched.title}`);
         // Fetch active loans
-        const txs = await txApi.getAll();
-        const bookLoans = (txs || []).filter(t => t.book_id === matched.id && t.status === 'issued');
+        const rawTxs = await txApi.getAll();
+        const txs = Array.isArray(rawTxs) ? rawTxs : (rawTxs?.transactions || []);
+        const bookLoans = txs.filter(t => t.book_id === matched.id && t.status === 'issued');
         setActiveLoans(bookLoans);
         setScannedBook(matched);
       } else {

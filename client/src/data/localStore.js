@@ -397,6 +397,7 @@ export const localStore = {
         available_copies: availableCopies,
         active_loans: activeLoans,
         issued_count: activeLoans,
+        issued_books: activeLoans,
         overdue_count: overdueCount,
         total_students: totalStudents,
         total_fines_uncollected: 85,

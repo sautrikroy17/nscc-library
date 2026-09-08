@@ -21,6 +21,7 @@ import { books as booksApi, transactions as txApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
 import { playClick, playSuccessChime, playErrorBeep } from '../utils/audio';
+import { INITIAL_BOOKS } from '../data/seedData';
 
 const BOOK_METAS = {
   'BK002': {
@@ -252,18 +253,24 @@ export default function Catalog() {
   useEffect(() => {
     booksApi.getAll()
       .then(data => {
-        setBooksList(data || []);
+        const list = Array.isArray(data) ? data : (data?.books || INITIAL_BOOKS);
+        setBooksList(list);
       })
-      .catch(console.error)
+      .catch(err => {
+        console.warn('Catalog: booksApi.getAll failed, using initial catalog:', err);
+        setBooksList(INITIAL_BOOKS);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const categories = ['All', 'Software Engineering', 'Algorithms', 'Databases', 'Operating Systems', 'Computer Networks', 'AI & Machine Learning', 'Interview Prep'];
 
-  const filteredBooks = booksList.filter(b => {
+  const safeList = Array.isArray(booksList) ? booksList : (booksList?.books || INITIAL_BOOKS);
+  const filteredBooks = safeList.filter(b => {
+    if (!b) return false;
     if (categoryFilter !== 'All' && b.category !== categoryFilter) return false;
-    if (availabilityFilter === 'Available' && b.available_copies <= 0) return false;
-    if (availabilityFilter === 'Limited' && b.available_copies > 2) return false;
+    if (availabilityFilter === 'Available' && (b.available_copies ?? 1) <= 0) return false;
+    if (availabilityFilter === 'Limited' && (b.available_copies ?? 1) > 2) return false;
     return true;
   });
 
