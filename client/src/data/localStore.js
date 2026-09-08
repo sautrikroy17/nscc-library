@@ -37,12 +37,15 @@ function initStore() {
   }
 }
 
-// Helper to get array from localStorage
+// Helper to get array from localStorage (with empty-array fallback guard)
 function getItems(key, fallback) {
   initStore();
   try {
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return fallback;
+    return parsed;
   } catch {
     return fallback;
   }

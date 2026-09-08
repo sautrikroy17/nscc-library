@@ -327,7 +327,7 @@ export default function Catalog({
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [availabilityFilter, setAvailabilityFilter] = useState('All');
   const [viewMode, setViewMode] = useState('grid');
-  const [wishlist, setWishlist] = useState(['BK004', 'BK015']);
+  const [wishlist, setWishlist] = useState(['BK002', 'BK004', 'BK015', 'BK031', 'BK006']);
   const [activeTab, setActiveTab] = useState('description');
   const [openLibraryBooks, setOpenLibraryBooks] = useState([]);
   const [isSearchingOpenLibrary, setIsSearchingOpenLibrary] = useState(false);
@@ -338,16 +338,17 @@ export default function Catalog({
         booksApi.getAll(),
         txApi.getAll()
       ]);
-      const bList = Array.isArray(bData) ? bData : (bData?.books || INITIAL_BOOKS);
+      const bList = (Array.isArray(bData) && bData.length > 0) ? bData : (bData?.books?.length ? bData.books : INITIAL_BOOKS);
       setBooksList(bList);
       const tList = Array.isArray(tData) ? tData : (tData?.transactions || []);
       setActiveLoans(tList.filter(t => t.status !== 'returned'));
     } catch (err) {
       console.warn('Catalog loadData fallback to localStore:', err);
       const localBooks = localStore.listBooks({ limit: 100 });
-      setBooksList(localBooks.books || INITIAL_BOOKS);
+      const bList = (localBooks?.books && localBooks.books.length > 0) ? localBooks.books : INITIAL_BOOKS;
+      setBooksList(bList);
       const localTx = localStore.listTransactions();
-      setActiveLoans((localTx.transactions || []).filter(t => t.status !== 'returned'));
+      setActiveLoans((localTx?.transactions || []).filter(t => t.status !== 'returned'));
     } finally {
       setLoading(false);
     }
@@ -356,6 +357,9 @@ export default function Catalog({
   useEffect(() => {
     loadData();
   }, []);
+
+  const isWishlistTab = initialTab === 'wishlist';
+  const isSearchTab = initialTab === 'search';
 
   // When searchQuery changes and has no local matches, automatically trigger Open Library preview
   useEffect(() => {
@@ -386,10 +390,11 @@ export default function Catalog({
   ];
 
   const q = (searchQuery || '').trim().toLowerCase();
-  const safeList = Array.isArray(booksList) ? booksList : (booksList?.books || INITIAL_BOOKS);
+  const safeList = (Array.isArray(booksList) && booksList.length > 0) ? booksList : INITIAL_BOOKS;
 
   const filteredBooks = safeList.filter(b => {
     if (!b) return false;
+    if (isWishlistTab && !wishlist.includes(b.id)) return false;
     if (categoryFilter !== 'All' && b.category !== categoryFilter) return false;
     
     const isBorrowedByMe = myActiveLoans.some(t => t.book_id?.toUpperCase() === b.id?.toUpperCase());
@@ -872,12 +877,54 @@ export default function Catalog({
                 marginBottom: 6,
                 letterSpacing: '-0.5px'
               }}>
-                Browse Library Stacks
+                {isWishlistTab 
+                  ? `My Saved Wishlist (${filteredBooks.length} Titles)` 
+                  : isSearchTab 
+                    ? 'Search Campus Catalog & Global Stacks' 
+                    : 'Browse Library Stacks'}
               </h1>
               <p style={{ fontSize: 13.5, color: '#94a3b8' }}>
-                Search, borrow, and return from over 30+ physical titles and academic collections
+                {isWishlistTab 
+                  ? 'Your personal reading queue — borrow or return titles directly from this list' 
+                  : isSearchTab 
+                    ? 'Instant real-time search across 30+ library stacks, ISBNs, and global Open Library' 
+                    : 'Search, borrow, and return from over 36+ physical titles and academic collections'}
               </p>
             </div>
+
+            {isWishlistTab && filteredBooks.length === 0 && (
+              <div style={{
+                background: 'rgba(14, 22, 38, 0.65)',
+                border: '1px dashed rgba(255, 255, 255, 0.15)',
+                borderRadius: 16,
+                padding: '40px 24px',
+                textAlign: 'center',
+                marginBottom: 30
+              }}>
+                <Heart size={40} color="#f43f5e" style={{ margin: '0 auto 12px', opacity: 0.7 }} />
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', marginBottom: 6 }}>
+                  Your Wishlist is Empty
+                </h3>
+                <p style={{ fontSize: 13, color: '#94a3b8', maxWidth: 460, margin: '0 auto 20px' }}>
+                  Tap the heart icon on any book in the catalog to bookmark it for later study or borrowing.
+                </p>
+                <button
+                  onClick={() => onNavigate('catalog')}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: 10,
+                    background: '#10b981',
+                    border: 'none',
+                    color: '#080c14',
+                    fontSize: 13,
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Browse Campus Stacks
+                </button>
+              </div>
+            )}
 
             {/* Prominent Search Input Box */}
             <div style={{
