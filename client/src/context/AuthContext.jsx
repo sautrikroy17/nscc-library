@@ -50,10 +50,10 @@ export function AuthProvider({ children }) {
       const isLibrarian = email.includes('librarian') || email.includes('sarah') || email.includes('admin');
       const isAdmin = email.includes('admin');
       const fallbackUser = {
-        id: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'STU002',
-        name: isAdmin ? 'Admin Librarian' : (isLibrarian ? 'Dr. Rajesh Kumar' : (email.includes('pranav') ? 'Pranav Sharma' : 'Sautrik Roy')),
-        email: email,
-        reg_number: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'RA2311003030002',
+        id: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'STU001',
+        name: isAdmin ? 'Admin Librarian' : (isLibrarian ? 'Dr. Rajesh Kumar' : 'Sautrik Roy'),
+        email: email || 'sr9973@srmist.edu.in',
+        reg_number: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'RA2311003030001',
         department: isLibrarian ? 'Library Administration' : 'CSE',
         role: isLibrarian ? 'librarian' : 'student'
       };

@@ -276,8 +276,8 @@ export default function Catalog() {
     }
     txApi.issue({
       book_id: b.id,
-      borrower_name: user?.name || 'Pranav Sharma',
-      borrower_reg: user?.reg_number || 'RA2311003030002',
+      borrower_name: user?.name || 'Sautrik Roy',
+      borrower_reg: user?.reg_number || 'RA2311003030001',
       borrower_dept: user?.department || 'CSE',
       loan_days: 14
     }).then(res => {

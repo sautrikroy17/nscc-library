@@ -95,7 +95,7 @@ export const localStore = {
       const cached = localStorage.getItem(STORAGE_KEYS.ACTIVE_USER);
       if (cached) return { user: JSON.parse(cached) };
     } catch {}
-    return { user: INITIAL_USERS[3] }; // Default Pranav Sharma
+    return { user: INITIAL_USERS[2] }; // Default Sautrik Roy
   },
 
   // ── Books ──

@@ -35,9 +35,9 @@ import { INITIAL_BOOKS } from '../data/seedData';
 
 const ROLE_DEMOS = {
   student: {
-    email: 'pranav@srmist.edu.in',
+    email: 'sr9973@srmist.edu.in',
     password: 'student123',
-    name: 'Pranav Sharma'
+    name: 'Sautrik Roy'
   },
   librarian: {
     email: 'librarian@srmist.edu.in',
@@ -905,7 +905,7 @@ export default function LoginPage() {
                     type="text"
                     value={regName}
                     onChange={e => setRegName(e.target.value)}
-                    placeholder="e.g. Pranav Sharma"
+                    placeholder="e.g. Sautrik Roy"
                     required
                     style={{
                       width: '100%',
@@ -1469,7 +1469,7 @@ export default function LoginPage() {
                       </svg>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981', marginBottom: 4 }}>
-                      ACTIVE PASS: RA2311003030002
+                      ACTIVE PASS: RA2311003030001
                     </div>
                     <div style={{ fontSize: 12, color: '#94a3b8' }}>
                       Hold up to any campus kiosk or scan via the in-app camera reticle.

@@ -110,7 +110,7 @@ export default function App() {
   if (!user) return <LoginPage />;
 
   const isStudent = user.role === 'student';
-  const profileName = user.name || (isStudent ? 'Pranav Sharma' : 'Dr. Rajesh Kumar');
+  const profileName = user.name || (isStudent ? 'Sautrik Roy' : 'Dr. Rajesh Kumar');
   const profileRole = isStudent ? '2nd Year CSE' : 'Librarian';
 
   const renderPage = () => {

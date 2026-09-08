@@ -147,7 +147,7 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
                 type="text"
                 value={form.borrower_name}
                 onChange={e => setForm({ ...form, borrower_name: e.target.value })}
-                placeholder="e.g. Pranav Sharma"
+                placeholder="e.g. Sautrik Roy"
                 required
                 style={{
                   width: '100%',

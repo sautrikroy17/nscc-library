@@ -200,7 +200,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
   // Time Greeting Calculation
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : (hour < 18 ? 'Good afternoon' : 'Good evening');
-  const firstName = user?.name ? user.name.split(' ')[0] : (viewRole === 'student' ? 'Pranav' : 'Dr. Rajesh');
+  const firstName = user?.name ? user.name.split(' ')[0] : (viewRole === 'student' ? 'Sautrik' : 'Dr. Rajesh');
 
   const handleRenew = (book) => {
     playClick();
