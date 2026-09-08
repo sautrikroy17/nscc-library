@@ -87,3 +87,16 @@ export function playReturnChime() {
   playTone(784, 0.18, 'sine', 0.18);
   setTimeout(() => playTone(880, 0.28, 'sine', 0.15), 110);
 }
+
+export function playMicStart() {
+  // Rising futuristic chime for voice recording start
+  playTone(550, 0.12, 'sine', 0.15);
+  setTimeout(() => playTone(880, 0.18, 'sine', 0.18), 80);
+}
+
+export function playMicStop() {
+  // Descending confirmation for voice recording end
+  playTone(880, 0.12, 'sine', 0.15);
+  setTimeout(() => playTone(550, 0.18, 'sine', 0.12), 80);
+}
+

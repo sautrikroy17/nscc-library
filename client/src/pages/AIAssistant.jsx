@@ -17,6 +17,7 @@ import { ai as aiApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
 import { playClick, playSuccessChime, playErrorBeep } from '../utils/audio';
+import VoiceInputButton from '../components/VoiceInputButton';
 
 const QUICK_PROMPTS = [
   "Which algorithms and data structures books are on the shelf right now?",
@@ -177,7 +178,7 @@ function SemanticSearch() {
       </div>
 
       <div className="card-body">
-        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
           <input
             className="input"
             style={{ flex: 1 }}
@@ -185,6 +186,12 @@ function SemanticSearch() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
+          />
+          <VoiceInputButton
+            onTranscript={(transcript) => setQuery(transcript)}
+            disabled={loading}
+            accentColor="var(--cyan)"
+            title="Voice Search (Speak book title or subject)"
           />
           <button
             className="btn btn-cyan"
@@ -352,7 +359,7 @@ function AIChat() {
       </div>
 
       {/* Message Input Strip */}
-      <div style={{ padding: '14px 18px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10 }}>
+      <div style={{ padding: '14px 18px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'center' }}>
         <input
           className="input"
           style={{ flex: 1 }}
@@ -361,6 +368,12 @@ function AIChat() {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
           disabled={loading}
+        />
+        <VoiceInputButton
+          onTranscript={(transcript) => setInput(transcript)}
+          disabled={loading}
+          accentColor="var(--cyan)"
+          title="Voice Input (Speak your prompt)"
         />
         <button
           className="btn btn-cyan"
