@@ -1,14 +1,42 @@
-// Web Audio API synthesizer — zero external dependencies
+// Web Audio API synthesizer — zero external audio files
 let _audioCtx = null;
+let _soundEnabled = localStorage.getItem('librax_sfx_enabled') !== 'false';
 
 function getCtx() {
-  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!_audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      _audioCtx = new AudioContextClass();
+    }
+  }
+  if (_audioCtx && _audioCtx.state === 'suspended') {
+    _audioCtx.resume();
+  }
   return _audioCtx;
 }
 
-function playTone(freq, duration, type = 'sine', gainVal = 0.3) {
+export function isSoundEnabled() {
+  return _soundEnabled;
+}
+
+export function setSoundEnabled(enabled) {
+  _soundEnabled = !!enabled;
+  localStorage.setItem('librax_sfx_enabled', _soundEnabled ? 'true' : 'false');
+  if (_soundEnabled) {
+    playClick();
+  }
+}
+
+export function toggleSound() {
+  setSoundEnabled(!_soundEnabled);
+  return _soundEnabled;
+}
+
+function playTone(freq, duration, type = 'sine', gainVal = 0.25) {
+  if (!_soundEnabled) return;
   try {
     const ctx = getCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -16,35 +44,46 @@ function playTone(freq, duration, type = 'sine', gainVal = 0.3) {
     osc.type = type;
     osc.frequency.setValueAtTime(freq, ctx.currentTime);
     gain.gain.setValueAtTime(gainVal, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + duration);
   } catch (e) {
-    // Audio not available — fail silently
+    // Audio context not allowed or unsupported
   }
 }
 
+export function playClick() {
+  // Ultra-tactile subtle micro-click
+  playTone(850, 0.04, 'sine', 0.08);
+}
+
+export function playHover() {
+  // Subtle soft blip
+  playTone(600, 0.02, 'sine', 0.03);
+}
+
 export function playScanBeep() {
-  // Classic scan laser beep: rising chirp
-  playTone(1200, 0.08, 'square', 0.15);
-  setTimeout(() => playTone(1800, 0.08, 'square', 0.12), 60);
+  // Classic scan laser beep: dual chirps
+  playTone(1200, 0.07, 'square', 0.12);
+  setTimeout(() => playTone(1850, 0.08, 'square', 0.10), 60);
 }
 
 export function playSuccessChime() {
-  // Three-note ascending major chord: C-E-G
-  playTone(523, 0.25, 'sine', 0.25);
-  setTimeout(() => playTone(659, 0.25, 'sine', 0.20), 120);
-  setTimeout(() => playTone(784, 0.4, 'sine', 0.18), 240);
+  // Ascending crystal chord: C-E-G-C
+  playTone(523, 0.22, 'sine', 0.20);
+  setTimeout(() => playTone(659, 0.22, 'sine', 0.18), 100);
+  setTimeout(() => playTone(784, 0.28, 'sine', 0.16), 200);
+  setTimeout(() => playTone(1046, 0.40, 'sine', 0.15), 320);
 }
 
 export function playErrorBeep() {
-  // Low warning buzz
-  playTone(180, 0.3, 'sawtooth', 0.2);
-  setTimeout(() => playTone(120, 0.3, 'sawtooth', 0.15), 200);
+  // Low synth alarm
+  playTone(220, 0.25, 'sawtooth', 0.16);
+  setTimeout(() => playTone(140, 0.35, 'sawtooth', 0.14), 160);
 }
 
 export function playReturnChime() {
-  // Softer success variant (return confirmed)
-  playTone(784, 0.2, 'sine', 0.20);
-  setTimeout(() => playTone(659, 0.3, 'sine', 0.15), 150);
+  // Confirmation chord
+  playTone(784, 0.18, 'sine', 0.18);
+  setTimeout(() => playTone(880, 0.28, 'sine', 0.15), 110);
 }

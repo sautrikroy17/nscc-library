@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AlertTriangle, Zap, FileSpreadsheet, BookOpen, ShieldCheck } from 'lucide-react';
 import { books as booksApi, transactions as txApi, stats as statsApi, exportData } from '../api';
 import { toast } from '../context/ToastContext';
+import { playClick } from '../utils/audio';
 
 function SectionTitle({ icon, title, subtitle }) {
   return (
@@ -357,48 +359,59 @@ export default function AdminPanel() {
   const [activeSection, setActiveSection] = useState('overdue');
 
   const SECTIONS = [
-    { id: 'overdue', label: '⚠️ Overdue', desc: 'Manage overdue books & collect fines' },
-    { id: 'quick', label: '⚡ Quick Ops', desc: 'Issue or return books by ID' },
-    { id: 'export', label: '📤 Export', desc: 'Download reports as CSV or Excel' },
-    { id: 'books', label: '📚 Books DB', desc: 'Full books database overview' },
+    { id: 'overdue', label: 'Overdue Audit', icon: AlertTriangle, desc: 'Manage overdue books & collect fines' },
+    { id: 'quick', label: 'Quick Operations', icon: Zap, desc: 'Issue or return books by ID' },
+    { id: 'export', label: 'Data Exporter', icon: FileSpreadsheet, desc: 'Download reports as CSV or Excel' },
+    { id: 'books', label: 'Inventory DB', icon: BookOpen, desc: 'Full books database overview' },
   ];
 
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">⚙️ Admin Panel</h1>
-        <p className="page-subtitle">Library operations control center</p>
+        <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <ShieldCheck size={24} color="var(--accent)" />
+          <span>Administrative Control Hub</span>
+        </h1>
+        <p className="page-subtitle">Central management station for circulation, fines, inventory and institutional reporting</p>
       </div>
 
       {/* Section Tabs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-        {SECTIONS.map(s => (
-          <button
-            key={s.id}
-            onClick={() => setActiveSection(s.id)}
-            style={{
-              padding: '10px 18px',
-              borderRadius: 12,
-              border: activeSection === s.id ? '1px solid var(--accent)' : '1px solid var(--border)',
-              background: activeSection === s.id ? 'var(--accent-soft)' : 'var(--bg-elevated)',
-              color: activeSection === s.id ? 'var(--accent)' : 'var(--text-2)',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: 13.5,
-              transition: 'all 200ms',
-            }}
-          >
-            {s.label}
-          </button>
-        ))}
+        {SECTIONS.map(s => {
+          const Icon = s.icon;
+          const isActive = activeSection === s.id;
+          return (
+            <button
+              key={s.id}
+              onClick={() => { playClick(); setActiveSection(s.id); }}
+              style={{
+                padding: '10px 18px',
+                borderRadius: 'var(--r-md)',
+                border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                background: isActive ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-elevated)',
+                color: isActive ? '#ffffff' : 'var(--text-3)',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: 13,
+                transition: 'all 200ms',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <Icon size={16} color={isActive ? 'var(--accent-bright)' : 'currentColor'} />
+              <span>{s.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <AnimatePresence mode="wait">
         <motion.div
           key={activeSection}
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
+          exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.2 }}
         >
           {activeSection === 'overdue' && <OverdueManagement />}

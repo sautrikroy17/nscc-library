@@ -1,13 +1,32 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'qrcode';
+import { 
+  BookOpen, 
+  MapPin, 
+  QrCode, 
+  Plus, 
+  Search, 
+  Download, 
+  Printer, 
+  Edit3, 
+  Trash2, 
+  Sparkles, 
+  X,
+  Layers,
+  Calendar,
+  Filter
+} from 'lucide-react';
 import { books as booksApi, ai as aiApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
+import { playClick, playSuccessChime, playErrorBeep } from '../utils/audio';
 
 const COLORS = ['#10b981','#06b6d4','#8b5cf6','#f59e0b','#f97316','#ef4444','#84cc16','#ec4899','#6366f1'];
 
 function BookCard({ book, onSelect, onQR, isLibrarian }) {
+  const isAvailable = book.available_copies > 0;
+
   return (
     <motion.div
       className="book-card"
@@ -15,61 +34,118 @@ function BookCard({ book, onSelect, onQR, isLibrarian }) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      whileHover={{ y: -4 }}
-      onClick={() => onSelect(book)}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      onClick={() => { playClick(); onSelect(book); }}
+      style={{
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+      }}
     >
-      <div className="book-cover" style={{ background: `linear-gradient(135deg, ${book.cover_color}22, ${book.cover_color}44)` }}>
-        <svg className="book-cover-icon" viewBox="0 0 24 24" fill="none" stroke={book.cover_color} strokeWidth="1.5">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-        </svg>
+      <div className="book-cover" style={{ 
+        background: `linear-gradient(135deg, ${book.cover_color}25 0%, ${book.cover_color}45 100%)`,
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <BookOpen size={48} color={book.cover_color} strokeWidth={1.5} style={{ opacity: 0.85 }} />
         <div className="book-cover-overlay" />
-        {book.available_copies === 0 && (
-          <div style={{
-            position: 'absolute', top: 8, right: 8,
-            background: 'rgba(244,63,94,0.9)', color: 'white',
-            fontSize: 10, fontWeight: 700, padding: '2px 7px',
-            borderRadius: 20, backdropFilter: 'blur(4px)',
-          }}>ISSUED OUT</div>
-        )}
-        {book.available_copies > 0 && (
-          <div style={{
-            position: 'absolute', top: 8, right: 8,
-            background: 'rgba(16,185,129,0.85)', color: 'white',
-            fontSize: 10, fontWeight: 700, padding: '2px 7px',
-            borderRadius: 20,
-          }}>AVAILABLE</div>
-        )}
-      </div>
-      <div className="book-card-body">
-        <div className="book-title">{book.title}</div>
-        <div className="book-author">{book.author}</div>
-        <div className="book-meta">
-          <span className="book-copies">
-            <span>{book.available_copies}</span>/{book.total_copies}
-          </span>
-          <span style={{
-            fontSize: 10.5, fontWeight: 600,
-            padding: '2px 8px', borderRadius: 20,
-            background: `${book.cover_color}20`,
-            color: book.cover_color,
-          }}>{book.category}</span>
+        
+        {/* Availability Badge */}
+        <div style={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          background: isAvailable ? 'rgba(16,185,129,0.9)' : 'rgba(244,63,94,0.9)',
+          color: 'white',
+          fontSize: 9.5,
+          fontWeight: 800,
+          padding: '2px 8px',
+          borderRadius: 20,
+          letterSpacing: '0.4px',
+          backdropFilter: 'blur(6px)',
+          boxShadow: isAvailable ? '0 0 10px rgba(16,185,129,0.4)' : 'none'
+        }}>
+          {isAvailable ? `${book.available_copies} AVAILABLE` : 'ISSUED OUT'}
         </div>
+
+        {/* Category Pill Over Cover */}
+        <div style={{
+          position: 'absolute',
+          bottom: 10,
+          left: 10,
+          background: 'rgba(8, 12, 20, 0.85)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          padding: '2px 8px',
+          borderRadius: 6,
+          fontSize: 10,
+          fontWeight: 700,
+          color: book.cover_color
+        }}>
+          {book.category}
+        </div>
+      </div>
+
+      <div className="book-card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div className="book-title" style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', lineHeight: 1.35 }}>
+          {book.title}
+        </div>
+        <div className="book-author" style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
+          {book.author}
+        </div>
+
+        {/* Shelf coordinate */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          marginTop: 'auto', 
+          paddingTop: 10,
+          fontSize: 11.5,
+          color: 'var(--text-3)',
+          borderTop: '1px solid var(--border-soft)'
+        }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'JetBrains Mono, monospace' }}>
+            <MapPin size={11} color="var(--cyan-bright)" />
+            {book.shelf_location || 'Zone A'}
+          </span>
+          <span style={{ 
+            fontWeight: 700, 
+            color: isAvailable ? 'var(--accent-bright)' : 'var(--danger)',
+            fontFamily: 'JetBrains Mono, monospace'
+          }}>
+            {book.available_copies}/{book.total_copies}
+          </span>
+        </div>
+
         {isLibrarian && (
           <button
-            onClick={e => { e.stopPropagation(); onQR(book); }}
+            onClick={e => { e.stopPropagation(); playClick(); onQR(book); }}
             style={{
-              marginTop: 8, width: '100%',
-              padding: '6px', borderRadius: 8,
-              background: 'var(--bg-elevated)',
+              marginTop: 10,
+              width: '100%',
+              padding: '6px',
+              borderRadius: 8,
+              background: 'rgba(255,255,255,0.03)',
               border: '1px solid var(--border)',
-              color: 'var(--text-3)', fontSize: 12, cursor: 'pointer',
+              color: 'var(--text-3)',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
               transition: 'all 200ms',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-3)'; }}
           >
-            📱 QR Code
+            <QrCode size={13} />
+            <span>Shelf QR Label</span>
           </button>
         )}
       </div>
@@ -467,27 +543,32 @@ export default function Catalog() {
     <div className="page">
       <div className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 className="page-title">📚 Book Catalog</h1>
-          <p className="page-subtitle">{bookList.length} books shown · {categories.length - 1} categories</p>
+          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <BookOpen size={24} color="var(--accent)" />
+            <span>Central Book Repository</span>
+          </h1>
+          <p className="page-subtitle">{bookList.length} volumes listed · {categories.length - 1} engineering & science categories</p>
         </div>
         {isLibrarian && (
           <motion.button
             className="btn btn-primary"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => setShowAddModal(true)}
+            onClick={() => { playClick(); setShowAddModal(true); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 7 }}
           >
-            ➕ Add Book
+            <Plus size={16} />
+            <span>Register Volume</span>
           </motion.button>
         )}
       </div>
 
       {/* Search & Filters */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div className="search-bar" style={{ flex: 1, minWidth: 200 }}>
-          <span style={{ color: 'var(--text-4)', fontSize: 16 }}>🔍</span>
+        <div className="search-bar" style={{ flex: 1, minWidth: 200, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Search size={16} color="var(--text-4)" style={{ flexShrink: 0 }} />
           <input
-            placeholder="Search by title, author, ISBN or ID..."
+            placeholder="Search by title, author, ISBN or Book ID..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
