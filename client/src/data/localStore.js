@@ -1,17 +1,34 @@
 import { INITIAL_USERS, INITIAL_BOOKS, INITIAL_TRANSACTIONS } from './seedData';
 
 const STORAGE_KEYS = {
-  BOOKS: 'librax_books_v2',
-  TRANSACTIONS: 'librax_transactions_v2',
-  USERS: 'librax_users_v2',
-  ACTIVE_USER: 'librax_cached_user'
+  BOOKS: 'librax_books_v3',
+  TRANSACTIONS: 'librax_transactions_v3',
+  USERS: 'librax_users_v3',
+  ACTIVE_USER: 'librax_cached_user_v3'
 };
 
-// Initialize localStorage if not present
+// Initialize localStorage if not present or backfill new books
 function initStore() {
-  if (!localStorage.getItem(STORAGE_KEYS.BOOKS)) {
+  const existingBooksRaw = localStorage.getItem(STORAGE_KEYS.BOOKS);
+  if (!existingBooksRaw) {
     localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(INITIAL_BOOKS));
+  } else {
+    try {
+      const stored = JSON.parse(existingBooksRaw);
+      // Ensure all seed books exist in storage
+      let updated = false;
+      for (const seedBook of INITIAL_BOOKS) {
+        if (!stored.some(b => b.id.toLowerCase() === seedBook.id.toLowerCase())) {
+          stored.push(seedBook);
+          updated = true;
+        }
+      }
+      if (updated) {
+        localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(stored));
+      }
+    } catch {}
   }
+
   if (!localStorage.getItem(STORAGE_KEYS.TRANSACTIONS)) {
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(INITIAL_TRANSACTIONS));
   }

@@ -18,9 +18,17 @@ import {
   Bookmark,
   QrCode,
   Copy,
-  Zap
+  Zap,
+  RotateCcw,
+  Globe,
+  Download,
+  Plus,
+  X,
+  Sparkles,
+  BookMarked
 } from 'lucide-react';
 import { books as booksApi, transactions as txApi } from '../api';
+import { localStore } from '../data/localStore';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
 import { playClick, playSuccessChime, playErrorBeep } from '../utils/audio';
@@ -98,6 +106,15 @@ const BOOK_METAS = {
     year: '2020',
     pages: '320',
     desc: 'System Design Interview – An Insider Guide provides a reliable strategy and actionable knowledge to tackle open-ended system design questions with step-by-step frameworks.'
+  },
+  'BK031': {
+    rating: '4.9',
+    reviews: '8.5k',
+    isbn: '978-0439708180',
+    publisher: 'Scholastic / Bloomsbury',
+    year: '1997',
+    pages: '309',
+    desc: 'Harry Potter has never even heard of Hogwarts when the letters start dropping on the doormat at number four, Privet Drive. On his eleventh birthday, he discovers he is a wizard.'
   }
 };
 
@@ -152,10 +169,66 @@ const BOOK_COVERS = {
     title: 'System Design Interview',
     author: 'Alex Xu',
     light: true
+  },
+  'Harry Potter': {
+    bg: 'linear-gradient(135deg, #451a03 0%, #78350f 100%)',
+    ring: '#f59e0b',
+    title: 'Harry Potter',
+    author: 'J.K. Rowling',
+    light: false
+  },
+  'Lord of the Rings': {
+    bg: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+    ring: '#a855f7',
+    title: 'Lord of the Rings',
+    author: 'J.R.R. Tolkien',
+    light: false
+  },
+  '1984': {
+    bg: 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%)',
+    ring: '#ef4444',
+    title: '1984',
+    author: 'George Orwell',
+    light: false
+  },
+  'Atomic Habits': {
+    bg: 'linear-gradient(135deg, #042f2e 0%, #115e59 100%)',
+    ring: '#14b8a6',
+    title: 'Atomic Habits',
+    author: 'James Clear',
+    light: false
+  },
+  'Steve Jobs': {
+    bg: 'linear-gradient(135deg, #172554 0%, #1e40af 100%)',
+    ring: '#38bdf8',
+    title: 'Steve Jobs',
+    author: 'Walter Isaacson',
+    light: false
   }
 };
 
-function CoverPreview({ title, height = 140, light = false }) {
+function CoverPreview({ title, height = 140, light = false, coverUrl = null }) {
+  if (coverUrl) {
+    return (
+      <div style={{
+        width: '100%',
+        height,
+        borderRadius: 8,
+        overflow: 'hidden',
+        position: 'relative',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+        background: '#0d1627'
+      }}>
+        <img 
+          src={coverUrl} 
+          alt={title}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={e => { e.currentTarget.style.display = 'none'; }}
+        />
+      </div>
+    );
+  }
+
   const match = Object.keys(BOOK_COVERS).find(k => title.toLowerCase().includes(k.toLowerCase()));
   const c = match ? BOOK_COVERS[match] : {
     bg: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
@@ -181,7 +254,6 @@ function CoverPreview({ title, height = 140, light = false }) {
       overflow: 'hidden',
       color: c.light ? '#0f172a' : '#ffffff'
     }}>
-      {/* Spine line */}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -191,7 +263,6 @@ function CoverPreview({ title, height = 140, light = false }) {
         background: 'rgba(255, 255, 255, 0.25)'
       }} />
 
-      {/* Futuristic Center Horizon Ring */}
       <div style={{
         position: 'absolute',
         top: '40%',
@@ -235,15 +306,21 @@ function CoverPreview({ title, height = 140, light = false }) {
         opacity: 0.85
       }}>
         <span>LIBRAX</span>
-        <span>PEARSON / MIT</span>
+        <span>SRM IST CENTRAL</span>
       </div>
     </div>
   );
 }
 
-export default function Catalog({ onNavigate = () => {} }) {
+export default function Catalog({ 
+  onNavigate = () => {},
+  searchQuery = '',
+  onSearchChange = () => {},
+  initialTab = 'catalog'
+}) {
   const { user } = useAuth();
   const [booksList, setBooksList] = useState([]);
+  const [activeLoans, setActiveLoans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedBook, setSelectedBook] = useState(null);
   const [qrModalBook, setQrModalBook] = useState(null);
@@ -251,31 +328,84 @@ export default function Catalog({ onNavigate = () => {} }) {
   const [availabilityFilter, setAvailabilityFilter] = useState('All');
   const [viewMode, setViewMode] = useState('grid');
   const [wishlist, setWishlist] = useState(['BK004', 'BK015']);
-  const [activeTab, setActiveTab] = useState('description'); // 'description' | 'details'
-  const [showFullDesc, setShowFullDesc] = useState(false);
+  const [activeTab, setActiveTab] = useState('description');
+  const [openLibraryBooks, setOpenLibraryBooks] = useState([]);
+  const [isSearchingOpenLibrary, setIsSearchingOpenLibrary] = useState(false);
+
+  const loadData = async () => {
+    try {
+      const [bData, tData] = await Promise.all([
+        booksApi.getAll(),
+        txApi.getAll()
+      ]);
+      const bList = Array.isArray(bData) ? bData : (bData?.books || INITIAL_BOOKS);
+      setBooksList(bList);
+      const tList = Array.isArray(tData) ? tData : (tData?.transactions || []);
+      setActiveLoans(tList.filter(t => t.status !== 'returned'));
+    } catch (err) {
+      console.warn('Catalog loadData fallback to localStore:', err);
+      const localBooks = localStore.listBooks({ limit: 100 });
+      setBooksList(localBooks.books || INITIAL_BOOKS);
+      const localTx = localStore.listTransactions();
+      setActiveLoans((localTx.transactions || []).filter(t => t.status !== 'returned'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    booksApi.getAll()
-      .then(data => {
-        const list = Array.isArray(data) ? data : (data?.books || INITIAL_BOOKS);
-        setBooksList(list);
-      })
-      .catch(err => {
-        console.warn('Catalog: booksApi.getAll failed, using initial catalog:', err);
-        setBooksList(INITIAL_BOOKS);
-      })
-      .finally(() => setLoading(false));
+    loadData();
   }, []);
 
-  const categories = ['All', 'Software Engineering', 'Algorithms', 'Databases', 'Operating Systems', 'Computer Networks', 'AI & Machine Learning', 'Interview Prep'];
+  // When searchQuery changes and has no local matches, automatically trigger Open Library preview
+  useEffect(() => {
+    const q = (searchQuery || '').trim();
+    if (q.length > 2 && filteredBooks.length === 0) {
+      searchOpenLibrary(q);
+    }
+  }, [searchQuery, booksList]);
 
+  const userReg = (user?.reg_number || 'RA2311003030001').toUpperCase();
+  const myActiveLoans = activeLoans.filter(t => 
+    (t.borrower_reg && t.borrower_reg.toUpperCase() === userReg) ||
+    (t.borrower_name && t.borrower_name.toLowerCase() === (user?.name || 'sautrik roy').toLowerCase())
+  );
+
+  const categories = [
+    'All', 
+    'Software Engineering', 
+    'Algorithms', 
+    'Databases', 
+    'Operating Systems', 
+    'Computer Networks', 
+    'AI & Machine Learning', 
+    'Literature & Fiction', 
+    'Interview Prep',
+    'Self-Improvement & Productivity',
+    'Biography & Technology'
+  ];
+
+  const q = (searchQuery || '').trim().toLowerCase();
   const safeList = Array.isArray(booksList) ? booksList : (booksList?.books || INITIAL_BOOKS);
+
   const filteredBooks = safeList.filter(b => {
     if (!b) return false;
     if (categoryFilter !== 'All' && b.category !== categoryFilter) return false;
-    if (availabilityFilter === 'Available' && (b.available_copies ?? 1) <= 0) return false;
-    if (availabilityFilter === 'Limited' && (b.available_copies ?? 1) > 2) return false;
-    return true;
+    
+    const isBorrowedByMe = myActiveLoans.some(t => t.book_id?.toUpperCase() === b.id?.toUpperCase());
+    if (availabilityFilter === 'Available' && (b.available_copies <= 0 || isBorrowedByMe)) return false;
+    if (availabilityFilter === 'Borrowed' && !isBorrowedByMe) return false;
+    if (availabilityFilter === 'Limited' && (b.available_copies > 2 || b.available_copies <= 0)) return false;
+
+    if (!q) return true;
+    return (
+      b.title.toLowerCase().includes(q) ||
+      b.author.toLowerCase().includes(q) ||
+      (b.isbn && b.isbn.toLowerCase().includes(q)) ||
+      (b.category && b.category.toLowerCase().includes(q)) ||
+      (b.description && b.description.toLowerCase().includes(q)) ||
+      b.id.toLowerCase().includes(q)
+    );
   });
 
   const handleBorrow = (b) => {
@@ -285,6 +415,7 @@ export default function Catalog({ onNavigate = () => {} }) {
       playErrorBeep();
       return;
     }
+
     txApi.issue({
       book_id: b.id,
       borrower_name: user?.name || 'Sautrik Roy',
@@ -293,15 +424,112 @@ export default function Catalog({ onNavigate = () => {} }) {
       loan_days: 14
     }).then(res => {
       playSuccessChime();
-      toast.success(res.message || `Successfully checked out ${b.title}!`);
+      toast.success(res.message || `Successfully checked out ${b.title}! Due in 14 days.`);
       // Decrement locally
       setBooksList(prev => prev.map(item => item.id === b.id ? { ...item, available_copies: item.available_copies - 1 } : item));
+      setActiveLoans(prev => [
+        {
+          id: `TXN_${Date.now()}`,
+          book_id: b.id,
+          book_title: b.title,
+          borrower_name: user?.name || 'Sautrik Roy',
+          borrower_reg: user?.reg_number || 'RA2311003030001',
+          status: 'issued'
+        },
+        ...prev
+      ]);
       if (selectedBook && selectedBook.id === b.id) {
         setSelectedBook(prev => ({ ...prev, available_copies: prev.available_copies - 1 }));
       }
     }).catch(err => {
       playErrorBeep();
       toast.error(err.message || 'Borrow operation failed');
+    });
+  };
+
+  const handleReturn = (b) => {
+    playClick();
+    txApi.return({
+      book_id: b.id,
+      borrower_reg: user?.reg_number || 'RA2311003030001'
+    }).then(res => {
+      playSuccessChime();
+      toast.success(res.message || `Successfully returned "${b.title}" to library! Outstanding fine: ₹0`);
+      // Increment locally
+      setBooksList(prev => prev.map(item => item.id === b.id ? { ...item, available_copies: item.available_copies + 1 } : item));
+      setActiveLoans(prev => prev.filter(t => t.book_id?.toUpperCase() !== b.id?.toUpperCase()));
+      if (selectedBook && selectedBook.id === b.id) {
+        setSelectedBook(prev => ({ ...prev, available_copies: prev.available_copies + 1 }));
+      }
+    }).catch(err => {
+      playErrorBeep();
+      toast.error(err.message || 'Return operation failed');
+    });
+  };
+
+  const searchOpenLibrary = async (term) => {
+    const queryTerm = (term || searchQuery || '').trim();
+    if (!queryTerm) return;
+    setIsSearchingOpenLibrary(true);
+    try {
+      const resp = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(queryTerm)}&limit=6`);
+      const data = await resp.json();
+      const docs = (data.docs || []).slice(0, 6).map((doc, idx) => ({
+        id: `BK${Math.floor(100 + Math.random() * 899)}`,
+        title: doc.title,
+        author: doc.author_name ? doc.author_name.join(', ') : 'Acclaimed Author',
+        isbn: doc.isbn ? doc.isbn[0] : `978-OL${Math.floor(100000000 + Math.random() * 900000000)}`,
+        category: doc.subject ? doc.subject[0] : 'General Literature',
+        total_copies: 4,
+        available_copies: 4,
+        shelf_location: `Zone N-${100 + idx}`,
+        description: doc.first_sentence ? (Array.isArray(doc.first_sentence) ? doc.first_sentence[0] : doc.first_sentence) : `A notable work by ${doc.author_name ? doc.author_name[0] : 'the author'}. Published in ${doc.first_publish_year || 'various editions'}.`,
+        published_year: doc.first_publish_year || 2020,
+        cover_url: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
+        cover_color: ['#f59e0b', '#10b981', '#6366f1', '#ec4899', '#06b6d4'][idx % 5]
+      }));
+      setOpenLibraryBooks(docs);
+      if (docs.length > 0) {
+        toast.info(`Found ${docs.length} global records from Open Library!`);
+      }
+    } catch (err) {
+      console.warn('OpenLibrary search error:', err);
+    } finally {
+      setIsSearchingOpenLibrary(false);
+    }
+  };
+
+  const handleAcquireAndIssue = (book) => {
+    playClick();
+    const newBook = {
+      ...book,
+      available_copies: book.available_copies - 1
+    };
+
+    localStore.createBook(newBook);
+    setBooksList(prev => [newBook, ...prev]);
+
+    txApi.issue({
+      book_id: newBook.id,
+      borrower_name: user?.name || 'Sautrik Roy',
+      borrower_reg: user?.reg_number || 'RA2311003030001',
+      borrower_dept: user?.department || 'CSE',
+      loan_days: 14
+    }).then(() => {
+      playSuccessChime();
+      toast.success(`"${newBook.title}" acquired into SRM IST Stacks and issued to you!`);
+      setActiveLoans(prev => [
+        {
+          id: `TXN_${Date.now()}`,
+          book_id: newBook.id,
+          book_title: newBook.title,
+          borrower_name: user?.name || 'Sautrik Roy',
+          borrower_reg: user?.reg_number || 'RA2311003030001',
+          status: 'issued'
+        },
+        ...prev
+      ]);
+      setOpenLibraryBooks(prev => prev.filter(b => b.title !== book.title));
     });
   };
 
@@ -360,143 +588,168 @@ export default function Catalog({ onNavigate = () => {} }) {
               background: 'rgba(14, 22, 38, 0.85)',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: 20,
-              padding: '36px 32px',
+              padding: 36,
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: 36,
-              alignItems: 'start',
-              backdropFilter: 'blur(24px)'
+              gridTemplateColumns: '320px 1fr',
+              gap: 40,
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)'
             }}>
-              {/* Left Column: Cover Preview with Glow */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{
-                  width: 240,
-                  maxWidth: '100%',
-                  position: 'relative'
-                }}>
-                  {/* Neon backlight aura */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '10%',
-                    left: '10%',
-                    right: '10%',
-                    bottom: '10%',
-                    background: 'radial-gradient(circle, rgba(6, 182, 212, 0.35) 0%, transparent 70%)',
-                    filter: 'blur(30px)',
-                    zIndex: 0
-                  }} />
+              {/* Left Column: Cover & Quick Stats */}
+              <div>
+                <CoverPreview title={selectedBook.title} height={260} coverUrl={selectedBook.cover_url} />
 
-                  <div style={{ position: 'relative', zIndex: 1 }}>
-                    <CoverPreview title={selectedBook.title} height={320} />
+                <div style={{
+                  background: 'rgba(8, 12, 20, 0.6)',
+                  borderRadius: 12,
+                  padding: 18,
+                  marginTop: 20,
+                  border: '1px solid rgba(255, 255, 255, 0.06)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <span style={{ color: '#94a3b8', fontSize: 13 }}>Copies Available</span>
+                    <span style={{
+                      fontWeight: 800,
+                      fontSize: 13,
+                      color: selectedBook.available_copies > 0 ? '#10b981' : '#f43f5e'
+                    }}>
+                      {selectedBook.available_copies} of {selectedBook.total_copies ?? 5}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <span style={{ color: '#94a3b8', fontSize: 13 }}>Shelf Location</span>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: '#ffffff', fontFamily: 'JetBrains Mono, monospace' }}>
+                      {selectedBook.shelf_location || 'Zone A-101'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#94a3b8', fontSize: 13 }}>Standard Loan</span>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: '#ffffff' }}>14 Days</span>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Title, Ratings, Specs, Actions, Tabs */}
+              {/* Right Column: Title, Author, Issue / Return Action */}
               <div>
-                {/* Title & Author */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    color: '#10b981',
+                    background: 'rgba(16, 185, 129, 0.12)',
+                    padding: '4px 10px',
+                    borderRadius: 6
+                  }}>
+                    {selectedBook.category}
+                  </span>
+                  <span style={{
+                    fontSize: 11,
+                    fontFamily: 'JetBrains Mono, monospace',
+                    color: '#94a3b8',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    padding: '4px 10px',
+                    borderRadius: 6
+                  }}>
+                    ID: {selectedBook.id}
+                  </span>
+                </div>
+
                 <h1 style={{
                   fontFamily: "'Plus Jakarta Sans', sans-serif",
                   fontWeight: 800,
                   fontSize: 28,
                   color: '#ffffff',
-                  marginBottom: 6,
-                  letterSpacing: '-0.5px'
+                  marginBottom: 8,
+                  lineHeight: 1.25
                 }}>
                   {selectedBook.title}
                 </h1>
-                <div style={{ fontSize: 14, color: '#94a3b8', marginBottom: 16 }}>
-                  {selectedBook.author}
+                <div style={{ fontSize: 15, color: '#94a3b8', marginBottom: 20 }}>
+                  By <span style={{ color: '#ffffff', fontWeight: 600 }}>{selectedBook.author}</span>
                 </div>
 
-                {/* Rating & Copies Available */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                  marginBottom: 20,
-                  flexWrap: 'wrap'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={15} fill="#f59e0b" color="#f59e0b" />
-                    ))}
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', marginLeft: 4 }}>
-                      {BOOK_METAS[selectedBook.id]?.rating || '4.8'}
-                    </span>
-                    <span style={{ fontSize: 12, color: '#64748b' }}>
-                      ({BOOK_METAS[selectedBook.id]?.reviews || '1.2k'} reviews)
-                    </span>
+                {/* Rating & Review row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, fontSize: 13 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#f59e0b', fontWeight: 700 }}>
+                    <Star size={16} fill="#f59e0b" color="#f59e0b" />
+                    <span>{BOOK_METAS[selectedBook.id]?.rating || '4.8'}</span>
                   </div>
+                  <span style={{ color: '#64748b' }}>•</span>
+                  <span style={{ color: '#94a3b8' }}>{BOOK_METAS[selectedBook.id]?.reviews || '1.2k'} reviews</span>
+                  <span style={{ color: '#64748b' }}>•</span>
+                  <span style={{ color: '#94a3b8' }}>ISBN {BOOK_METAS[selectedBook.id]?.isbn || selectedBook.isbn || '978-0132350884'}</span>
+                </div>
 
-                  <span style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    padding: '3px 10px',
-                    borderRadius: 999,
-                    background: selectedBook.available_copies > 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.12)',
-                    color: selectedBook.available_copies > 0 ? '#10b981' : '#f43f5e',
-                    border: `1px solid ${selectedBook.available_copies > 0 ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.3)'}`
+                {/* Status Callout */}
+                {myActiveLoans.some(t => t.book_id?.toUpperCase() === selectedBook.id?.toUpperCase()) ? (
+                  <div style={{
+                    background: 'rgba(6, 182, 212, 0.12)',
+                    border: '1px solid rgba(6, 182, 212, 0.3)',
+                    borderRadius: 10,
+                    padding: '12px 16px',
+                    marginBottom: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    color: '#38bdf8'
                   }}>
-                    ● {selectedBook.available_copies} copies available
-                  </span>
-                </div>
-
-                {/* Metadata Specs Box */}
-                <div style={{
-                  background: 'rgba(8, 12, 20, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  borderRadius: 12,
-                  padding: '14px 18px',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '10px 20px',
-                  fontSize: 12.5,
-                  marginBottom: 24
-                }}>
-                  <div>
-                    <span style={{ color: '#64748b' }}>ISBN: </span>
-                    <span style={{ color: '#ffffff', fontFamily: 'JetBrains Mono, monospace' }}>
-                      {BOOK_METAS[selectedBook.id]?.isbn || selectedBook.isbn || '978-0132350884'}
+                    <BookMarked size={18} />
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>
+                      You currently have this title checked out under Reg No. {userReg}.
                     </span>
                   </div>
-                  <div>
-                    <span style={{ color: '#64748b' }}>Category: </span>
-                    <span style={{ color: '#ffffff', fontWeight: 600 }}>{selectedBook.category}</span>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748b' }}>Publisher: </span>
-                    <span style={{ color: '#ffffff' }}>{BOOK_METAS[selectedBook.id]?.publisher || 'Pearson'}</span>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748b' }}>Year: </span>
-                    <span style={{ color: '#ffffff' }}>{BOOK_METAS[selectedBook.id]?.year || selectedBook.published_year || '2022'}</span>
-                  </div>
-                </div>
+                ) : null}
 
-                {/* Action Buttons: [Borrow Book] + [Add to Wishlist] */}
+                {/* ACTION BUTTONS: [Issue / Borrow] + [Return] + [QR] + [Wishlist] */}
                 <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleBorrow(selectedBook)}
-                    style={{
-                      padding: '12px 28px',
-                      borderRadius: 10,
-                      background: '#10b981',
-                      border: 'none',
-                      color: '#080c14',
-                      fontWeight: 800,
-                      fontSize: 14,
-                      cursor: 'pointer',
-                      boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8
-                    }}
-                  >
-                    <span>Borrow Book</span>
-                  </motion.button>
+                  {myActiveLoans.some(t => t.book_id?.toUpperCase() === selectedBook.id?.toUpperCase()) ? (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleReturn(selectedBook)}
+                      style={{
+                        padding: '12px 28px',
+                        borderRadius: 10,
+                        background: '#06b6d4',
+                        border: 'none',
+                        color: '#080c14',
+                        fontWeight: 800,
+                        fontSize: 14,
+                        cursor: 'pointer',
+                        boxShadow: '0 0 20px rgba(6, 182, 212, 0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8
+                      }}
+                    >
+                      <RotateCcw size={16} />
+                      <span>Return Book to Library</span>
+                    </motion.button>
+                  ) : (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleBorrow(selectedBook)}
+                      disabled={selectedBook.available_copies <= 0}
+                      style={{
+                        padding: '12px 28px',
+                        borderRadius: 10,
+                        background: selectedBook.available_copies > 0 ? '#10b981' : '#334155',
+                        border: 'none',
+                        color: selectedBook.available_copies > 0 ? '#080c14' : '#94a3b8',
+                        fontWeight: 800,
+                        fontSize: 14,
+                        cursor: selectedBook.available_copies > 0 ? 'pointer' : 'not-allowed',
+                        boxShadow: selectedBook.available_copies > 0 ? '0 0 20px rgba(16, 185, 129, 0.4)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8
+                      }}
+                    >
+                      <Plus size={16} />
+                      <span>{selectedBook.available_copies > 0 ? 'Borrow Book (14 Days)' : 'Currently Checked Out'}</span>
+                    </motion.button>
+                  )}
 
                   <button
                     onClick={() => toggleWishlist(selectedBook.id)}
@@ -555,10 +808,11 @@ export default function Catalog({ onNavigate = () => {} }) {
                         paddingBottom: 8,
                         fontSize: 13.5,
                         fontWeight: activeTab === 'description' ? 700 : 500,
-                        color: activeTab === 'description' ? '#ffffff' : '#64748b',
-                        borderBottom: activeTab === 'description' ? '2px solid #10b981' : '2px solid transparent',
-                        cursor: 'pointer',
-                        transition: 'all 150ms'
+                        color: activeTab === 'description' ? '#10b981' : '#94a3b8',
+                        borderBottom: activeTab === 'description' ? '2px solid #10b981' : 'none',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer'
                       }}
                     >
                       Description
@@ -569,77 +823,140 @@ export default function Catalog({ onNavigate = () => {} }) {
                         paddingBottom: 8,
                         fontSize: 13.5,
                         fontWeight: activeTab === 'details' ? 700 : 500,
-                        color: activeTab === 'details' ? '#ffffff' : '#64748b',
-                        borderBottom: activeTab === 'details' ? '2px solid #10b981' : '2px solid transparent',
-                        cursor: 'pointer',
-                        transition: 'all 150ms'
+                        color: activeTab === 'details' ? '#10b981' : '#94a3b8',
+                        borderBottom: activeTab === 'details' ? '2px solid #10b981' : 'none',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer'
                       }}
                     >
-                      Details
+                      Publication Details
                     </button>
                   </div>
 
-                  {activeTab === 'description' ? (
-                    <div>
-                      <p style={{ fontSize: 13.5, color: '#94a3b8', lineHeight: 1.6 }}>
-                        {BOOK_METAS[selectedBook.id]?.desc || selectedBook.description || 'Comprehensive textbook covering foundational and advanced techniques across engineering and computational domains.'}
-                      </p>
-                      <span
-                        onClick={() => setShowFullDesc(!showFullDesc)}
-                        style={{ color: '#10b981', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-block', marginTop: 6 }}
-                      >
-                        {showFullDesc ? 'Show less' : 'Show more'}
-                      </span>
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: 12.5, color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <div>Shelf Coordinates: <strong style={{ color: '#ffffff' }}>{selectedBook.shelf_location || 'Zone A · Shelf 102'}</strong></div>
-                      <div>Language: <strong style={{ color: '#ffffff' }}>English (Technical)</strong></div>
-                      <div>Digital Companion: <strong style={{ color: '#10b981' }}>Included (PDF / Exercises)</strong></div>
-                    </div>
-                  )}
+                  <div style={{ fontSize: 13.5, color: '#94a3b8', lineHeight: 1.7 }}>
+                    {activeTab === 'description' ? (
+                      <div>
+                        {BOOK_METAS[selectedBook.id]?.desc || selectedBook.description}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div>Publisher: <strong style={{ color: '#fff' }}>{BOOK_METAS[selectedBook.id]?.publisher || 'MIT / Pearson'}</strong></div>
+                        <div>Year: <strong style={{ color: '#fff' }}>{selectedBook.published_year || '2022'}</strong></div>
+                        <div>Pages: <strong style={{ color: '#fff' }}>{BOOK_METAS[selectedBook.id]?.pages || '450'}</strong></div>
+                        <div>Language: <strong style={{ color: '#fff' }}>English (Academic)</strong></div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </motion.div>
         ) : (
           /* =========================================================================
-             SCREEN 4: BROWSE LIBRARY (BOTTOM-LEFT IN REFERENCE MOCKUP)
+             SCREEN 4: BROWSE BOOKS VIEW
              ========================================================================= */
           <motion.div
-            key="browse-library"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.25 }}
+            key="catalog-grid"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            {/* Header: Title & Subtitle */}
-            <div style={{ marginBottom: 20 }}>
+            {/* Header Title */}
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <h1 style={{
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
                 fontWeight: 800,
                 fontSize: 26,
                 color: '#ffffff',
-                marginBottom: 4,
+                marginBottom: 6,
                 letterSpacing: '-0.5px'
               }}>
-                Browse Library
+                Browse Library Stacks
               </h1>
-              <p style={{ fontSize: 13, color: '#94a3b8' }}>
-                Discover knowledge across all domains
+              <p style={{ fontSize: 13.5, color: '#94a3b8' }}>
+                Search, borrow, and return from over 30+ physical titles and academic collections
               </p>
             </div>
 
-            {/* Filters Row (Category, Author, Availability, Grid/List toggle) */}
+            {/* Prominent Search Input Box */}
+            <div style={{
+              maxWidth: 680,
+              margin: '0 auto 20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              background: 'rgba(14, 22, 38, 0.9)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: 14,
+              padding: '10px 18px',
+              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.15)'
+            }}>
+              <Search size={18} color="#10b981" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => onSearchChange(e.target.value)}
+                placeholder="Search books, authors, ISBN, Harry Potter, Algorithms..."
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: '#ffffff',
+                  fontSize: 14
+                }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => onSearchChange('')}
+                  title="Clear Search"
+                  style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: 16, cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Fast Suggestion Quick Chips */}
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              justifyContent: 'center',
+              marginBottom: 24
+            }}>
+              {['Harry Potter', 'Clean Code', 'Algorithms', 'Operating Systems', 'Machine Learning', 'Databases', '1984', 'Atomic Habits'].map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => { playClick(); onSearchChange(tag); }}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: 16,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    background: searchQuery.toLowerCase() === tag.toLowerCase() ? '#10b981' : 'rgba(255, 255, 255, 0.04)',
+                    color: searchQuery.toLowerCase() === tag.toLowerCase() ? '#080c14' : '#94a3b8',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    transition: 'all 150ms'
+                  }}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+
+            {/* Filter Bar & Controls */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: 24,
+              marginBottom: 20,
               flexWrap: 'wrap',
               gap: 12
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 {/* Category Selector */}
                 <div style={{
                   display: 'flex',
@@ -696,54 +1013,98 @@ export default function Catalog({ onNavigate = () => {} }) {
                   >
                     <option value="All" style={{ background: '#0e1628' }}>All</option>
                     <option value="Available" style={{ background: '#0e1628' }}>In Stock</option>
+                    <option value="Borrowed" style={{ background: '#0e1628' }}>Borrowed by You ({myActiveLoans.length})</option>
                     <option value="Limited" style={{ background: '#0e1628' }}>Limited Copies</option>
                   </select>
                 </div>
               </div>
 
-              {/* View Mode Toggle */}
-              <div style={{
-                display: 'flex',
-                background: 'rgba(14, 22, 38, 0.75)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: 8,
-                padding: 3
-              }}>
-                <button
-                  onClick={() => { playClick(); setViewMode('grid'); }}
-                  style={{
-                    padding: '5px 8px',
-                    borderRadius: 6,
-                    background: viewMode === 'grid' ? '#10b981' : 'transparent',
-                    color: viewMode === 'grid' ? '#ffffff' : '#64748b',
-                    display: 'flex',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <Grid size={15} />
-                </button>
-                <button
-                  onClick={() => { playClick(); setViewMode('list'); }}
-                  style={{
-                    padding: '5px 8px',
-                    borderRadius: 6,
-                    background: viewMode === 'list' ? '#10b981' : 'transparent',
-                    color: viewMode === 'list' ? '#ffffff' : '#64748b',
-                    display: 'flex',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <List size={15} />
-                </button>
+              {/* View Mode & Results Count */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8' }}>
+                  {filteredBooks.length} Books Found
+                </span>
+
+                <div style={{
+                  display: 'flex',
+                  background: 'rgba(14, 22, 38, 0.75)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 8,
+                  padding: 3
+                }}>
+                  <button
+                    onClick={() => { playClick(); setViewMode('grid'); }}
+                    style={{
+                      padding: '5px 8px',
+                      borderRadius: 6,
+                      background: viewMode === 'grid' ? '#10b981' : 'transparent',
+                      color: viewMode === 'grid' ? '#ffffff' : '#64748b',
+                      display: 'flex',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Grid size={15} />
+                  </button>
+                  <button
+                    onClick={() => { playClick(); setViewMode('list'); }}
+                    style={{
+                      padding: '5px 8px',
+                      borderRadius: 6,
+                      background: viewMode === 'list' ? '#10b981' : 'transparent',
+                      color: viewMode === 'list' ? '#ffffff' : '#64748b',
+                      display: 'flex',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <List size={15} />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Results Count (Screen 4 exact "248 Books Available" indicator) */}
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', marginBottom: 16 }}>
-              248 Books Available
-            </div>
+            {/* If 0 books match in physical stacks, display search empty state & Open Library Button */}
+            {filteredBooks.length === 0 && (
+              <div style={{
+                background: 'rgba(14, 22, 38, 0.65)',
+                border: '1px dashed rgba(255, 255, 255, 0.15)',
+                borderRadius: 16,
+                padding: '40px 24px',
+                textAlign: 'center',
+                marginBottom: 30
+              }}>
+                <BookOpen size={40} color="#94a3b8" style={{ margin: '0 auto 12px', opacity: 0.6 }} />
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', marginBottom: 6 }}>
+                  No physical copies found matching "{searchQuery}"
+                </h3>
+                <p style={{ fontSize: 13, color: '#94a3b8', maxWidth: 460, margin: '0 auto 20px' }}>
+                  The requested title might be part of the Global Academic Repository or Open Library. Search globally to acquire and issue it immediately.
+                </p>
 
-            {/* 4-Column Responsive Grid matching Mockup Screen 4 */}
+                <button
+                  onClick={() => searchOpenLibrary(searchQuery)}
+                  disabled={isSearchingOpenLibrary}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: 10,
+                    background: '#06b6d4',
+                    border: 'none',
+                    color: '#080c14',
+                    fontSize: 13,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    boxShadow: '0 0 16px rgba(6, 182, 212, 0.35)'
+                  }}
+                >
+                  <Globe size={15} />
+                  <span>{isSearchingOpenLibrary ? 'Searching Global Open Library...' : `Search Open Library for "${searchQuery}"`}</span>
+                </button>
+              </div>
+            )}
+
+            {/* 4-Column Responsive Grid */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
@@ -752,6 +1113,7 @@ export default function Catalog({ onNavigate = () => {} }) {
               {filteredBooks.map(book => {
                 const isAvail = book.available_copies > 0;
                 const isLow = book.available_copies > 0 && book.available_copies <= 2;
+                const isBorrowedByMe = myActiveLoans.some(t => t.book_id?.toUpperCase() === book.id?.toUpperCase());
 
                 return (
                   <motion.div
@@ -759,19 +1121,20 @@ export default function Catalog({ onNavigate = () => {} }) {
                     whileHover={{ y: -4 }}
                     style={{
                       background: 'rgba(14, 22, 38, 0.75)',
-                      border: '1px solid rgba(255, 255, 255, 0.07)',
+                      border: `1px solid ${isBorrowedByMe ? 'rgba(6, 182, 212, 0.35)' : 'rgba(255, 255, 255, 0.07)'}`,
                       borderRadius: 14,
                       padding: 16,
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      boxShadow: isBorrowedByMe ? '0 0 18px rgba(6, 182, 212, 0.15)' : 'none'
                     }}
                     onClick={() => { playClick(); setSelectedBook(book); }}
                   >
                     <div>
                       {/* Realistic Cover Preview */}
-                      <CoverPreview title={book.title} height={140} />
+                      <CoverPreview title={book.title} height={140} coverUrl={book.cover_url} />
 
                       {/* Title & Author */}
                       <div style={{ marginTop: 12 }}>
@@ -791,55 +1154,135 @@ export default function Catalog({ onNavigate = () => {} }) {
                         </div>
                       </div>
 
-                      {/* Availability Badge */}
-                      <div style={{ marginTop: 10 }}>
-                        <span style={{
-                          fontSize: 10.5,
-                          fontWeight: 700,
-                          padding: '2px 8px',
-                          borderRadius: 6,
-                          background: isAvail 
-                            ? (isLow ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)') 
-                            : 'rgba(244, 63, 94, 0.15)',
-                          color: isAvail 
-                            ? (isLow ? '#f59e0b' : '#10b981') 
-                            : '#f43f5e'
-                        }}>
-                          {isAvail ? (isLow ? `${book.available_copies} Copies left` : `${book.available_copies} Available`) : 'Checked Out'}
+                      {/* Availability / Borrowed Badge */}
+                      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {isBorrowedByMe ? (
+                          <span style={{
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                            background: 'rgba(6, 182, 212, 0.15)',
+                            color: '#06b6d4',
+                            border: '1px solid rgba(6, 182, 212, 0.3)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}>
+                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#06b6d4' }} />
+                            Borrowed by You
+                          </span>
+                        ) : (
+                          <span style={{
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                            background: isAvail 
+                              ? (isLow ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)') 
+                              : 'rgba(244, 63, 94, 0.15)',
+                            color: isAvail 
+                              ? (isLow ? '#f59e0b' : '#10b981') 
+                              : '#f43f5e'
+                          }}>
+                            {isAvail ? (isLow ? `${book.available_copies} Copies left` : `${book.available_copies} Available`) : 'Checked Out'}
+                          </span>
+                        )}
+                        <span style={{ fontSize: 10.5, color: '#64748b', fontFamily: 'monospace' }}>
+                          {book.shelf_location}
                         </span>
                       </div>
                     </div>
 
-                    {/* Action Row: Borrow + Quick QR Code */}
+                    {/* Action Row: Issue / Borrow / Return + QR Code */}
                     <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleBorrow(book);
-                        }}
-                        style={{
-                          flex: 1,
-                          padding: '8px 0',
-                          borderRadius: 8,
-                          background: 'rgba(8, 12, 20, 0.8)',
-                          border: '1px solid rgba(16, 185, 129, 0.35)',
-                          color: '#10b981',
-                          fontSize: 12.5,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          transition: 'all 150ms'
-                        }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = '#10b981';
-                          e.currentTarget.style.color = '#080c14';
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = 'rgba(8, 12, 20, 0.8)';
-                          e.currentTarget.style.color = '#10b981';
-                        }}
-                      >
-                        Borrow
-                      </button>
+                      {isBorrowedByMe ? (
+                        <button
+                          title="Return this book to the library"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleReturn(book);
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '8px 0',
+                            borderRadius: 8,
+                            background: 'rgba(6, 182, 212, 0.18)',
+                            border: '1px solid rgba(6, 182, 212, 0.45)',
+                            color: '#38bdf8',
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 5,
+                            transition: 'all 150ms'
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = '#06b6d4';
+                            e.currentTarget.style.color = '#080c14';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'rgba(6, 182, 212, 0.18)';
+                            e.currentTarget.style.color = '#38bdf8';
+                          }}
+                        >
+                          <RotateCcw size={13} />
+                          <span>Return</span>
+                        </button>
+                      ) : isAvail ? (
+                        <button
+                          title="Borrow this book for 14 days"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBorrow(book);
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '8px 0',
+                            borderRadius: 8,
+                            background: 'rgba(8, 12, 20, 0.8)',
+                            border: '1px solid rgba(16, 185, 129, 0.35)',
+                            color: '#10b981',
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'all 150ms'
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = '#10b981';
+                            e.currentTarget.style.color = '#080c14';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'rgba(8, 12, 20, 0.8)';
+                            e.currentTarget.style.color = '#10b981';
+                          }}
+                        >
+                          Borrow
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playClick();
+                            toast.info(`Reserved ${book.title}. You will receive a notification when a copy is returned.`);
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '8px 0',
+                            borderRadius: 8,
+                            background: 'rgba(244, 63, 94, 0.1)',
+                            border: '1px solid rgba(244, 63, 94, 0.25)',
+                            color: '#f43f5e',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Reserved
+                        </button>
+                      )}
 
                       <button
                         title={`View QR code for ${book.title}`}
@@ -860,14 +1303,6 @@ export default function Catalog({ onNavigate = () => {} }) {
                           cursor: 'pointer',
                           transition: 'all 150ms'
                         }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = '#10b981';
-                          e.currentTarget.style.color = '#080c14';
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
-                          e.currentTarget.style.color = '#10b981';
-                        }}
                       >
                         <QrCode size={15} />
                       </button>
@@ -876,6 +1311,85 @@ export default function Catalog({ onNavigate = () => {} }) {
                 );
               })}
             </div>
+
+            {/* Global Open Library Search Section (If search matches or user searched) */}
+            {openLibraryBooks.length > 0 && (
+              <div style={{ marginTop: 40 }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 16
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Globe size={18} color="#06b6d4" />
+                    <span style={{ fontSize: 16, fontWeight: 800, color: '#ffffff' }}>
+                      Global Academic Library Results ({openLibraryBooks.length} Titles)
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 12, color: '#06b6d4' }}>
+                    Click to acquire & issue directly to your card
+                  </span>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: 16
+                }}>
+                  {openLibraryBooks.map((olBook, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        background: 'rgba(14, 22, 38, 0.85)',
+                        border: '1px solid rgba(6, 182, 212, 0.3)',
+                        borderRadius: 12,
+                        padding: 14,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: 12
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: '#ffffff' }}>
+                          {olBook.title}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                          {olBook.author} · {olBook.published_year}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 6, fontStyle: 'italic' }}>
+                          {olBook.description.substring(0, 100)}...
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleAcquireAndIssue(olBook)}
+                        style={{
+                          width: '100%',
+                          padding: '9px 0',
+                          borderRadius: 8,
+                          background: '#06b6d4',
+                          border: 'none',
+                          color: '#080c14',
+                          fontSize: 12.5,
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          boxShadow: '0 0 14px rgba(6, 182, 212, 0.3)'
+                        }}
+                      >
+                        <Download size={14} />
+                        <span>Add to Stacks & Issue to Me</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1090,4 +1604,3 @@ export default function Catalog({ onNavigate = () => {} }) {
     </div>
   );
 }
-

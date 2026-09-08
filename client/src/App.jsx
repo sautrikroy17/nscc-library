@@ -119,7 +119,14 @@ export default function App() {
       case 'dashboard':    return <Dashboard onNavigate={setActivePage} />;
       case 'catalog':      
       case 'search':       
-      case 'wishlist':     return <Catalog onNavigate={setActivePage} />;
+      case 'wishlist':     return (
+        <Catalog 
+          onNavigate={setActivePage} 
+          searchQuery={searchQuery} 
+          onSearchChange={setSearchQuery} 
+          initialTab={activePage} 
+        />
+      );
       case 'borrowings':   return <Dashboard onNavigate={setActivePage} />;
       case 'scanner':      return <Scanner />;
       case 'history':      
@@ -205,8 +212,13 @@ export default function App() {
             <input
               type="text"
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search books, authors, ISBN..."
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                if (activePage !== 'catalog' && activePage !== 'search') {
+                  setActivePage('catalog');
+                }
+              }}
+              placeholder="Search books, authors, ISBN, Harry Potter..."
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -216,17 +228,39 @@ export default function App() {
                 flex: 1
               }}
             />
-            <span style={{
-              fontSize: 10,
-              fontWeight: 700,
-              padding: '2px 6px',
-              borderRadius: 4,
-              background: 'rgba(255, 255, 255, 0.06)',
-              color: '#94a3b8',
-              fontFamily: 'JetBrains Mono, monospace'
-            }}>
-              ⌘ K
-            </span>
+            {searchQuery ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSearchQuery('');
+                }}
+                title="Clear Search"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  padding: '0 4px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                ✕
+              </button>
+            ) : (
+              <span style={{
+                fontSize: 10,
+                fontWeight: 700,
+                padding: '2px 6px',
+                borderRadius: 4,
+                background: 'rgba(255, 255, 255, 0.06)',
+                color: '#94a3b8',
+                fontFamily: 'JetBrains Mono, monospace'
+              }}>
+                ⌘ K
+              </span>
+            )}
           </div>
 
           {/* Dedicated QR Scanner Quick Action */}

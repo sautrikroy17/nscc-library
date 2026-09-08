@@ -86,7 +86,13 @@ export const INITIAL_BOOKS = [
   { id: 'BK027', title: 'Node.js Design Patterns', author: 'Mario Casciaro & Luciano Mammino', isbn: '978-1839214110', category: 'Web Development', total_copies: 3, available_copies: 2, shelf_location: 'I-904', description: 'Design and implement production-grade Node.js applications using proven design patterns and best practices.', cover_color: '#10b981', published_year: 2020 },
   { id: 'BK028', title: 'The Clean Coder', author: 'Robert C. Martin', isbn: '978-0137081073', category: 'Software Engineering', total_copies: 4, available_copies: 4, shelf_location: 'B-204', description: 'A code of conduct for professional programmers. Covers responsibility, work ethics, estimates, and managing pressure.', cover_color: '#f59e0b', published_year: 2011 },
   { id: 'BK029', title: 'Eloquent JavaScript', author: 'Marijn Haverbeke', isbn: '978-1718500709', category: 'Web Development', total_copies: 4, available_copies: 4, shelf_location: 'I-905', description: 'A modern introduction to JavaScript. Covers data structures, OOP, functional programming, Node.js, and the DOM.', cover_color: '#f97316', published_year: 2018 },
-  { id: 'BK030', title: 'Graph Theory and Its Applications', author: 'Jonathan L. Gross', isbn: '978-1584885054', category: 'Mathematics', total_copies: 2, available_copies: 2, shelf_location: 'M-303', description: 'Comprehensive treatment of graph theory with applications to computer science, operations research, and engineering.', cover_color: '#84cc16', published_year: 2005 }
+  { id: 'BK030', title: 'Graph Theory and Its Applications', author: 'Jonathan L. Gross', isbn: '978-1584885054', category: 'Mathematics', total_copies: 2, available_copies: 2, shelf_location: 'M-303', description: 'Comprehensive treatment of graph theory with applications to computer science, operations research, and engineering.', cover_color: '#84cc16', published_year: 2005 },
+  { id: 'BK031', title: 'Harry Potter and the Sorcerer\'s Stone', author: 'J.K. Rowling', isbn: '978-0439708180', category: 'Literature & Fiction', total_copies: 5, available_copies: 4, shelf_location: 'L-101', description: 'The magical journey begins. Harry Potter discovers he is a wizard and attends Hogwarts School of Witchcraft and Wizardry.', cover_color: '#f59e0b', published_year: 1997 },
+  { id: 'BK032', title: 'Harry Potter and the Chamber of Secrets', author: 'J.K. Rowling', isbn: '978-0439064873', category: 'Literature & Fiction', total_copies: 4, available_copies: 4, shelf_location: 'L-102', description: 'Mysterious whispers and petrified students haunt the ancient halls of Hogwarts.', cover_color: '#10b981', published_year: 1998 },
+  { id: 'BK033', title: 'The Lord of the Rings: The Fellowship of the Ring', author: 'J.R.R. Tolkien', isbn: '978-0544003415', category: 'Literature & Fiction', total_copies: 3, available_copies: 2, shelf_location: 'L-201', description: 'The legendary epic fantasy quest across Middle-earth to destroy the One Ring.', cover_color: '#8b5cf6', published_year: 1954 },
+  { id: 'BK034', title: '1984', author: 'George Orwell', isbn: '978-0451524935', category: 'Literature & Fiction', total_copies: 6, available_copies: 5, shelf_location: 'L-202', description: 'A chilling dystopian masterpiece examining surveillance, totalitarian control, and objective truth.', cover_color: '#ef4444', published_year: 1949 },
+  { id: 'BK035', title: 'Atomic Habits', author: 'James Clear', isbn: '978-0735211292', category: 'Self-Improvement & Productivity', total_copies: 5, available_copies: 4, shelf_location: 'P-101', description: 'An easy and proven way to build good habits and break bad ones. Practical framework for continuous personal growth.', cover_color: '#06b6d4', published_year: 2018 },
+  { id: 'BK036', title: 'Steve Jobs: The Exclusive Biography', author: 'Walter Isaacson', isbn: '978-1451648539', category: 'Biography & Technology', total_copies: 3, available_copies: 3, shelf_location: 'B-301', description: 'The definitive biography of Apple co-founder Steve Jobs, chronicling creative leadership and technology revolutions.', cover_color: '#3b82f6', published_year: 2011 }
 ];
 
 const pastDate = (days) => {
@@ -104,6 +110,57 @@ const futureDate = (days) => {
 export const INITIAL_TRANSACTIONS = [
   {
     id: 'TXN-001',
+    book_id: 'BK002',
+    book_title: 'Clean Code',
+    book_author: 'Robert C. Martin',
+    borrower_id: 'STU001',
+    borrower_name: 'Sautrik Roy',
+    borrower_reg: 'RA2311003030001',
+    borrower_dept: 'CSE',
+    issued_by: 'LIB001',
+    issue_date: pastDate(4),
+    due_date: futureDate(10),
+    return_date: null,
+    status: 'issued',
+    fine_amount: 0,
+    fine_collected: 0
+  },
+  {
+    id: 'TXN-002',
+    book_id: 'BK006',
+    book_title: 'Operating System Concepts (Dinosaur Book)',
+    book_author: 'Silberschatz, Galvin & Gagne',
+    borrower_id: 'STU001',
+    borrower_name: 'Sautrik Roy',
+    borrower_reg: 'RA2311003030001',
+    borrower_dept: 'CSE',
+    issued_by: 'LIB001',
+    issue_date: pastDate(7),
+    due_date: futureDate(7),
+    return_date: null,
+    status: 'issued',
+    fine_amount: 0,
+    fine_collected: 0
+  },
+  {
+    id: 'TXN-003',
+    book_id: 'BK007',
+    book_title: 'Database System Concepts',
+    book_author: 'Silberschatz, Korth & Sudarshan',
+    borrower_id: 'STU001',
+    borrower_name: 'Sautrik Roy',
+    borrower_reg: 'RA2311003030001',
+    borrower_dept: 'CSE',
+    issued_by: 'LIB001',
+    issue_date: pastDate(2),
+    due_date: futureDate(12),
+    return_date: null,
+    status: 'issued',
+    fine_amount: 0,
+    fine_collected: 0
+  },
+  {
+    id: 'TXN-004',
     book_id: 'BK001',
     book_title: 'Introduction to Algorithms',
     book_author: 'Cormen, Leiserson, Rivest & Stein',
@@ -118,23 +175,6 @@ export const INITIAL_TRANSACTIONS = [
     status: 'returned',
     fine_amount: 0,
     fine_collected: 0
-  },
-  {
-    id: 'TXN-002',
-    book_id: 'BK010',
-    book_title: 'Cracking the Coding Interview',
-    book_author: 'Gayle Laakmann McDowell',
-    borrower_id: 'STU001',
-    borrower_name: 'Sautrik Roy',
-    borrower_reg: 'RA2311003030001',
-    borrower_dept: 'CSE',
-    issued_by: 'LIB001',
-    issue_date: pastDate(30),
-    due_date: pastDate(16),
-    return_date: pastDate(10),
-    status: 'returned',
-    fine_amount: 30,
-    fine_collected: 1
   },
   {
     id: 'TXN-003',
