@@ -74,9 +74,9 @@ function LoadingScreen() {
           fontFamily: "'Plus Jakarta Sans', sans-serif",
           fontWeight: 800, fontSize: 22, color: 'var(--text)', marginBottom: 6,
         }}>
-          NSCC Library
+          LibraX
         </div>
-        <div style={{ fontSize: 13, color: 'var(--text-3)' }}>Initializing...</div>
+        <div style={{ fontSize: 13, color: 'var(--text-3)' }}>NSCC · SRM IST</div>
       </motion.div>
       <div className="spinner spinner-lg" style={{ borderTopColor: 'var(--accent)' }} />
     </div>

@@ -154,7 +154,7 @@ export default function LoginPage() {
               fontSize: 22,
               color: 'var(--text)',
               letterSpacing: '-0.5px',
-            }}>NSCC Library</div>
+            }}>LibraX</div>
             <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 1.5 }}>
               Newton School Coding Club · SRM IST
             </div>
@@ -260,7 +260,7 @@ export default function LoginPage() {
             fontSize: 22,
           }}>📚</div>
           <div>
-            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>NSCC Library</div>
+            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>LibraX</div>
             <div style={{ fontSize: 11, color: 'var(--text-3)', letterSpacing: 0.5 }}>Newton School Coding Club · SRM IST</div>
           </div>
         </motion.div>

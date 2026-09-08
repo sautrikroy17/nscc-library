@@ -29,8 +29,8 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">📚</div>
           <div className="sidebar-logo-text">
-            <span>NSCC Library</span>
-            <span>SRM IST</span>
+            <span>LibraX</span>
+            <span>NSCC · SRM IST</span>
           </div>
         </div>
 
@@ -96,7 +96,7 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
       <div className="mobile-topbar mobile-only">
         <div className="mobile-topbar-logo">
           <div className="mobile-topbar-logo-icon">📚</div>
-          <span className="mobile-topbar-title">NSCC Library</span>
+          <span className="mobile-topbar-title">LibraX</span>
         </div>
         <div className="mobile-topbar-right">
           {overdueCount > 0 && (

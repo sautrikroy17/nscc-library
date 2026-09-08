@@ -1,8 +1,9 @@
-# 📚 NSCC Library — Smart Library Management System
+# 📚 LibraX — Smart Library Management System
 
-> AI-powered library management for Newton School Coding Club, SRM IST
+> **Newton School Coding Club (NSCC) · SRM IST**  
+> 🌐 **Live Production**: [https://librax-app.vercel.app](https://librax-app.vercel.app) · [https://librax-library.vercel.app](https://librax-library.vercel.app)
 
-A full-stack, modern library management system built for NSCC @ SRM IST. Features QR-based book scanning, Groq-powered AI assistant, real-time overdue tracking, fine management, and rich CSV/Excel reporting — all wrapped in a stunning dark-mode UI.
+A full-stack, AI-powered library management system engineered for NSCC @ SRM IST. Features QR-based camera scanning, Groq-powered AI assistant, real-time overdue tracking, automated fine calculations, and dual CSV/Excel reporting — all encased in a Sentinel-grade dark obsidian UI with a unified responsive layout.
 
 ---
 
