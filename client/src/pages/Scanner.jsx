@@ -1,10 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Html5Qrcode } from 'html5-qrcode';
+import { 
+  Camera, 
+  CameraOff, 
+  ScanLine, 
+  BookOpen, 
+  ArrowUpRight, 
+  RotateCcw, 
+  CheckCircle2, 
+  Zap, 
+  Keyboard, 
+  Info, 
+  AlertTriangle,
+  ArrowRight
+} from 'lucide-react';
 import { transactions as txApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
-import { playScanBeep, playSuccessChime, playErrorBeep, playReturnChime } from '../utils/audio';
+import { playScanBeep, playSuccessChime, playErrorBeep, playReturnChime, playClick } from '../utils/audio';
 
 const DEMO_BOOK_IDS = ['BK001','BK002','BK003','BK004','BK005','BK006','BK007','BK008','BK009','BK010'];
 
@@ -66,8 +80,11 @@ function IssueModal({ book, activeLoans, onClose, onIssue, onReturn }) {
           <div style={{
             width: 48, height: 60, borderRadius: 8,
             background: `linear-gradient(135deg, ${book.cover_color}66, ${book.cover_color}33)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0,
-          }}>📖</div>
+            border: `1px solid ${book.cover_color}88`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <BookOpen size={24} color="#ffffff" />
+          </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{book.title}</div>
             <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>{book.author}</div>
@@ -87,27 +104,33 @@ function IssueModal({ book, activeLoans, onClose, onIssue, onReturn }) {
         <div style={{ padding: '12px 22px 0', display: 'flex', gap: 8 }}>
           {book.available_copies > 0 && (
             <button
-              onClick={() => setMode('issue')}
+              onClick={() => { playClick(); setMode('issue'); }}
               style={{
                 padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
                 cursor: 'pointer', border: 'none',
                 background: mode === 'issue' ? 'var(--accent)' : 'var(--bg-elevated)',
                 color: mode === 'issue' ? 'white' : 'var(--text-3)',
                 transition: 'all 200ms',
+                display: 'flex', alignItems: 'center', gap: 6
               }}
-            >📤 Issue Book</button>
+            >
+              <ArrowUpRight size={14} /> Issue Book
+            </button>
           )}
           {activeLoans.length > 0 && (
             <button
-              onClick={() => setMode('return')}
+              onClick={() => { playClick(); setMode('return'); }}
               style={{
                 padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
                 cursor: 'pointer', border: 'none',
                 background: mode === 'return' ? 'var(--cyan)' : 'var(--bg-elevated)',
                 color: mode === 'return' ? 'white' : 'var(--text-3)',
                 transition: 'all 200ms',
+                display: 'flex', alignItems: 'center', gap: 6
               }}
-            >↩️ Return Book</button>
+            >
+              <RotateCcw size={14} /> Return Book
+            </button>
           )}
         </div>
 
@@ -299,10 +322,26 @@ export default function Scanner() {
   };
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1 className="page-title">📷 QR Scanner Station</h1>
-        <p className="page-subtitle">Scan a book QR code to issue or return instantly</p>
+    <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
+      <div className="page-header" style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+          <div style={{
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.15))',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <ScanLine size={22} color="var(--accent-bright)" />
+          </div>
+          <h1 className="page-title" style={{ margin: 0 }}>QR Vision Scanner Station</h1>
+        </div>
+        <p className="page-subtitle" style={{ margin: 0 }}>
+          High-speed optical scanning for zero-touch book issuance, automated return logging, and fine audit
+        </p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
@@ -314,15 +353,33 @@ export default function Scanner() {
           className="card"
         >
           <div className="card-header">
-            <div className="card-title">
-              <span style={{ color: scanning ? 'var(--accent)' : 'var(--text-3)', fontSize: 10 }}>●</span>
-              {scanning ? 'Camera Active' : 'Camera Off'}
+            <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ 
+                width: 8, 
+                height: 8, 
+                borderRadius: '50%', 
+                background: scanning ? 'var(--accent)' : 'var(--text-4)',
+                boxShadow: scanning ? '0 0 10px var(--accent)' : 'none'
+              }} />
+              <span>{scanning ? 'Live Hardware Sensor Stream' : 'Camera Feed Offline'}</span>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {scanning ? (
-                <button className="btn btn-danger btn-sm" onClick={stopScanner}>⛔ Stop</button>
+                <button 
+                  className="btn btn-danger btn-sm" 
+                  onClick={() => { playClick(); stopScanner(); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <CameraOff size={13} /> Deactivate Sensor
+                </button>
               ) : (
-                <button className="btn btn-primary btn-sm" onClick={startScanner}>📷 Start Camera</button>
+                <button 
+                  className="btn btn-primary btn-sm" 
+                  onClick={() => { playClick(); startScanner(); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Camera size={13} /> Initialize Camera
+                </button>
               )}
             </div>
           </div>
@@ -337,7 +394,7 @@ export default function Scanner() {
                   minHeight: 320,
                   borderRadius: 16,
                   overflow: 'hidden',
-                  background: '#000',
+                  background: '#04070d',
                   border: `2px solid ${scanning ? 'var(--accent)' : 'var(--border)'}`,
                   transition: 'border-color 400ms',
                 }}
@@ -350,9 +407,9 @@ export default function Scanner() {
                   background: 'var(--bg-elevated)', borderRadius: 14,
                   border: '2px dashed var(--border)',
                 }}>
-                  <span style={{ fontSize: 64, opacity: 0.3 }}>📷</span>
-                  <div style={{ fontSize: 15, color: 'var(--text-3)', fontWeight: 600 }}>Camera Not Active</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-4)' }}>Click "Start Camera" to begin scanning</div>
+                  <Camera size={56} style={{ opacity: 0.25 }} color="var(--text-3)" />
+                  <div style={{ fontSize: 15, color: 'var(--text-2)', fontWeight: 700 }}>Hardware Camera Inactive</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-4)' }}>Click "Initialize Camera" or enter Book ID on right</div>
                 </div>
               )}
             </div>
@@ -361,10 +418,10 @@ export default function Scanner() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginTop: 16, color: 'var(--accent)' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginTop: 16, color: 'var(--accent-bright)' }}
               >
-                <div className="spinner" />
-                <span style={{ fontSize: 14, fontWeight: 600 }}>Processing scan...</span>
+                <div className="spinner" style={{ borderTopColor: 'var(--accent)' }} />
+                <span style={{ fontSize: 14, fontWeight: 700 }}>Decoding Book Signature...</span>
               </motion.div>
             )}
           </div>
@@ -380,7 +437,10 @@ export default function Scanner() {
             className="card"
           >
             <div className="card-header">
-              <div className="card-title">⌨️ Manual Entry</div>
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Keyboard size={16} color="var(--accent-bright)" />
+                <span>Manual Hardware Entry</span>
+              </div>
             </div>
             <div className="card-body">
               <ManualEntry onSubmit={processBookId} loading={loadingScan} />
@@ -395,26 +455,29 @@ export default function Scanner() {
             className="card"
           >
             <div className="card-header">
-              <div className="card-title">🎯 Quick Demo</div>
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Zap size={16} color="#eab308" />
+                <span>Rapid Simulation Stream</span>
+              </div>
             </div>
             <div className="card-body" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <p style={{ width: '100%', fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>
-                Tap a book ID to simulate a QR scan:
+                Simulate a QR laser detection hit:
               </p>
               {DEMO_BOOK_IDS.map(id => (
                 <button
                   key={id}
-                  onClick={() => processBookId(id)}
+                  onClick={() => { playClick(); processBookId(id); }}
                   disabled={loadingScan}
                   style={{
                     padding: '6px 12px', borderRadius: 20,
-                    background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                    background: 'rgba(6, 182, 212, 0.1)', border: '1px solid rgba(6, 182, 212, 0.25)',
                     color: 'var(--cyan)', fontFamily: 'JetBrains Mono, monospace',
                     fontSize: 12, fontWeight: 700, cursor: 'pointer',
                     transition: 'all 200ms',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--cyan-soft)'; e.currentTarget.style.borderColor = 'var(--cyan)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.2)'; e.currentTarget.style.borderColor = 'var(--cyan)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.1)'; e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.25)'; }}
                 >
                   {id}
                 </button>
@@ -430,24 +493,27 @@ export default function Scanner() {
             className="card"
           >
             <div className="card-header">
-              <div className="card-title">📋 How It Works</div>
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Info size={16} color="#38bdf8" />
+                <span>Scanning Protocol</span>
+              </div>
             </div>
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {[
-                ['1', '📱', 'Start camera or enter Book ID manually'],
-                ['2', '🔍', 'QR code is scanned and book is looked up'],
-                ['3', '✅', 'Issue to a student or process a return'],
-                ['4', '⚠️', 'Overdue fines are calculated automatically'],
-              ].map(([num, icon, text]) => (
+                ['1', Camera, 'Initialize camera feed or select simulated ID'],
+                ['2', ScanLine, 'Align QR code barcode directly within laser crosshairs'],
+                ['3', ArrowUpRight, 'Issue book to borrower or check-in return instantly'],
+                ['4', AlertTriangle, 'Automated fine calculation applies to overdue days'],
+              ].map(([num, Icon, text]) => (
                 <div key={num} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <div style={{
-                    width: 26, height: 26, borderRadius: '50%',
-                    background: 'var(--accent-soft)', color: 'var(--accent)',
+                    width: 24, height: 24, borderRadius: '50%',
+                    background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-bright)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 11, fontWeight: 800, flexShrink: 0,
                   }}>{num}</div>
-                  <span style={{ fontSize: 16 }}>{icon}</span>
-                  <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{text}</span>
+                  <Icon size={15} color="var(--accent-bright)" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.35 }}>{text}</span>
                 </div>
               ))}
             </div>
