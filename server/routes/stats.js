@@ -33,13 +33,26 @@ router.get('/', authenticateToken, (req, res) => {
     FROM books GROUP BY category ORDER BY count DESC
   `).all();
 
-  // Daily activity last 7 days
-  const dailyActivity = db.prepare(`
-    SELECT DATE(issue_date) as date, COUNT(*) as issued
-    FROM transactions
-    WHERE issue_date >= datetime('now', '-7 days')
-    GROUP BY DATE(issue_date) ORDER BY date ASC
-  `).all();
+  // Day-wise circulation activity (last 14 days timeline)
+  const dailyActivity = [];
+  const DAYS_TRACKED = 14;
+  for (let i = DAYS_TRACKED - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const issued = db.prepare("SELECT COUNT(*) as cnt FROM transactions WHERE DATE(issue_date) = ?").get(dateStr).cnt || 0;
+    const returned = db.prepare("SELECT COUNT(*) as cnt FROM transactions WHERE DATE(return_date) = ?").get(dateStr).cnt || 0;
+    dailyActivity.push({
+      date: dateStr,
+      day: dayName,
+      label,
+      issued,
+      returned,
+      net: issued - returned
+    });
+  }
 
   // Recent overdue books
   const overdueBooks = db.prepare(`
