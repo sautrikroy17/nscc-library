@@ -12,7 +12,12 @@ import {
   CheckCircle2, 
   Cpu, 
   Database, 
-  Radio
+  Radio,
+  User,
+  Hash,
+  GraduationCap,
+  UserPlus,
+  LogIn
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
@@ -64,15 +69,34 @@ const ARCHITECTURE_HIGHLIGHTS = [
   { icon: QrCode, label: 'Hardware Optical Scanner', desc: 'Live camera QR scanning with Web Audio synthesizer chirp' },
 ];
 
+const DEPARTMENTS = [
+  'CSE', 'ECE', 'EEE', 'ME', 'CE', 'IT', 'BBA', 'MBA', 'Physics', 'Chemistry', 'Biotech', 'Other'
+];
+
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
+  const [authMode, setAuthMode] = useState('signin'); // 'signin' | 'register'
+  
+  // Sign In State
   const [email, setEmail] = useState('admin@nscc.srmist.edu.in');
   const [password, setPassword] = useState('nscc2024');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState(0);
 
-  const handleSubmit = async (e) => {
+  // Register State
+  const [regForm, setRegForm] = useState({
+    name: '',
+    email: '',
+    reg_number: '',
+    department: 'CSE',
+    password: '',
+    confirmPassword: ''
+  });
+  const [showRegPassword, setShowRegPassword] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  const handleLoginSubmit = async (e) => {
     e?.preventDefault();
     if (!email || !password) {
       toast.error('Please input valid credentials');
@@ -84,7 +108,7 @@ export default function LoginPage() {
     playClick();
 
     try {
-      await login(email, password);
+      await login(email.trim().toLowerCase(), password);
       playSuccessChime();
       toast.success('Authentication confirmed. Welcome to LibraX!');
     } catch (err) {
@@ -95,8 +119,52 @@ export default function LoginPage() {
     }
   };
 
+  const handleRegisterSubmit = async (e) => {
+    e?.preventDefault();
+    const { name, email, reg_number, department, password, confirmPassword } = regForm;
+
+    if (!name.trim() || !email.trim() || !reg_number.trim() || !password) {
+      toast.error('Please fill all required registration fields');
+      playErrorBeep();
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      playErrorBeep();
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      playErrorBeep();
+      return;
+    }
+
+    setLoading(true);
+    playClick();
+
+    try {
+      const user = await register({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        reg_number: reg_number.trim().toUpperCase(),
+        department,
+        password
+      });
+      playSuccessChime();
+      toast.success(`Account registered! Welcome to LibraX, ${user.name}.`);
+    } catch (err) {
+      playErrorBeep();
+      toast.error(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSelectDemo = (acc, idx) => {
     playClick();
+    setAuthMode('signin');
     setSelectedDemo(idx);
     setEmail(acc.email);
     setPassword(acc.password);
@@ -110,7 +178,7 @@ export default function LoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '24px 20px',
+      padding: '32px 20px',
       position: 'relative',
       overflow: 'hidden'
     }}>
@@ -141,10 +209,10 @@ export default function LoginPage() {
       {/* Main Container Card */}
       <div style={{
         width: '100%',
-        maxWidth: 1120,
+        maxWidth: 1140,
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-        gap: 32,
+        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+        gap: 36,
         alignItems: 'center',
         position: 'relative',
         zIndex: 2,
@@ -271,7 +339,7 @@ export default function LoginPage() {
               gap: 8
             }}>
               {DEMO_ACCOUNTS.map((acc, i) => {
-                const isSel = selectedDemo === i;
+                const isSel = authMode === 'signin' && selectedDemo === i;
                 return (
                   <button
                     key={acc.email}
@@ -322,7 +390,7 @@ export default function LoginPage() {
             border: '1px solid var(--border)',
             borderTop: '1px solid rgba(255,255,255,0.18)',
             borderRadius: 'var(--r-2xl)',
-            padding: '36px 32px',
+            padding: '32px 30px',
             backdropFilter: 'blur(30px) saturate(190%)',
             boxShadow: '0 20px 60px -15px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08)',
             position: 'relative'
@@ -338,116 +406,347 @@ export default function LoginPage() {
               boxShadow: '0 0 12px var(--accent)',
             }} />
 
-            <div style={{ marginBottom: 24 }}>
-              <div style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontWeight: 800,
-                fontSize: 22,
-                color: 'var(--text)',
-                marginBottom: 4,
-                letterSpacing: '-0.4px'
-              }}>
-                Authenticate Node Session
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-3)' }}>
-                Enter institutional credentials to access the central repository
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              {/* Email Input */}
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  SRM / Institutional Email
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Mail size={16} color="var(--text-4)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
-                  <input
-                    type="email"
-                    className="input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. admin@nscc.srmist.edu.in"
-                    style={{ paddingLeft: 40 }}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Password Input */}
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Secret Password
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Lock size={16} color="var(--text-4)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className="input"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter security key"
-                    style={{ paddingLeft: 40, paddingRight: 40 }}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: 12,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-4)',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                disabled={loading}
+            {/* Segmented Auth Mode Switcher */}
+            <div style={{
+              display: 'flex',
+              background: 'rgba(15, 22, 35, 0.7)',
+              padding: 4,
+              borderRadius: 12,
+              border: '1px solid var(--border)',
+              marginBottom: 24
+            }}>
+              <button
+                type="button"
+                onClick={() => { playClick(); setAuthMode('signin'); }}
                 style={{
-                  marginTop: 6,
-                  height: 48,
-                  borderRadius: 'var(--r-md)',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  color: '#ffffff',
-                  fontWeight: 800,
-                  fontSize: 14,
-                  letterSpacing: '0.2px',
+                  flex: 1,
+                  padding: '9px 12px',
+                  borderRadius: 9,
                   border: 'none',
+                  background: authMode === 'signin' ? 'var(--accent)' : 'transparent',
+                  color: authMode === 'signin' ? '#ffffff' : 'var(--text-3)',
+                  fontWeight: 700,
+                  fontSize: 13,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
-                  boxShadow: '0 0 24px rgba(16,185,129,0.35)',
-                  transition: 'box-shadow 0.2s'
+                  transition: 'all 200ms',
+                  boxShadow: authMode === 'signin' ? '0 0 16px rgba(16,185,129,0.35)' : 'none'
                 }}
               >
-                {loading ? (
-                  <div className="spinner" style={{ borderTopColor: 'white' }} />
-                ) : (
-                  <>
-                    <span>Enter Central Hub</span>
-                    <ArrowRight size={16} />
-                  </>
-                )}
-              </motion.button>
-            </form>
+                <LogIn size={15} /> Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => { playClick(); setAuthMode('register'); }}
+                style={{
+                  flex: 1,
+                  padding: '9px 12px',
+                  borderRadius: 9,
+                  border: 'none',
+                  background: authMode === 'register' ? 'var(--accent)' : 'transparent',
+                  color: authMode === 'register' ? '#ffffff' : 'var(--text-3)',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  transition: 'all 200ms',
+                  boxShadow: authMode === 'register' ? '0 0 16px rgba(16,185,129,0.35)' : 'none'
+                }}
+              >
+                <UserPlus size={15} /> Create Account
+              </button>
+            </div>
+
+            {/* Header copy */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontWeight: 800,
+                fontSize: 21,
+                color: 'var(--text)',
+                marginBottom: 4,
+                letterSpacing: '-0.4px'
+              }}>
+                {authMode === 'signin' ? 'Authenticate Node Session' : 'Initialize Student Profile'}
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-3)', lineHeight: 1.4 }}>
+                {authMode === 'signin' 
+                  ? 'Enter credentials or tap a passport to access the repository' 
+                  : 'Register a new student account saved permanently in the local SQLite database'}
+              </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+              {authMode === 'signin' ? (
+                /* ── SIGN IN FORM ── */
+                <motion.form 
+                  key="signin-form"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  onSubmit={handleLoginSubmit} 
+                  style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                >
+                  {/* Email Input */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      SRM / Institutional Email
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Mail size={16} color="var(--text-4)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+                      <input
+                        type="email"
+                        className="input"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="e.g. admin@nscc.srmist.edu.in"
+                        style={{ paddingLeft: 40 }}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password Input */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Secret Password
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Lock size={16} color="var(--text-4)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        className="input"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter security key"
+                        style={{ paddingLeft: 40, paddingRight: 40 }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: 12,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-4)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={loading}
+                    style={{
+                      marginTop: 6,
+                      height: 46,
+                      borderRadius: 'var(--r-md)',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      fontSize: 14,
+                      letterSpacing: '0.2px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      boxShadow: '0 0 24px rgba(16,185,129,0.35)',
+                      transition: 'box-shadow 0.2s'
+                    }}
+                  >
+                    {loading ? (
+                      <div className="spinner" style={{ borderTopColor: 'white' }} />
+                    ) : (
+                      <>
+                        <span>Enter Central Hub</span>
+                        <ArrowRight size={16} />
+                      </>
+                    )}
+                  </motion.button>
+                </motion.form>
+              ) : (
+                /* ── REGISTER FORM ── */
+                <motion.form 
+                  key="register-form"
+                  initial={{ opacity: 0, x: 8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -8 }}
+                  onSubmit={handleRegisterSubmit} 
+                  style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+                >
+                  {/* Full Name */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Full Legal Name *
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <User size={15} color="var(--text-4)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+                      <input
+                        type="text"
+                        className="input"
+                        value={regForm.name}
+                        onChange={(e) => setRegForm(p => ({ ...p, name: e.target.value }))}
+                        placeholder="e.g. Sautrik Roy"
+                        style={{ paddingLeft: 40 }}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Institutional Email */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Institutional / SRM Email *
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Mail size={15} color="var(--text-4)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+                      <input
+                        type="email"
+                        className="input"
+                        value={regForm.email}
+                        onChange={(e) => setRegForm(p => ({ ...p, email: e.target.value }))}
+                        placeholder="e.g. sr9973@srmist.edu.in"
+                        style={{ paddingLeft: 40 }}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Registration Number & Department in a grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Reg / Roll # *
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <Hash size={14} color="var(--text-4)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                        <input
+                          type="text"
+                          className="input"
+                          value={regForm.reg_number}
+                          onChange={(e) => setRegForm(p => ({ ...p, reg_number: e.target.value.toUpperCase() }))}
+                          placeholder="RA2311..."
+                          style={{ paddingLeft: 34, fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Department *
+                      </label>
+                      <select
+                        className="input"
+                        value={regForm.department}
+                        onChange={(e) => setRegForm(p => ({ ...p, department: e.target.value }))}
+                        style={{ fontSize: 13 }}
+                      >
+                        {DEPARTMENTS.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Password & Confirm */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Password *
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <Lock size={14} color="var(--text-4)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                        <input
+                          type={showRegPassword ? 'text' : 'password'}
+                          className="input"
+                          value={regForm.password}
+                          onChange={(e) => setRegForm(p => ({ ...p, password: e.target.value }))}
+                          placeholder="Min 6 chars"
+                          style={{ paddingLeft: 34, fontSize: 12 }}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Confirm *
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <Lock size={14} color="var(--text-4)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                        <input
+                          type={showRegPassword ? 'text' : 'password'}
+                          className="input"
+                          value={regForm.confirmPassword}
+                          onChange={(e) => setRegForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                          placeholder="Repeat"
+                          style={{ paddingLeft: 34, fontSize: 12 }}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={loading}
+                    style={{
+                      marginTop: 6,
+                      height: 46,
+                      borderRadius: 'var(--r-md)',
+                      background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      fontSize: 14,
+                      letterSpacing: '0.2px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      boxShadow: '0 0 24px rgba(6,182,212,0.35)',
+                      transition: 'box-shadow 0.2s'
+                    }}
+                  >
+                    {loading ? (
+                      <div className="spinner" style={{ borderTopColor: 'white' }} />
+                    ) : (
+                      <>
+                        <span>Create Student Profile</span>
+                        <UserPlus size={16} />
+                      </>
+                    )}
+                  </motion.button>
+                </motion.form>
+              )}
+            </AnimatePresence>
 
             <div style={{
-              marginTop: 22,
-              paddingTop: 16,
+              marginTop: 20,
+              paddingTop: 14,
               borderTop: '1px solid var(--border-soft)',
               display: 'flex',
               alignItems: 'center',
@@ -456,7 +755,7 @@ export default function LoginPage() {
               color: 'var(--text-4)'
             }}>
               <span>NSCC RECRUITMENT SPECIFICATION</span>
-              <span style={{ color: 'var(--accent)', fontWeight: 700 }}>256-BIT JWT</span>
+              <span style={{ color: 'var(--accent)', fontWeight: 700 }}>SQLITE PERSISTENT</span>
             </div>
           </div>
         </motion.div>
