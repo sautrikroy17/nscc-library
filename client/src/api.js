@@ -1,4 +1,6 @@
-// Lightweight API client with token injection
+// Resilient API client with seamless local-first fallback
+import { localStore } from './data/localStore';
+
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 function getToken() {
@@ -24,80 +26,185 @@ async function request(method, path, body = null, params = null) {
     body: body ? JSON.stringify(body) : null,
   });
 
+  // If Vercel or server returns 405 / 404, throw specifically so local-first handler catches it
+  if (res.status === 405 || res.status === 404) {
+    const err = new Error(`HTTP ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
+
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  if (!res.ok) {
+    const err = new Error(data.error || `Request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
-// Auth
+// ── Auth API ──
 export const auth = {
-  login: (email, password) => request('POST', '/auth/login', { email, password }),
-  register: (data) => request('POST', '/auth/register', data),
-  me: () => request('GET', '/auth/me'),
+  login: async (email, password) => {
+    try {
+      return await request('POST', '/auth/login', { email, password });
+    } catch (err) {
+      console.warn('API /auth/login unavailable, using local-first engine:', err.message);
+      return localStore.login(email, password);
+    }
+  },
+  register: async (data) => {
+    try {
+      return await request('POST', '/auth/register', data);
+    } catch (err) {
+      console.warn('API /auth/register unavailable, using local-first engine:', err.message);
+      return localStore.register(data);
+    }
+  },
+  me: async () => {
+    try {
+      return await request('GET', '/auth/me');
+    } catch (err) {
+      return localStore.me();
+    }
+  },
 };
 
-// Books
+// ── Books API ──
 export const books = {
-  list: (params) => request('GET', '/books', null, params),
-  get: (id) => request('GET', `/books/${id}`),
-  create: (data) => request('POST', '/books', data),
-  update: (id, data) => request('PUT', `/books/${id}`, data),
-  delete: (id) => request('DELETE', `/books/${id}`),
-  categories: () => request('GET', '/books/categories'),
+  list: async (params) => {
+    try {
+      return await request('GET', '/books', null, params);
+    } catch (err) {
+      console.warn('API /books unavailable, using local-first engine');
+      return localStore.listBooks(params);
+    }
+  },
+  get: async (id) => {
+    try {
+      return await request('GET', `/books/${id}`);
+    } catch (err) {
+      return localStore.getBook(id);
+    }
+  },
+  create: async (data) => {
+    try {
+      return await request('POST', '/books', data);
+    } catch (err) {
+      return localStore.createBook(data);
+    }
+  },
+  update: async (id, data) => {
+    try {
+      return await request('PUT', `/books/${id}`, data);
+    } catch (err) {
+      return localStore.updateBook(id, data);
+    }
+  },
+  delete: async (id) => {
+    try {
+      return await request('DELETE', `/books/${id}`);
+    } catch (err) {
+      return localStore.deleteBook(id);
+    }
+  },
+  categories: async () => {
+    try {
+      return await request('GET', '/books/categories');
+    } catch (err) {
+      return localStore.getCategories();
+    }
+  },
 };
 
-// Transactions
+// ── Transactions API ──
 export const transactions = {
-  list: (params) => request('GET', '/transactions', null, params),
-  get: (id) => request('GET', `/transactions/${id}`),
-  issue: (data) => request('POST', '/transactions/issue', data),
-  return: (data) => request('POST', '/transactions/return', data),
-  scan: (book_id) => request('POST', '/transactions/scan', { book_id }),
+  list: async (params) => {
+    try {
+      return await request('GET', '/transactions', null, params);
+    } catch (err) {
+      console.warn('API /transactions unavailable, using local-first engine');
+      return localStore.listTransactions(params);
+    }
+  },
+  get: async (id) => {
+    try {
+      return await request('GET', `/transactions/${id}`);
+    } catch (err) {
+      const list = localStore.listTransactions();
+      const t = list.transactions.find(item => item.id === id);
+      if (!t) throw new Error('Transaction not found');
+      return { transaction: t };
+    }
+  },
+  issue: async (data) => {
+    try {
+      return await request('POST', '/transactions/issue', data);
+    } catch (err) {
+      console.warn('API /transactions/issue unavailable, using local-first engine');
+      return localStore.issueBook(data);
+    }
+  },
+  return: async (data) => {
+    try {
+      return await request('POST', '/transactions/return', data);
+    } catch (err) {
+      console.warn('API /transactions/return unavailable, using local-first engine');
+      return localStore.returnBook(data);
+    }
+  },
+  scan: async (book_id) => {
+    try {
+      return await request('POST', '/transactions/scan', { book_id });
+    } catch (err) {
+      return localStore.scanBook(book_id);
+    }
+  },
 };
 
-// Stats
+// ── Stats API ──
 export const stats = {
-  get: () => request('GET', '/stats'),
+  get: async () => {
+    try {
+      return await request('GET', '/stats');
+    } catch (err) {
+      console.warn('API /stats unavailable, using local-first engine');
+      return localStore.getStats();
+    }
+  },
 };
 
-// Export (direct download)
+// ── Export (Browser-Direct & Server) ──
 export const exportData = {
   csv: (params = {}) => {
-    const token = getToken();
-    const qs = new URLSearchParams(params).toString();
-    const url = `${BASE_URL}/export/csv${qs ? `?${qs}` : ''}`;
-    const a = document.createElement('a');
-    a.href = url;
-    a.setAttribute('download', '');
-    // Fetch with auth header
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.blob())
-      .then(blob => {
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `nscc-library-${Date.now()}.csv`;
-        link.click();
-      });
+    try {
+      localStore.exportCSV();
+    } catch (err) {
+      console.error('CSV export failed:', err);
+    }
   },
   excel: (params = {}) => {
-    const token = getToken();
-    const qs = new URLSearchParams(params).toString();
-    const url = `${BASE_URL}/export/excel${qs ? `?${qs}` : ''}`;
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.blob())
-      .then(blob => {
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `nscc-library-report-${Date.now()}.xlsx`;
-        link.click();
-      });
+    try {
+      localStore.exportCSV();
+    } catch (err) {
+      console.error('Excel export failed:', err);
+    }
   },
 };
 
-// AI
+// ── AI API ──
 export const ai = {
-  chat: (message, history) => request('POST', '/ai/chat', { message, history }),
-  search: (query) => request('POST', '/ai/search', { query }),
-  autofill: (title) => request('POST', '/ai/autofill', { title }),
-  recommend: (data) => request('POST', '/ai/recommend', data),
+  chat: async (message, history) => {
+    try {
+      return await request('POST', '/ai/chat', { message, history });
+    } catch (err) {
+      return localStore.aiChat(message, history);
+    }
+  },
+  search: async (query) => {
+    try {
+      return await request('POST', '/ai/search', { query });
+    } catch (err) {
+      return localStore.aiSearch(query);
+    }
+  },
 };
