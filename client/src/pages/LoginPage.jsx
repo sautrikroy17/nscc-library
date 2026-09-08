@@ -31,9 +31,9 @@ const ROLE_DEMOS = {
     name: 'Pranav Sharma'
   },
   librarian: {
-    email: 'sarah.jenkins@srmist.edu.in',
-    password: 'password123',
-    name: 'Dr. Sarah Jenkins'
+    email: 'librarian@srmist.edu.in',
+    password: 'librarian123',
+    name: 'Dr. Rajesh Kumar'
   },
   admin: {
     email: 'admin@nscc.srmist.edu.in',
