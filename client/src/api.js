@@ -210,9 +210,19 @@ export const exportData = {
   },
 };
 
+import { groqService } from './services/groqService';
+
 // ── AI API ──
 export const ai = {
-  chat: async (message, history) => {
+  chat: async (message, history, modelChoice) => {
+    // 1. Direct Groq LPU™ ultra-fast inference
+    try {
+      return await groqService.chat(message, history, modelChoice);
+    } catch (groqErr) {
+      console.warn('Direct Groq service error, falling back to server proxy:', groqErr);
+    }
+
+    // 2. Server proxy if backend is online
     try {
       return await request('POST', '/ai/chat', { message, history });
     } catch (err) {
@@ -221,9 +231,16 @@ export const ai = {
   },
   search: async (query) => {
     try {
+      return await groqService.search(query);
+    } catch (groqErr) {
+      console.warn('Groq search error, falling back:', groqErr);
+    }
+
+    try {
       return await request('POST', '/ai/search', { query });
     } catch (err) {
       return localStore.aiSearch(query);
     }
   },
 };
+
