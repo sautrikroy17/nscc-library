@@ -26,9 +26,10 @@ async function request(method, path, body = null, params = null) {
     body: body ? JSON.stringify(body) : null,
   });
 
-  // If Vercel or server returns 405 / 404, throw specifically so local-first handler catches it
-  if (res.status === 405 || res.status === 404) {
-    const err = new Error(`HTTP ${res.status}`);
+  // If Vercel or server returns 405 / 404 or HTML SPA rewrite, throw specifically so local-first handler catches it
+  const contentType = res.headers.get('content-type') || '';
+  if (res.status === 405 || res.status === 404 || !contentType.includes('application/json')) {
+    const err = new Error(`HTTP ${res.status}: Non-JSON or unsupported response`);
     err.status = res.status;
     throw err;
   }
