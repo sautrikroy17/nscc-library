@@ -111,8 +111,8 @@ export default function App() {
   if (!user) return <LoginPage />;
 
   const isStudent = user.role === 'student';
-  const profileName = user.name || (isStudent ? 'Sautrik Roy' : 'Dr. Rajesh Kumar');
-  const profileRole = isStudent ? `${user.reg_number || 'RA2511003010052'} · 2nd Year CSE` : 'Librarian';
+  const profileName = isStudent ? 'Sautrik Roy' : (user.name || 'Dr. Rajesh Kumar');
+  const profileRole = isStudent ? 'RA2511003010052 · 2nd Year CSE' : 'Librarian';
 
   const renderPage = () => {
     switch (activePage) {

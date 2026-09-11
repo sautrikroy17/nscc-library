@@ -118,6 +118,83 @@ export const BOOK_ARTWORKS = {
     copies: 3,
     status: 'available'
   },
+  'BK003': {
+    title: 'The Pragmatic Programmer',
+    subtitle: 'Your Journey to Mastery',
+    author: 'David Thomas & Andrew Hunt',
+    bg: '#0f172a',
+    coverStyle: 'pragmatic',
+    accentColor: '#f59e0b',
+    pill: 'Software Engineering',
+    copies: 3,
+    status: 'available'
+  },
+  'BK008': {
+    title: 'Deep Learning',
+    subtitle: 'Ian Goodfellow, Yoshua Bengio, Aaron Courville',
+    author: 'Ian Goodfellow et al.',
+    bg: '#180e29',
+    coverStyle: 'deep-learning',
+    accentColor: '#ec4899',
+    pill: 'AI & ML',
+    copies: 4,
+    status: 'available'
+  },
+  'BK010': {
+    title: 'Cracking the Coding Interview',
+    subtitle: '189 Programming Questions & Solutions',
+    author: 'Gayle Laakmann McDowell',
+    bg: '#14532d',
+    coverStyle: 'cracking-coding',
+    accentColor: '#4ade80',
+    pill: 'Interview Prep',
+    copies: 6,
+    status: 'available'
+  },
+  'BK020': {
+    title: 'Designing Data-Intensive Applications',
+    subtitle: 'The Big Ideas Behind Reliable Systems',
+    author: 'Martin Kleppmann',
+    bg: '#431407',
+    coverStyle: 'ddia',
+    accentColor: '#fb923c',
+    pill: 'Distributed Systems',
+    copies: 3,
+    status: 'available'
+  },
+  'BK031': {
+    title: "Harry Potter and the Sorcerer's Stone",
+    subtitle: 'J.K. Rowling',
+    author: 'J.K. Rowling',
+    bg: '#3b0764',
+    coverStyle: 'harry-potter',
+    accentColor: '#f59e0b',
+    pill: 'Fiction',
+    copies: 5,
+    status: 'available'
+  },
+  'BK034': {
+    title: '1984',
+    subtitle: 'George Orwell',
+    author: 'George Orwell',
+    bg: '#450a0a',
+    coverStyle: '1984',
+    accentColor: '#ef4444',
+    pill: 'Dystopian',
+    copies: 6,
+    status: 'available'
+  },
+  'BK035': {
+    title: 'Atomic Habits',
+    subtitle: 'Tiny Changes, Remarkable Results',
+    author: 'James Clear',
+    bg: '#042f2e',
+    coverStyle: 'atomic-habits',
+    accentColor: '#14b8a6',
+    pill: 'Productivity',
+    copies: 5,
+    status: 'available'
+  },
   'BK012': {
     title: 'System Design Interview',
     subtitle: 'Alex Xu',
@@ -473,6 +550,115 @@ export default function BookCover({ bookId, title, author, width = '100%', heigh
           <div style={{ zIndex: 1, display: 'flex', justifyContent: 'space-between', fontSize: '0.55rem', color: '#78350f', fontWeight: 700 }}>
             <span>ByteByteGo</span>
             <span>Vol 1</span>
+          </div>
+        </>
+      )}
+
+      {artwork.coverStyle === 'pragmatic' && (
+        <>
+          <div style={{ zIndex: 1 }}>
+            <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.5px' }}>David Thomas · Andrew Hunt</div>
+            <div style={{ fontSize: '0.95rem', color: '#ffffff', fontWeight: 800, marginTop: 4, letterSpacing: '-0.2px', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>The Pragmatic Programmer</div>
+            <div style={{ fontSize: '0.52rem', color: '#cbd5e1', marginTop: 2 }}>20th Anniversary Edition</div>
+          </div>
+          {/* Pragmatic Compass Gem */}
+          <div style={{
+            position: 'absolute',
+            top: '54%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 44,
+            height: 44,
+            transformOrigin: 'center',
+            rotate: '45deg',
+            border: '2px solid #f59e0b',
+            background: 'rgba(245, 158, 11, 0.12)',
+            boxShadow: '0 0 20px rgba(245, 158, 11, 0.5), inset 0 0 10px rgba(245, 158, 11, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{ width: 14, height: 14, background: '#f59e0b', borderRadius: 2 }} />
+          </div>
+          <div style={{ zIndex: 1, display: 'flex', justifyContent: 'space-between', fontSize: '0.55rem', color: '#cbd5e1', fontWeight: 700 }}>
+            <span>Addison-Wesley</span>
+            <span>2nd Edition</span>
+          </div>
+        </>
+      )}
+
+      {artwork.coverStyle === 'deep-learning' && (
+        <>
+          <div style={{ zIndex: 1 }}>
+            <div style={{ fontSize: '0.95rem', color: '#ffffff', fontWeight: 800 }}>Deep Learning</div>
+            <div style={{ fontSize: '0.52rem', color: '#f472b6', marginTop: 2 }}>Goodfellow · Bengio · Courville</div>
+          </div>
+          <div style={{
+            position: 'absolute',
+            top: '55%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            border: '2px solid #ec4899',
+            boxShadow: '0 0 20px rgba(236, 72, 153, 0.6)'
+          }} />
+          <div style={{ zIndex: 1, display: 'flex', justifyContent: 'space-between', fontSize: '0.55rem', color: '#fbcfe8', fontWeight: 700 }}>
+            <span>MIT Press</span>
+            <span>Adaptive Computation</span>
+          </div>
+        </>
+      )}
+
+      {artwork.coverStyle === 'cracking-coding' && (
+        <>
+          <div style={{ zIndex: 1 }}>
+            <div style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 800 }}>Cracking the Coding Interview</div>
+            <div style={{ fontSize: '0.52rem', color: '#86efac', marginTop: 2 }}>Gayle Laakmann McDowell</div>
+          </div>
+          <div style={{
+            position: 'absolute',
+            top: '55%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            padding: '6px 10px',
+            border: '1.5px solid #4ade80',
+            borderRadius: 6,
+            background: 'rgba(74, 222, 128, 0.1)',
+            fontSize: '0.62rem',
+            color: '#4ade80',
+            fontWeight: 800
+          }}>
+            189 QUESTIONS
+          </div>
+          <div style={{ zIndex: 1, display: 'flex', justifyContent: 'space-between', fontSize: '0.55rem', color: '#86efac', fontWeight: 700 }}>
+            <span>CareerCup</span>
+            <span>6th Edition</span>
+          </div>
+        </>
+      )}
+
+      {artwork.coverStyle === 'ddia' && (
+        <>
+          <div style={{ zIndex: 1 }}>
+            <div style={{ fontSize: '0.84rem', color: '#ffffff', fontWeight: 800 }}>Designing Data-Intensive Applications</div>
+            <div style={{ fontSize: '0.52rem', color: '#fdba74', marginTop: 2 }}>Martin Kleppmann</div>
+          </div>
+          <div style={{
+            position: 'absolute',
+            top: '55%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 44,
+            height: 44,
+            borderRadius: 4,
+            border: '2px dashed #fb923c',
+            boxShadow: '0 0 16px rgba(251, 146, 60, 0.4)'
+          }} />
+          <div style={{ zIndex: 1, display: 'flex', justifyContent: 'space-between', fontSize: '0.55rem', color: '#fed7aa', fontWeight: 700 }}>
+            <span>O\'Reilly</span>
+            <span>Distributed Systems</span>
           </div>
         </>
       )}

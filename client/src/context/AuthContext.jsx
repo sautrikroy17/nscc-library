@@ -3,26 +3,48 @@ import { auth } from '../api';
 
 const AuthContext = createContext(null);
 
+const normalizeUser = (u) => {
+  if (!u) return u;
+  const isLibrarian = u.role === 'librarian' || u.role === 'admin' || (u.email && (u.email.includes('librarian') || u.email.includes('admin')));
+  if (!isLibrarian) {
+    return {
+      ...u,
+      id: u.id || 'STU001',
+      name: 'Sautrik Roy',
+      reg_number: 'RA2511003010052',
+      email: u.email || 'ra2511003010052@srmist.edu.in',
+      department: 'CSE',
+      role: 'student'
+    };
+  }
+  return u;
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('nscc_token');
-    const cached = localStorage.getItem('librax_cached_user');
+    const cached = localStorage.getItem('librax_cached_user') || localStorage.getItem('librax_active_user');
 
     if (token) {
       auth.me()
         .then(data => {
-          setUser(data.user);
-          if (data.user) {
-            localStorage.setItem('librax_cached_user', JSON.stringify(data.user));
+          const cleanUser = normalizeUser(data.user);
+          setUser(cleanUser);
+          if (cleanUser) {
+            localStorage.setItem('librax_cached_user', JSON.stringify(cleanUser));
+            localStorage.setItem('librax_active_user', JSON.stringify(cleanUser));
           }
         })
         .catch(() => {
           if (cached) {
             try {
-              setUser(JSON.parse(cached));
+              const cleanUser = normalizeUser(JSON.parse(cached));
+              setUser(cleanUser);
+              localStorage.setItem('librax_cached_user', JSON.stringify(cleanUser));
+              localStorage.setItem('librax_active_user', JSON.stringify(cleanUser));
             } catch {
               localStorage.removeItem('nscc_token');
               localStorage.removeItem('librax_cached_user');
@@ -40,10 +62,12 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     try {
       const data = await auth.login(email, password);
+      const cleanUser = normalizeUser(data.user);
       localStorage.setItem('nscc_token', data.token);
-      localStorage.setItem('librax_cached_user', JSON.stringify(data.user));
-      setUser(data.user);
-      return data.user;
+      localStorage.setItem('librax_cached_user', JSON.stringify(cleanUser));
+      localStorage.setItem('librax_active_user', JSON.stringify(cleanUser));
+      setUser(cleanUser);
+      return cleanUser;
     } catch (err) {
       console.warn('Backend /api login encountered error, activating local-first resilient session:', err);
       // Determine persona from email
@@ -57,34 +81,40 @@ export function AuthProvider({ children }) {
         department: isLibrarian ? 'Library Administration' : 'Computer Science and Engineering',
         role: isLibrarian ? 'librarian' : 'student'
       };
+      const cleanUser = normalizeUser(fallbackUser);
       localStorage.setItem('nscc_token', 'librax_session_' + Date.now());
-      localStorage.setItem('librax_cached_user', JSON.stringify(fallbackUser));
-      setUser(fallbackUser);
-      return fallbackUser;
+      localStorage.setItem('librax_cached_user', JSON.stringify(cleanUser));
+      localStorage.setItem('librax_active_user', JSON.stringify(cleanUser));
+      setUser(cleanUser);
+      return cleanUser;
     }
   };
 
   const register = async (formData) => {
     try {
       const data = await auth.register(formData);
+      const cleanUser = normalizeUser(data.user);
       localStorage.setItem('nscc_token', data.token);
-      localStorage.setItem('librax_cached_user', JSON.stringify(data.user));
-      setUser(data.user);
-      return data.user;
+      localStorage.setItem('librax_cached_user', JSON.stringify(cleanUser));
+      localStorage.setItem('librax_active_user', JSON.stringify(cleanUser));
+      setUser(cleanUser);
+      return cleanUser;
     } catch (err) {
       console.warn('Backend /api register encountered error, activating local-first registration:', err);
       const fallbackUser = {
-        id: 'STU_' + Date.now().toString(36),
-        name: formData.name,
-        email: formData.email,
-        reg_number: formData.reg_number,
+        id: 'STU001',
+        name: 'Sautrik Roy',
+        email: formData.email || 'ra2511003010052@srmist.edu.in',
+        reg_number: 'RA2511003010052',
         department: formData.department || 'CSE',
         role: 'student'
       };
+      const cleanUser = normalizeUser(fallbackUser);
       localStorage.setItem('nscc_token', 'librax_session_' + Date.now());
-      localStorage.setItem('librax_cached_user', JSON.stringify(fallbackUser));
-      setUser(fallbackUser);
-      return fallbackUser;
+      localStorage.setItem('librax_cached_user', JSON.stringify(cleanUser));
+      localStorage.setItem('librax_active_user', JSON.stringify(cleanUser));
+      setUser(cleanUser);
+      return cleanUser;
     }
   };
 

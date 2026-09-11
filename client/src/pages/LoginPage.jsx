@@ -34,6 +34,7 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
 import { playClick, playSuccessChime, playErrorBeep } from '../utils/audio';
 import { INITIAL_BOOKS } from '../data/seedData';
+import BookCover from '../components/BookCover';
 
 const ROLE_DEMOS = {
   student: {
@@ -1032,27 +1033,13 @@ export default function LoginPage() {
               >
                 {/* Book Cover */}
                 <div style={{
-                  height: 180,
+                  height: 190,
                   borderRadius: 8,
                   overflow: 'hidden',
-                  background: '#f1f5f9',
                   marginBottom: 14,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                  position: 'relative'
                 }}>
-                  {book.cover_image ? (
-                    <img 
-                      src={book.cover_image} 
-                      alt={book.title} 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <BookOpen size={36} color="#94a3b8" />
-                  )}
+                  <BookCover bookId={book.id} title={book.title} author={book.author} height="100%" />
                 </div>
 
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -1805,19 +1792,14 @@ export default function LoginPage() {
 
               <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
                 <div style={{
-                  width: 100,
-                  height: 140,
+                  width: 105,
+                  height: 145,
                   borderRadius: 8,
                   overflow: 'hidden',
-                  background: '#f1f5f9',
-                  flexShrink: 0
+                  flexShrink: 0,
+                  position: 'relative'
                 }}>
-                  <img 
-                    src={selectedBook.cover_image} 
-                    alt={selectedBook.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={e => e.currentTarget.style.display = 'none'}
-                  />
+                  <BookCover bookId={selectedBook.id} title={selectedBook.title} author={selectedBook.author} width="100%" height="100%" />
                 </div>
                 <div>
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#10b981', textTransform: 'uppercase' }}>

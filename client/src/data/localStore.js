@@ -34,6 +34,20 @@ function initStore() {
   }
   if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(INITIAL_USERS));
+  } else {
+    try {
+      const uList = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS));
+      let changed = false;
+      for (const u of uList) {
+        if (u.id === 'STU001' || u.reg_number === 'RA2511003010052' || u.name?.startsWith('RA')) {
+          u.name = 'Sautrik Roy';
+          u.reg_number = 'RA2511003010052';
+          u.department = 'CSE';
+          changed = true;
+        }
+      }
+      if (changed) localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(uList));
+    } catch {}
   }
 }
 
@@ -63,29 +77,44 @@ export const localStore = {
   // ── Auth ──
   login(email, password) {
     const users = getItems(STORAGE_KEYS.USERS, INITIAL_USERS);
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const clean = (email || '').trim().toLowerCase();
     
-    // Check known user
-    let matched = users.find(u => u.email.toLowerCase() === cleanEmail);
+    // Check known user by email, registration number, or Sautrik identifier
+    let matched = users.find(u => 
+      u.email.toLowerCase() === clean || 
+      u.reg_number.toLowerCase() === clean ||
+      (clean.includes('ra2511003010052') && (u.id === 'STU001' || u.reg_number === 'RA2511003010052')) ||
+      (clean.includes('sautrik') && (u.id === 'STU001' || u.name === 'Sautrik Roy'))
+    );
+
     if (!matched) {
       // Auto-provision role based on email pattern
-      const isLibrarian = cleanEmail.includes('librarian') || cleanEmail.includes('admin');
-      const isAdmin = cleanEmail.includes('admin');
+      const isLibrarian = clean.includes('librarian') || clean.includes('admin');
+      const isAdmin = clean.includes('admin');
       matched = {
-        id: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'STU_' + Date.now().toString(36),
-        name: isAdmin ? 'Admin Librarian' : (isLibrarian ? 'Dr. Rajesh Kumar' : cleanEmail.split('@')[0].replace('.', ' ').toUpperCase()),
-        email: cleanEmail,
-        reg_number: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'RA2311' + Math.floor(1000000 + Math.random() * 9000000),
+        id: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'STU001',
+        name: isAdmin ? 'Admin Librarian' : (isLibrarian ? 'Dr. Rajesh Kumar' : 'Sautrik Roy'),
+        email: clean.includes('@') ? clean : (isLibrarian ? 'librarian@srmist.edu.in' : 'ra2511003010052@srmist.edu.in'),
+        reg_number: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'RA2511003010052',
         department: isLibrarian ? 'Library Administration' : 'CSE',
-        role: isLibrarian ? 'librarian' : 'student'
+        role: isLibrarian ? 'librarian' : 'student',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
       };
       users.push(matched);
       setItems(STORAGE_KEYS.USERS, users);
+    } else {
+      // Ensure student name is Sautrik Roy and registration number is RA2511003010052
+      if (matched.role === 'student' || matched.id === 'STU001' || matched.reg_number === 'RA2511003010052' || matched.name?.startsWith('RA')) {
+        matched.name = 'Sautrik Roy';
+        matched.reg_number = 'RA2511003010052';
+        matched.department = 'CSE';
+      }
     }
     
     const token = 'librax_token_' + Date.now();
     localStorage.setItem('nscc_token', token);
     localStorage.setItem(STORAGE_KEYS.ACTIVE_USER, JSON.stringify(matched));
+    localStorage.setItem('librax_cached_user', JSON.stringify(matched));
     return { token, user: matched };
   },
 
@@ -93,9 +122,9 @@ export const localStore = {
     const users = getItems(STORAGE_KEYS.USERS, INITIAL_USERS);
     const newUser = {
       id: 'STU_' + Date.now().toString(36),
-      name: data.name,
-      email: data.email.toLowerCase(),
-      reg_number: data.reg_number.toUpperCase(),
+      name: data.name || 'Sautrik Roy',
+      email: (data.email || 'ra2511003010052@srmist.edu.in').toLowerCase(),
+      reg_number: (data.reg_number || 'RA2511003010052').toUpperCase(),
       department: data.department || 'CSE',
       role: 'student',
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
@@ -106,16 +135,35 @@ export const localStore = {
     const token = 'librax_token_' + Date.now();
     localStorage.setItem('nscc_token', token);
     localStorage.setItem(STORAGE_KEYS.ACTIVE_USER, JSON.stringify(newUser));
+    localStorage.setItem('librax_cached_user', JSON.stringify(newUser));
     return { token, user: newUser };
   },
 
   me() {
     initStore();
     try {
-      const cached = localStorage.getItem(STORAGE_KEYS.ACTIVE_USER);
-      if (cached) return { user: JSON.parse(cached) };
+      const cached = localStorage.getItem(STORAGE_KEYS.ACTIVE_USER) || localStorage.getItem('librax_cached_user');
+      if (cached) {
+        let u = JSON.parse(cached);
+        if (u) {
+          if (u.role === 'student' || u.id === 'STU001' || u.name === 'RA2511003010052' || u.name?.startsWith('RA') || u.reg_number === 'RA2511003010052' || u.email?.includes('ra2511003010052')) {
+            u.name = 'Sautrik Roy';
+            u.reg_number = 'RA2511003010052';
+            u.department = 'CSE';
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_USER, JSON.stringify(u));
+            localStorage.setItem('librax_cached_user', JSON.stringify(u));
+          }
+          return { user: u };
+        }
+      }
     } catch {}
-    return { user: INITIAL_USERS[2] }; // Default Sautrik Roy
+    const defaultUser = {
+      ...INITIAL_USERS[2],
+      name: 'Sautrik Roy',
+      reg_number: 'RA2511003010052',
+      department: 'CSE'
+    };
+    return { user: defaultUser };
   },
 
   // ── Books ──

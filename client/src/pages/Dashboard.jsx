@@ -98,8 +98,8 @@ export default function Dashboard({ onNavigate = () => {} }) {
     }
   };
 
-  const userName = user?.name || 'Sautrik';
-  const firstName = userName.split(' ')[0] || 'Sautrik';
+  const isLibrarian = user?.role === 'librarian' || user?.role === 'admin';
+  const greetingName = isLibrarian ? (user?.name || 'Dr. Rajesh Kumar') : 'Sautrik Roy';
 
   return (
     <div style={{
@@ -129,7 +129,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
             letterSpacing: '-0.3px',
             lineHeight: 1.2
           }}>
-            Good evening, {firstName} 👋
+            Good evening, {greetingName} 👋
           </h1>
           <p style={{
             fontSize: 13.5,
