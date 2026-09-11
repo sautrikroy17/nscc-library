@@ -4,7 +4,7 @@ DRIVE VIDEO LINK
 https://drive.google.com/file/d/1HEGVzVIv34snoS1e3fr0rxLiJNFqFi72/view?usp=sharing
 
 > **Newton School Coding Club (NSCC) · SRM IST**  
-> 🌐 **Live Production**: [https://librax-app.vercel.app](https://librax-app.vercel.app) · [https://librax-library.vercel.app](https://librax-library.vercel.app)
+> 🌐 **Live Production**:  [https://librax-library.vercel.app](https://librax-library.vercel.app)
 
 A full-stack, AI-powered library management system engineered for NSCC @ SRM IST. Features QR-based camera scanning, Groq-powered AI assistant, real-time overdue tracking, automated fine calculations, and dual CSV/Excel reporting — all encased in a Sentinel-grade dark obsidian UI with a unified responsive layout.
 
