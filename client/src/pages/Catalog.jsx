@@ -369,7 +369,7 @@ export default function Catalog({
     }
   }, [searchQuery, booksList]);
 
-  const userReg = (user?.reg_number || 'RA2311003030001').toUpperCase();
+  const userReg = (user?.reg_number || 'RA2511003010052').toUpperCase();
   const myActiveLoans = activeLoans.filter(t => 
     (t.borrower_reg && t.borrower_reg.toUpperCase() === userReg) ||
     (t.borrower_name && t.borrower_name.toLowerCase() === (user?.name || 'sautrik roy').toLowerCase())
@@ -424,7 +424,7 @@ export default function Catalog({
     txApi.issue({
       book_id: b.id,
       borrower_name: user?.name || 'Sautrik Roy',
-      borrower_reg: user?.reg_number || 'RA2311003030001',
+      borrower_reg: user?.reg_number || 'RA2511003010052',
       borrower_dept: user?.department || 'CSE',
       loan_days: 14
     }).then(res => {
@@ -438,7 +438,7 @@ export default function Catalog({
           book_id: b.id,
           book_title: b.title,
           borrower_name: user?.name || 'Sautrik Roy',
-          borrower_reg: user?.reg_number || 'RA2311003030001',
+          borrower_reg: user?.reg_number || 'RA2511003010052',
           status: 'issued'
         },
         ...prev
@@ -456,7 +456,7 @@ export default function Catalog({
     playClick();
     txApi.return({
       book_id: b.id,
-      borrower_reg: user?.reg_number || 'RA2311003030001'
+      borrower_reg: user?.reg_number || 'RA2511003010052'
     }).then(res => {
       playSuccessChime();
       toast.success(res.message || `Successfully returned "${b.title}" to library! Outstanding fine: ₹0`);
@@ -517,7 +517,7 @@ export default function Catalog({
     txApi.issue({
       book_id: newBook.id,
       borrower_name: user?.name || 'Sautrik Roy',
-      borrower_reg: user?.reg_number || 'RA2311003030001',
+      borrower_reg: user?.reg_number || 'RA2511003010052',
       borrower_dept: user?.department || 'CSE',
       loan_days: 14
     }).then(() => {
@@ -529,7 +529,7 @@ export default function Catalog({
           book_id: newBook.id,
           book_title: newBook.title,
           borrower_name: user?.name || 'Sautrik Roy',
-          borrower_reg: user?.reg_number || 'RA2311003030001',
+          borrower_reg: user?.reg_number || 'RA2511003010052',
           status: 'issued'
         },
         ...prev

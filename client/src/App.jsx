@@ -112,7 +112,7 @@ export default function App() {
 
   const isStudent = user.role === 'student';
   const profileName = user.name || (isStudent ? 'Sautrik Roy' : 'Dr. Rajesh Kumar');
-  const profileRole = isStudent ? '2nd Year CSE' : 'Librarian';
+  const profileRole = isStudent ? `${user.reg_number || 'RA2511003010052'} · 2nd Year CSE` : 'Librarian';
 
   const renderPage = () => {
     switch (activePage) {

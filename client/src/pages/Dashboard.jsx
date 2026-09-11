@@ -861,7 +861,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
     playClick();
     txApi.return({
       book_id: book.id,
-      borrower_reg: user?.reg_number || 'RA2311003030001'
+      borrower_reg: user?.reg_number || 'RA2511003010052'
     }).then(() => {
       playReturnChime();
       toast.success(`"${book.title}" returned successfully! Outstanding fine: ₹0`);
@@ -883,7 +883,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
   const confirmScheduleDropoff = () => {
     if (!selectedScheduleBook) return;
     playSuccessChime();
-    const slipId = `RET-${(user?.reg_number || 'RA2311003030001')}-${selectedScheduleBook.id}`;
+    const slipId = `RET-${(user?.reg_number || 'RA2511003010052')}-${selectedScheduleBook.id}`;
     setScheduledDropoffs(prev => ({
       ...prev,
       [selectedScheduleBook.id]: {
@@ -1164,7 +1164,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                     Currently Borrowed
                   </h2>
                   <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>
-                    Active physical loans linked to RA2311003030001
+                    Active physical loans linked to RA2511003010052
                   </div>
                 </div>
 

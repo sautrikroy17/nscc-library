@@ -29,7 +29,7 @@ import { playScanBeep, playSuccessChime, playErrorBeep, playReturnChime, playCli
 
 function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSuccess }) {
   const [mode, setMode] = useState(activeLoans.length === 0 ? 'issue' : 'return');
-  const [form, setForm] = useState({ borrower_name: 'Sautrik Roy', borrower_reg: 'RA2311003030001', borrower_dept: 'CSE', loan_days: 14 });
+  const [form, setForm] = useState({ borrower_name: 'Sautrik Roy', borrower_reg: 'RA2511003010052', borrower_dept: 'CSE', loan_days: 14 });
   const [loading, setLoading] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState(activeLoans[0]?.id || null);
 
@@ -289,7 +289,7 @@ function StudentPassView() {
   const [turnstilePassed, setTurnstilePassed] = useState(false);
 
   const studentName = user?.name || 'Sautrik Roy';
-  const studentReg = user?.reg_number || 'RA2311003030001';
+  const studentReg = user?.reg_number || 'RA2511003010052';
   const studentDept = user?.department || 'Computer Science & Engineering';
   const passPayload = `LIBRAX:PASS:${studentReg}:${studentName.replace(/\s+/g, '_')}:${studentDept}:VALID_2027`;
 

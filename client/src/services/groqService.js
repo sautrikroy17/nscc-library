@@ -86,7 +86,7 @@ Library Policies & Circulation Rules:
 - Standard Student Loan Duration: 14 days per checkout.
 - Overdue Fine Structure: ₹5 per day per overdue book.
 - Quota Allowance: Maximum 4 active circulating books simultaneously per student.
-- Access Control: Campus Turnstile Entry via Digital QR Student Pass (e.g. RA2311003030001 for Sautrik Roy).
+- Access Control: Campus Turnstile Entry via Digital QR Student Pass (e.g. RA2511003010052 for Sautrik Roy).
 - Physical Stacks: Organized by Zone Shelves (A-101 for Algorithms, B-204 for Software Engineering, C-301 for Networks, D-401 for AI).
 
 Your Guidelines:

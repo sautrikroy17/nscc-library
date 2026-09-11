@@ -11,8 +11,6 @@ import {
   Eye, 
   EyeOff, 
   ArrowRight, 
-  Sun, 
-  Moon, 
   Check,
   User,
   GraduationCap,
@@ -26,7 +24,11 @@ import {
   X,
   KeyRound,
   Download,
-  Share2
+  Share2,
+  Play,
+  Star,
+  BookMarked,
+  ArrowUpRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
@@ -35,27 +37,57 @@ import { INITIAL_BOOKS } from '../data/seedData';
 
 const ROLE_DEMOS = {
   student: {
-    email: 'sr9973@srmist.edu.in',
+    email: 'ra2511003010052@srmist.edu.in',
     password: 'student123',
-    name: 'Sautrik Roy'
+    name: 'Sautrik Roy',
+    reg: 'RA2511003010052'
   },
   librarian: {
     email: 'librarian@srmist.edu.in',
     password: 'librarian123',
-    name: 'Dr. Rajesh Kumar'
+    name: 'Dr. Rajesh Kumar',
+    reg: 'LIB-SRM-042'
   },
   admin: {
     email: 'admin@nscc.srmist.edu.in',
     password: 'nscc2024',
-    name: 'Admin Librarian'
+    name: 'Admin Librarian',
+    reg: 'ADM-SYS-001'
   }
 };
 
-const FEATURE_PILLS = [
-  { id: 'qr', icon: QrCode, label: 'Quick QR Operations' },
-  { id: 'search', icon: Search, label: 'Smart Search & Discovery' },
-  { id: 'realtime', icon: Activity, label: 'Real-time Transactions' },
-  { id: 'offline', icon: ShieldCheck, label: 'Secure & Offline (SQLite)' }
+const FEATURE_CARDS = [
+  {
+    id: 'search',
+    icon: Search,
+    title: 'Smart Search & Discovery',
+    desc: 'Instant full-text indexing, fuzzy search by title, author, or ISBN, with intelligent shelf location mapping across physical stacks.'
+  },
+  {
+    id: 'qr',
+    icon: QrCode,
+    title: 'QR Issue & Return',
+    desc: 'Lightning-fast contactless checkout. Scan turnstiles or book barcodes with your phone for instant verified circulation slips.'
+  },
+  {
+    id: 'realtime',
+    icon: Activity,
+    title: 'Real-time Availability',
+    desc: 'Live stack counters, floor plan shelf navigation (Zone A-101 to D-401), and automatic queue reservation notifications.'
+  },
+  {
+    id: 'secure',
+    icon: ShieldCheck,
+    title: 'Secure & Reliable',
+    desc: 'SRM IST verified SSO authentication, role-based controls for students and faculty, offline SQLite fallback, and audit logging.'
+  }
+];
+
+const WORKFLOW_STEPS = [
+  { step: '01', title: 'Search', desc: 'Browse or search over 10,000+ textbooks, journals, and tech publications in real-time.' },
+  { step: '02', title: 'Borrow', desc: 'Tap to reserve or scan at physical kiosk turnstiles using your personal digital student QR pass.' },
+  { step: '03', title: 'Return', desc: '24/7 automated return drop-box check-in with instantaneous fine waivers and digital receipts.' },
+  { step: '04', title: 'Grow', desc: 'Track your reading velocity, explore AI-tailored study roadmaps, and earn campus academic badges.' }
 ];
 
 export default function LoginPage() {
@@ -67,54 +99,60 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [themeMode, setThemeMode] = useState('dark');
 
-  // Interactive Modals State
-  const [activeModal, setActiveModal] = useState(null); // 'qr' | 'search' | 'realtime' | 'offline' | 'contact' | 'forgot' | 'book_detail'
+  // Modals
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [activeModal, setActiveModal] = useState(null); // 'demo' | 'feature' | 'book_detail' | 'forgot' | 'contact'
   const [selectedBook, setSelectedBook] = useState(null);
-  const [searchFilter, setSearchFilter] = useState('');
-  const [cardPulse, setCardPulse] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState(null);
+  const [navActive, setNavActive] = useState('home');
+
+  // Search input on landing page
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
   // Registration form
-  const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regNumber, setRegNumber] = useState('');
+  const [regName, setRegName] = useState('Sautrik Roy');
+  const [regEmail, setRegEmail] = useState('ra2511003010052@srmist.edu.in');
+  const [regNumber, setRegNumber] = useState('RA2511003010052');
   const [regDept, setRegDept] = useState('CSE');
-  const [regPassword, setRegPassword] = useState('');
+  const [regPassword, setRegPassword] = useState('student123');
 
   // Password recovery form
-  const [resetRegNo, setResetRegNo] = useState('');
+  const [resetRegNo, setResetRegNo] = useState('RA2511003010052');
   const [resetSuccess, setResetSuccess] = useState(false);
 
   // References for smooth scrolling
   const heroRef = useRef(null);
   const featuresRef = useRef(null);
+  const workflowRef = useRef(null);
+  const booksRef = useRef(null);
   const aboutRef = useRef(null);
-  const authCardRef = useRef(null);
+  const contactRef = useRef(null);
 
   const handleRoleSelect = (role) => {
     playClick();
     setSelectedRole(role);
     setEmail(ROLE_DEMOS[role].email);
     setPassword(ROLE_DEMOS[role].password);
-    toast.info(`Pre-loaded ${role.charAt(0).toUpperCase() + role.slice(1)} credentials`);
+    toast.info(`Switched to ${role.charAt(0).toUpperCase() + role.slice(1)}: ${ROLE_DEMOS[role].name}`);
   };
 
-  const scrollToSection = (ref) => {
+  const scrollToSection = (ref, sectionKey) => {
     playClick();
+    setNavActive(sectionKey);
     if (ref && ref.current) {
       ref.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  const focusAuthCard = () => {
+  const openAuth = (mode = 'signin', role = 'student') => {
     playClick();
-    setAuthMode('signin');
-    if (authCardRef.current) {
-      authCardRef.current.scrollIntoView({ behavior: 'smooth' });
-      setCardPulse(true);
-      setTimeout(() => setCardPulse(false), 1200);
-    }
+    setAuthMode(mode);
+    setSelectedRole(role);
+    setEmail(ROLE_DEMOS[role].email);
+    setPassword(ROLE_DEMOS[role].password);
+    setShowAuthModal(true);
   };
 
   const handleLoginSubmit = async (e) => {
@@ -130,7 +168,8 @@ export default function LoginPage() {
     try {
       const user = await login(email.trim().toLowerCase(), password);
       playSuccessChime();
-      toast.success(`Welcome to LibraX, ${user.name || 'Scholar'}!`);
+      toast.success(`Welcome to LibraX, ${user.name || 'Sautrik Roy'}!`);
+      setShowAuthModal(false);
     } catch (err) {
       console.error('Login error:', err);
       playErrorBeep();
@@ -165,6 +204,7 @@ export default function LoginPage() {
       });
       playSuccessChime();
       toast.success(`Account created! Welcome, ${user.name}`);
+      setShowAuthModal(false);
     } catch (err) {
       playErrorBeep();
       toast.error(err.message || 'Registration failed');
@@ -181,1735 +221,1905 @@ export default function LoginPage() {
     }
     playSuccessChime();
     setResetSuccess(true);
-    toast.success('Temporary access code generated: SRM-PASS-2026');
+    toast.success(`Password reset PIN sent to official SRM email for ${resetRegNo.toUpperCase()}`);
+    setTimeout(() => {
+      setResetSuccess(false);
+      setActiveModal(null);
+      openAuth('signin');
+    }, 2000);
   };
 
-  // Filter books for interactive search modal
-  const filteredCatalog = INITIAL_BOOKS.filter(b => 
-    b.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
-    b.author.toLowerCase().includes(searchFilter.toLowerCase()) ||
-    b.category.toLowerCase().includes(searchFilter.toLowerCase()) ||
-    b.id.toLowerCase().includes(searchFilter.toLowerCase())
-  );
+  // Filtered books for search bar
+  const searchedBooks = searchQuery.trim() 
+    ? INITIAL_BOOKS.filter(b => 
+        b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        b.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        b.category.toLowerCase().includes(searchQuery.toLowerCase())
+      ).slice(0, 5)
+    : [];
 
   return (
     <div style={{
       minHeight: '100vh',
-      background: themeMode === 'dark' ? '#080c14' : '#0a101d',
-      color: '#e2e8f0',
+      background: '#ffffff',
+      color: '#111827',
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       position: 'relative',
-      overflowX: 'hidden',
-      display: 'flex',
-      flexDirection: 'column'
+      overflowX: 'hidden'
     }}>
-      {/* ── Background Atmospheric Library Image & Gradients ── */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '100%',
-        minHeight: 1000,
-        backgroundImage: 'radial-gradient(circle at 50% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 60%), radial-gradient(circle at 85% 35%, rgba(6, 182, 212, 0.06) 0%, transparent 50%), linear-gradient(180deg, #080c14 0%, #060910 100%)',
-        zIndex: 1,
-        pointerEvents: 'none'
-      }} />
-
-      {/* Atmospheric Library Shelving Ambient Backdrop */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: 750,
-        backgroundImage: 'url(/library_bg.jpg)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center 20%',
-        opacity: 0.18,
-        filter: 'blur(2px) contrast(120%)',
-        maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)',
-        WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)',
-        zIndex: 1,
-        pointerEvents: 'none'
-      }} />
-
-      {/* ── Top Navigation Bar (Mockup Screen 1 Header) ── */}
+      {/* ── Top Navigation Bar (Matching media_1789145954159.jpg) ── */}
       <header style={{
         height: 72,
-        padding: '0 40px',
+        padding: '0 48px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+        background: '#ffffff',
+        borderBottom: '1px solid #f1f5f9',
         position: 'sticky',
         top: 0,
-        background: 'rgba(8, 12, 20, 0.85)',
-        backdropFilter: 'blur(20px)',
-        zIndex: 50
+        zIndex: 50,
+        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.03)'
       }}>
-        {/* Brand Logo */}
+        {/* Left: Brand Logo */}
         <div 
-          onClick={() => scrollToSection(heroRef)}
+          onClick={() => scrollToSection(heroRef, 'home')}
           style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
         >
           <div style={{
             width: 32,
             height: 32,
             borderRadius: 8,
-            background: 'rgba(16, 185, 129, 0.15)',
-            border: '1px solid rgba(16, 185, 129, 0.4)',
+            background: '#111827',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#10b981',
-            boxShadow: '0 0 16px rgba(16, 185, 129, 0.3)'
+            color: '#ffffff'
           }}>
-            <BookOpen size={18} />
+            <BookOpen size={17} strokeWidth={2.4} />
           </div>
           <span style={{
             fontFamily: "'Plus Jakarta Sans', sans-serif",
             fontWeight: 800,
-            fontSize: 20,
-            color: '#ffffff',
-            letterSpacing: '-0.4px'
+            fontSize: 21,
+            color: '#111827',
+            letterSpacing: '-0.5px'
           }}>
             LibraX
           </span>
         </div>
 
-        {/* Center Nav Links - All functional with smooth scroll and click */}
+        {/* Center: Nav Links */}
         <nav style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 32,
-          fontSize: 14,
-          color: '#94a3b8'
+          gap: 36,
+          fontSize: 14.5
         }} className="desktop-only">
           <button 
-            onClick={() => scrollToSection(heroRef)}
-            style={{ color: '#ffffff', fontWeight: 600, transition: 'color 150ms' }}
+            onClick={() => scrollToSection(heroRef, 'home')}
+            style={{ 
+              color: navActive === 'home' ? '#111827' : '#6b7280', 
+              fontWeight: navActive === 'home' ? 700 : 500,
+              paddingBottom: 4,
+              borderBottom: navActive === 'home' ? '2px solid #111827' : '2px solid transparent',
+              transition: 'all 150ms'
+            }}
           >
             Home
           </button>
           <button 
-            onClick={() => scrollToSection(featuresRef)}
-            style={{ color: '#94a3b8', transition: 'color 150ms' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#fff'} 
-            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+            onClick={() => scrollToSection(featuresRef, 'features')}
+            style={{ 
+              color: navActive === 'features' ? '#111827' : '#6b7280', 
+              fontWeight: navActive === 'features' ? 700 : 500,
+              paddingBottom: 4,
+              borderBottom: navActive === 'features' ? '2px solid #111827' : '2px solid transparent',
+              transition: 'all 150ms' 
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#111827'} 
+            onMouseLeave={e => e.currentTarget.style.color = navActive === 'features' ? '#111827' : '#6b7280'}
           >
             Features
           </button>
           <button 
-            onClick={() => scrollToSection(aboutRef)}
-            style={{ color: '#94a3b8', transition: 'color 150ms' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#fff'} 
-            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+            onClick={() => scrollToSection(aboutRef, 'about')}
+            style={{ 
+              color: navActive === 'about' ? '#111827' : '#6b7280', 
+              fontWeight: navActive === 'about' ? 700 : 500,
+              paddingBottom: 4,
+              borderBottom: navActive === 'about' ? '2px solid #111827' : '2px solid transparent',
+              transition: 'all 150ms' 
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#111827'} 
+            onMouseLeave={e => e.currentTarget.style.color = navActive === 'about' ? '#111827' : '#6b7280'}
           >
             About
           </button>
           <button 
-            onClick={() => { playClick(); setActiveModal('contact'); }}
-            style={{ color: '#94a3b8', transition: 'color 150ms' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#fff'} 
-            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+            onClick={() => scrollToSection(contactRef, 'contact')}
+            style={{ 
+              color: navActive === 'contact' ? '#111827' : '#6b7280', 
+              fontWeight: navActive === 'contact' ? 700 : 500,
+              paddingBottom: 4,
+              borderBottom: navActive === 'contact' ? '2px solid #111827' : '2px solid transparent',
+              transition: 'all 150ms' 
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#111827'} 
+            onMouseLeave={e => e.currentTarget.style.color = navActive === 'contact' ? '#111827' : '#6b7280'}
           >
             Contact
           </button>
         </nav>
 
-        {/* Right Actions */}
+        {/* Right: Search + Sign In + Get Started Buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Theme Toggle Button */}
-          <button
-            onClick={() => {
-              playClick();
-              setThemeMode(themeMode === 'dark' ? 'light' : 'dark');
-              toast.info(`Theme set to ${themeMode === 'dark' ? 'Emerald Light' : 'Deep Obsidian'}`);
-            }}
-            title="Toggle theme appearance"
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 8,
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: '#94a3b8',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 150ms'
-            }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.4)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)'}
-          >
-            {themeMode === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
-          </button>
+          {/* Quick Search trigger */}
+          <div style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setShowSearchDropdown(!showSearchDropdown)}
+              title="Search Catalog"
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#4b5563',
+                background: '#f3f4f6',
+                transition: 'all 150ms'
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = '#111827'}
+              onMouseLeave={e => e.currentTarget.style.color = '#4b5563'}
+            >
+              <Search size={17} />
+            </button>
 
-          {/* Sign In Pill Button in Top Nav */}
-          <button
-            onClick={focusAuthCard}
+            {/* Quick search popup */}
+            {showSearchDropdown && (
+              <div style={{
+                position: 'absolute',
+                top: 48,
+                right: 0,
+                width: 320,
+                background: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 12,
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                padding: 12,
+                zIndex: 60
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderBottom: '1px solid #f1f5f9' }}>
+                  <Search size={15} color="#9ca3af" />
+                  <input
+                    type="text"
+                    autoFocus
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search titles, authors..."
+                    style={{
+                      border: 'none',
+                      outline: 'none',
+                      fontSize: 13,
+                      width: '100%',
+                      background: 'transparent'
+                    }}
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} style={{ color: '#9ca3af', fontSize: 14 }}>✕</button>
+                  )}
+                </div>
+                {searchedBooks.length > 0 ? (
+                  <div style={{ marginTop: 8, maxHeight: 200, overflowY: 'auto' }}>
+                    {searchedBooks.map(b => (
+                      <div 
+                        key={b.id}
+                        onClick={() => {
+                          setSelectedBook(b);
+                          setActiveModal('book_detail');
+                          setShowSearchDropdown(false);
+                        }}
+                        style={{
+                          padding: '8px',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          fontSize: 12.5
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <BookOpen size={14} color="#6b7280" />
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#111827' }}>{b.title}</div>
+                          <div style={{ fontSize: 11, color: '#6b7280' }}>{b.author}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : searchQuery ? (
+                  <div style={{ padding: 12, fontSize: 12, color: '#9ca3af', textAlign: 'center' }}>No books found</div>
+                ) : null}
+              </div>
+            )}
+          </div>
+
+          {/* Sign In text link */}
+          <button 
+            onClick={() => openAuth('signin', 'student')}
             style={{
-              padding: '7px 18px',
-              borderRadius: 8,
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.35)',
-              color: '#10b981',
+              fontSize: 14,
               fontWeight: 600,
-              fontSize: 13,
-              cursor: 'pointer',
-              transition: 'all 150ms',
-              boxShadow: '0 0 12px rgba(16, 185, 129, 0.15)'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)';
-              e.currentTarget.style.boxShadow = '0 0 18px rgba(16, 185, 129, 0.3)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
-              e.currentTarget.style.boxShadow = '0 0 12px rgba(16, 185, 129, 0.15)';
+              color: '#111827',
+              padding: '8px 14px',
+              transition: 'color 150ms'
             }}
           >
             Sign In
           </button>
+
+          {/* Get Started Pill Button */}
+          <button 
+            onClick={() => openAuth('signin', 'student')}
+            style={{
+              padding: '9px 20px',
+              borderRadius: 9999,
+              background: '#111827',
+              color: '#ffffff',
+              fontSize: 13.5,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
+              transition: 'transform 120ms, background 120ms'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#1f2937'}
+            onMouseLeave={e => e.currentTarget.style.background = '#111827'}
+          >
+            Get Started
+            <ArrowRight size={14} />
+          </button>
         </div>
       </header>
 
-      {/* ── Main Hero Section (Matching User Reference Mockup) ── */}
-      <main 
+      {/* ── HERO SECTION: Exact Match to media_1789145954159.jpg & media_1789145647414.png ── */}
+      <section 
         ref={heroRef}
         style={{
-          flex: 1,
-          maxWidth: 1380,
-          width: '100%',
-          margin: '0 auto',
-          padding: '40px 32px 30px',
-          display: 'grid',
-          gridTemplateColumns: 'minmax(420px, 1.15fr) auto minmax(380px, 0.95fr)',
-          gap: 36,
-          alignItems: 'center',
           position: 'relative',
-          zIndex: 10
+          minHeight: 560,
+          background: '#ffffff',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'stretch'
         }}
       >
-        {/* ── LEFT HERO: Smarter Libraries, Brighter Minds ── */}
-        <motion.div
-          initial={{ opacity: 0, x: -24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
-        >
-          {/* Institutional Badge */}
-          <div>
-            <span style={{
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: '1px',
-              textTransform: 'uppercase',
-              color: '#10b981',
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              padding: '5px 14px',
-              borderRadius: 999,
-              display: 'inline-block',
-              boxShadow: '0 0 16px rgba(16, 185, 129, 0.15)'
-            }}>
-              NEWTON SCHOOL CODING CLUB - SRM IST
-            </span>
-          </div>
-
-          {/* Main Headline */}
-          <div>
-            <h1 style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 900,
-              fontSize: 'clamp(38px, 4.8vw, 58px)',
-              lineHeight: 1.12,
-              letterSpacing: '-1.5px',
-              color: '#ffffff',
-              marginBottom: 16
-            }}>
-              Smarter Libraries <br />
-              <span style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textShadow: '0 0 40px rgba(16, 185, 129, 0.3)'
-              }}>
-                Brighter Minds.
-              </span>
-            </h1>
-
-            <p style={{
-              fontSize: 15,
-              color: '#94a3b8',
-              lineHeight: 1.6,
-              maxWidth: 520
-            }}>
-              A modern library management system with QR scanning, real-time tracking, and intelligent search — built for students, by students.
-            </p>
-          </div>
-
-          {/* 4 Feature Pill Cards Row - All 4 Clickable with live interactive modals */}
+        {/* Left Column: Headline, Description, CTAs, Stats, Quote */}
+        <div style={{
+          flex: '1 1 54%',
+          padding: '56px 48px 48px 56px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          zIndex: 10,
+          maxWidth: 720
+        }}>
+          {/* Eyebrow badge */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 12,
-            maxWidth: 580
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: '1px',
+            textTransform: 'uppercase',
+            color: '#6b7280',
+            marginBottom: 16
           }}>
-            {FEATURE_PILLS.map((pill) => {
-              const Icon = pill.icon;
-              return (
-                <div
-                  key={pill.id}
-                  onClick={() => {
-                    playClick();
-                    setActiveModal(pill.id);
-                  }}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    gap: 10,
-                    padding: '14px 14px',
-                    borderRadius: 12,
-                    background: 'rgba(15, 22, 38, 0.75)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    backdropFilter: 'blur(12px)',
-                    cursor: 'pointer',
-                    transition: 'all 200ms ease-out',
-                    userSelect: 'none'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.boxShadow = '0 8px 24px -6px rgba(16, 185, 129, 0.25)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <div style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 7,
-                    background: 'rgba(16, 185, 129, 0.12)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#10b981'
-                  }}>
-                    <Icon size={16} />
-                  </div>
-                  <span style={{ fontSize: 11.5, fontWeight: 600, color: '#ffffff', lineHeight: 1.3 }}>
-                    {pill.label}
-                  </span>
-                </div>
-              );
-            })}
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
+            SRM IST Central Library System · NSCC
           </div>
 
-          {/* Accent Line, Quote & Scroll Anchor */}
-          <div style={{ paddingTop: 4 }}>
-            {/* Green horizontal accent bar matching mockup */}
-            <div style={{
-              width: 38,
-              height: 3.5,
-              borderRadius: 2,
-              background: '#10b981',
-              boxShadow: '0 0 10px #10b981',
-              marginBottom: 12
-            }} />
+          {/* Headline in Serif (Playfair Display) */}
+          <h1 style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontWeight: 700,
+            fontSize: 50,
+            lineHeight: 1.15,
+            color: '#111827',
+            letterSpacing: '-0.5px',
+            margin: 0
+          }}>
+            More Than Books.<br />
+            A Brighter You.
+          </h1>
 
-            <div style={{ fontStyle: 'italic', fontSize: 14, color: '#64748b', marginBottom: 14 }}>
-              "Books today. A brighter tomorrow."
-            </div>
+          {/* Subtitle */}
+          <p style={{
+            fontSize: 16.5,
+            lineHeight: 1.6,
+            color: '#4b5563',
+            marginTop: 18,
+            marginBottom: 28,
+            maxWidth: 500
+          }}>
+            A modern library management system for a smarter, more connected campus. Discover, borrow, learn and grow with LibraX.
+          </p>
 
+          {/* CTA Action Buttons Row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 40 }}>
+            {/* Get Started Button */}
             <button
-              onClick={() => scrollToSection(featuresRef)}
+              onClick={() => openAuth('signin', 'student')}
               style={{
+                padding: '13px 28px',
+                borderRadius: 9999,
+                background: '#111827',
+                color: '#ffffff',
+                fontWeight: 600,
+                fontSize: 14.5,
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: '1.2px',
-                textTransform: 'uppercase',
-                color: '#10b981',
-                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(17, 24, 39, 0.15)',
                 transition: 'all 150ms'
               }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              onMouseEnter={e => { e.currentTarget.style.background = '#1f2937'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#111827'; e.currentTarget.style.transform = 'none'; }}
+            >
+              Get Started
+              <ArrowRight size={16} />
+            </button>
+
+            {/* Watch Demo Button */}
+            <button
+              onClick={() => { playClick(); setActiveModal('demo'); }}
+              style={{
+                padding: '12px 24px',
+                borderRadius: 9999,
+                background: '#ffffff',
+                color: '#111827',
+                border: '1.5px solid #e5e7eb',
+                fontWeight: 600,
+                fontSize: 14.5,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'all 150ms'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#111827'; e.currentTarget.style.background = '#f9fafb'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = '#ffffff'; }}
             >
               <div style={{
-                width: 20,
-                height: 20,
+                width: 22,
+                height: 22,
                 borderRadius: '50%',
-                border: '1.5px solid #10b981',
+                background: '#f3f4f6',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <ChevronDown size={13} strokeWidth={2.5} />
+                <Play size={11} fill="#111827" stroke="none" />
               </div>
-              <span>SCROLL TO EXPLORE</span>
+              Watch Demo
             </button>
           </div>
-        </motion.div>
 
-        {/* ── CENTER ELEMENT: Illuminated Neon Quote Glass Pillar ── */}
-        {/* Rendered from reference mockup: GOOD STUDENTS READ GREAT MINDS BUILD */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0 10px'
-          }}
-          className="desktop-only"
-        >
+          {/* Key Metrics Stats Row */}
           <div style={{
-            position: 'relative',
-            width: 170,
-            height: 380,
-            borderRadius: 16,
-            background: 'linear-gradient(180deg, rgba(8, 20, 26, 0.85) 0%, rgba(5, 12, 18, 0.92) 100%)',
-            border: '1.5px solid rgba(16, 185, 129, 0.35)',
-            boxShadow: '0 0 35px rgba(16, 185, 129, 0.18), inset 0 0 30px rgba(16, 185, 129, 0.08)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'space-evenly',
-            padding: '24px 12px',
-            backdropFilter: 'blur(16px)',
-            overflow: 'hidden'
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 16,
+            paddingTop: 24,
+            borderTop: '1px solid #f1f5f9',
+            marginBottom: 28
           }}>
-            {/* Top & bottom light reflections on the glass pane */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 2,
-              background: 'linear-gradient(90deg, transparent, #34d399, transparent)'
-            }} />
-            <div style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 2,
-              background: 'linear-gradient(90deg, transparent, #10b981, transparent)'
-            }} />
-
-            {/* Neon Words with glowing text shadows */}
-            <span style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 800,
-              fontSize: 16,
-              letterSpacing: '3px',
-              color: '#10b981',
-              textShadow: '0 0 8px #10b981, 0 0 20px rgba(16, 185, 129, 0.8)'
-            }}>
-              GOOD
-            </span>
-
-            <span style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 800,
-              fontSize: 16,
-              letterSpacing: '2px',
-              color: '#34d399',
-              textShadow: '0 0 8px #34d399, 0 0 20px rgba(52, 211, 153, 0.8)'
-            }}>
-              STUDENTS
-            </span>
-
-            <span style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 900,
-              fontSize: 18,
-              letterSpacing: '3px',
-              color: '#f59e0b',
-              textShadow: '0 0 10px #f59e0b, 0 0 25px rgba(245, 158, 11, 0.8)'
-            }}>
-              READ
-            </span>
-
-            <span style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 800,
-              fontSize: 16,
-              letterSpacing: '3px',
-              color: '#34d399',
-              textShadow: '0 0 8px #34d399, 0 0 20px rgba(52, 211, 153, 0.8)'
-            }}>
-              GREAT
-            </span>
-
-            <span style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 800,
-              fontSize: 16,
-              letterSpacing: '3px',
-              color: '#06b6d4',
-              textShadow: '0 0 8px #06b6d4, 0 0 20px rgba(6, 182, 212, 0.8)'
-            }}>
-              MINDS
-            </span>
-
-            <span style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 800,
-              fontSize: 16,
-              letterSpacing: '3px',
-              color: '#10b981',
-              textShadow: '0 0 8px #10b981, 0 0 20px rgba(16, 185, 129, 0.8)'
-            }}>
-              BUILD
-            </span>
-          </div>
-        </motion.div>
-
-        {/* ── RIGHT HERO: Smoked Obsidian Auth Card ── */}
-        <motion.div
-          ref={authCardRef}
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
-          style={{ display: 'flex', justifyContent: 'center' }}
-        >
-          <div style={{
-            width: '100%',
-            maxWidth: 440,
-            background: 'rgba(14, 22, 38, 0.88)',
-            border: cardPulse ? '2px solid #10b981' : '1px solid rgba(255, 255, 255, 0.08)',
-            borderTop: cardPulse ? '2px solid #34d399' : '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: 20,
-            padding: '36px 32px',
-            backdropFilter: 'blur(30px) saturate(190%)',
-            boxShadow: cardPulse 
-              ? '0 0 40px rgba(16, 185, 129, 0.6), 0 24px 64px rgba(0, 0, 0, 0.85)' 
-              : '0 24px 64px -12px rgba(0, 0, 0, 0.85), 0 0 30px rgba(16, 185, 129, 0.06)',
-            position: 'relative',
-            transition: 'border 300ms, box-shadow 300ms'
-          }}>
-            {/* Header */}
-            <div style={{ marginBottom: 22 }}>
-              <h2 style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontWeight: 800,
-                fontSize: 22,
-                color: '#ffffff',
-                marginBottom: 6
-              }}>
-                {authMode === 'signin' ? 'Welcome to LibraX' : 'Create Student Account'}
-              </h2>
-              <p style={{ fontSize: 13, color: '#94a3b8' }}>
-                {authMode === 'signin' ? 'Sign in to access your library account' : 'Join the SRM IST digital library collective'}
-              </p>
+            <div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px' }}>10K+</div>
+              <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 2 }}>Books Available</div>
             </div>
+            <div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px' }}>3K+</div>
+              <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 2 }}>Active Students</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px' }}>24/7</div>
+              <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 2 }}>Digital Access</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px' }}>Smarter</div>
+              <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 2 }}>Learning</div>
+            </div>
+          </div>
 
-            {authMode === 'signin' ? (
-              <>
-                {/* Role Switcher Pill Tabs: [Student] [Librarian] [Admin] */}
-                <div style={{
-                  display: 'flex',
-                  background: 'rgba(8, 12, 20, 0.8)',
-                  padding: 4,
-                  borderRadius: 10,
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  marginBottom: 20
-                }}>
-                  {[
-                    { id: 'student', label: 'Student' },
-                    { id: 'librarian', label: 'Librarian' },
-                    { id: 'admin', label: 'Admin' }
-                  ].map(role => (
-                    <button
-                      key={role.id}
-                      type="button"
-                      onClick={() => handleRoleSelect(role.id)}
-                      style={{
-                        flex: 1,
-                        padding: '8px 0',
-                        borderRadius: 7,
-                        fontSize: 12.5,
-                        fontWeight: selectedRole === role.id ? 700 : 500,
-                        border: 'none',
-                        cursor: 'pointer',
-                        background: selectedRole === role.id ? '#10b981' : 'transparent',
-                        color: selectedRole === role.id ? '#ffffff' : '#94a3b8',
-                        transition: 'all 150ms',
-                        boxShadow: selectedRole === role.id ? '0 0 14px rgba(16, 185, 129, 0.5)' : 'none'
-                      }}
-                    >
-                      {role.label}
-                    </button>
-                  ))}
-                </div>
+          {/* Quote Card (Marcus Tullius Cicero) */}
+          <div style={{
+            background: '#fafaf9',
+            border: '1px solid #f0f0ee',
+            borderRadius: 12,
+            padding: '14px 18px',
+            fontSize: 13,
+            color: '#4b5563',
+            fontStyle: 'italic',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            maxWidth: 500
+          }}>
+            <span style={{ fontSize: 20, color: '#9ca3af', lineHeight: 1 }}>“</span>
+            <div>
+              <div>A room without books is like a body without a soul.</div>
+              <div style={{ fontStyle: 'normal', fontWeight: 600, fontSize: 11.5, color: '#111827', marginTop: 2 }}>
+                — Marcus Tullius Cicero
+              </div>
+            </div>
+          </div>
+        </div>
 
-                {/* Form Fields */}
-                <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {/* Institutional Email */}
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 6, display: 'block' }}>
-                      Institutional Email
-                    </label>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      background: 'rgba(8, 12, 20, 0.7)',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      borderRadius: 10,
-                      padding: '11px 14px'
-                    }}>
-                      <Mail size={16} color="#64748b" />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        placeholder="e.g. ra2311003000@srmist.edu.in"
-                        required
-                        style={{
-                          flex: 1,
-                          background: 'transparent',
-                          border: 'none',
-                          outline: 'none',
-                          color: '#ffffff',
-                          fontSize: 13.5
-                        }}
-                      />
-                    </div>
-                  </div>
+        {/* Right Column: Exact Modern Library Photo with Left Edge Fade Mask */}
+        <div style={{
+          flex: '1 1 46%',
+          position: 'relative',
+          minHeight: 520,
+          background: '#ffffff',
+          overflow: 'hidden'
+        }}>
+          {/* Main Photo with smooth CSS gradient mask on left edge */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: '100%',
+            height: '100%',
+            backgroundImage: 'url(/hero_photo_exact.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center right',
+            maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.2) 8%, rgba(0,0,0,0.8) 25%, black 45%)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.2) 8%, rgba(0,0,0,0.8) 25%, black 45%)'
+          }} />
 
-                  {/* Password */}
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 6, display: 'block' }}>
-                      Password
-                    </label>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      background: 'rgba(8, 12, 20, 0.7)',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      borderRadius: 10,
-                      padding: '11px 14px'
-                    }}>
-                      <Lock size={16} color="#64748b" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        required
-                        style={{
-                          flex: 1,
-                          background: 'transparent',
-                          border: 'none',
-                          outline: 'none',
-                          color: '#ffffff',
-                          fontSize: 13.5
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        style={{ color: '#64748b', display: 'flex', cursor: 'pointer' }}
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
+          {/* Column Badge: Good Books Better People */}
+          <div style={{
+            position: 'absolute',
+            top: 36,
+            right: 44,
+            writingMode: 'vertical-rl',
+            transform: 'rotate(180deg)',
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontWeight: 700,
+            fontSize: 13,
+            letterSpacing: '3px',
+            textTransform: 'uppercase',
+            color: 'rgba(255, 255, 255, 0.85)',
+            textShadow: '0 2px 8px rgba(0, 0, 0, 0.45)',
+            zIndex: 5
+          }}>
+            Good Books Better People
+          </div>
 
-                  {/* Remember Me & Forgot Password Row */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#94a3b8', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={e => setRememberMe(e.target.checked)}
-                        style={{ accentColor: '#10b981', cursor: 'pointer' }}
-                      />
-                      <span>Remember me</span>
-                    </label>
-                    <span 
-                      onClick={() => { playClick(); setActiveModal('forgot'); }}
-                      style={{ color: '#10b981', fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      Forgot password?
-                    </span>
-                  </div>
+          {/* Bottom Right Floating Badge: Explore Learn Grow Belong */}
+          <div style={{
+            position: 'absolute',
+            bottom: 24,
+            right: 32,
+            background: 'rgba(17, 24, 39, 0.85)',
+            backdropFilter: 'blur(8px)',
+            color: '#ffffff',
+            padding: '8px 16px',
+            borderRadius: 9999,
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '1px',
+            zIndex: 5,
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)'
+          }}>
+            Explore · Learn · Grow · Belong
+          </div>
+        </div>
+      </section>
 
-                  {/* Submit CTA Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                      marginTop: 6,
-                      padding: '12px 20px',
-                      borderRadius: 10,
-                      background: '#10b981',
-                      border: 'none',
-                      color: '#080c14',
-                      fontWeight: 800,
-                      fontSize: 14,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)',
-                      transition: 'all 150ms'
-                    }}
-                  >
-                    {loading ? (
-                      <div className="spinner spinner-sm" style={{ borderTopColor: '#080c14' }} />
-                    ) : (
-                      <>
-                        <span>Sign In</span>
-                        <ArrowRight size={16} strokeWidth={2.5} />
-                      </>
-                    )}
-                  </motion.button>
-                </form>
+      {/* ── FEATURES SECTION: Why LibraX? (4 Cards Grid) ── */}
+      <section 
+        ref={featuresRef}
+        style={{
+          padding: '80px 48px',
+          background: '#f8fafc',
+          borderTop: '1px solid #f1f5f9',
+          borderBottom: '1px solid #f1f5f9'
+        }}
+      >
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          {/* Section Header */}
+          <div style={{ textAlign: 'center', marginBottom: 54 }}>
+            <span style={{
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '1.5px',
+              textTransform: 'uppercase',
+              color: '#6b7280',
+              display: 'block',
+              marginBottom: 8
+            }}>
+              CAMPUS INTELLIGENCE
+            </span>
+            <h2 style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 36,
+              fontWeight: 700,
+              color: '#111827',
+              margin: 0
+            }}>
+              Why LibraX?
+            </h2>
+            <p style={{
+              fontSize: 15.5,
+              color: '#64748b',
+              marginTop: 10,
+              maxWidth: 580,
+              marginLeft: 'auto',
+              marginRight: 'auto'
+            }}>
+              Engineered specifically for the ambitious students, researchers, and faculty of SRM Institute of Science and Technology.
+            </p>
+          </div>
 
-                {/* Switch to Registration */}
-                <div style={{ marginTop: 22, textAlign: 'center', fontSize: 12.5, color: '#94a3b8' }}>
-                  New here?{' '}
-                  <span
-                    onClick={() => { playClick(); setAuthMode('register'); }}
-                    style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    Create an account
-                  </span>
-                </div>
-              </>
-            ) : (
-              /* ── Registration View ── */
-              <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 600, color: '#94a3b8', marginBottom: 5, display: 'block' }}>Full Name</label>
-                  <input
-                    type="text"
-                    value={regName}
-                    onChange={e => setRegName(e.target.value)}
-                    placeholder="e.g. Sautrik Roy"
-                    required
-                    style={{
-                      width: '100%',
-                      background: 'rgba(8, 12, 20, 0.7)',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      borderRadius: 9,
-                      padding: '10px 12px',
-                      color: '#ffffff',
-                      fontSize: 13
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 600, color: '#94a3b8', marginBottom: 5, display: 'block' }}>SRM Email</label>
-                  <input
-                    type="email"
-                    value={regEmail}
-                    onChange={e => setRegEmail(e.target.value)}
-                    placeholder="ps8821@srmist.edu.in"
-                    required
-                    style={{
-                      width: '100%',
-                      background: 'rgba(8, 12, 20, 0.7)',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      borderRadius: 9,
-                      padding: '10px 12px',
-                      color: '#ffffff',
-                      fontSize: 13
-                    }}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <div>
-                    <label style={{ fontSize: 11.5, fontWeight: 600, color: '#94a3b8', marginBottom: 5, display: 'block' }}>Reg Number</label>
-                    <input
-                      type="text"
-                      value={regNumber}
-                      onChange={e => setRegNumber(e.target.value)}
-                      placeholder="RA2311..."
-                      required
-                      style={{
-                        width: '100%',
-                        background: 'rgba(8, 12, 20, 0.7)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                        borderRadius: 9,
-                        padding: '10px 12px',
-                        color: '#ffffff',
-                        fontSize: 13,
-                        textTransform: 'uppercase'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 11.5, fontWeight: 600, color: '#94a3b8', marginBottom: 5, display: 'block' }}>Department</label>
-                    <select
-                      value={regDept}
-                      onChange={e => setRegDept(e.target.value)}
-                      style={{
-                        width: '100%',
-                        background: '#0e1628',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                        borderRadius: 9,
-                        padding: '10px 12px',
-                        color: '#ffffff',
-                        fontSize: 13
-                      }}
-                    >
-                      {['CSE', 'ECE', 'IT', 'EEE', 'ME', 'AI & DS', 'Other'].map(d => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 600, color: '#94a3b8', marginBottom: 5, display: 'block' }}>Password</label>
-                  <input
-                    type="password"
-                    value={regPassword}
-                    onChange={e => setRegPassword(e.target.value)}
-                    placeholder="Min 6 characters"
-                    required
-                    style={{
-                      width: '100%',
-                      background: 'rgba(8, 12, 20, 0.7)',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      borderRadius: 9,
-                      padding: '10px 12px',
-                      color: '#ffffff',
-                      fontSize: 13
-                    }}
-                  />
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  disabled={loading}
+          {/* 4 Cards Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: 24
+          }}>
+            {FEATURE_CARDS.map((feat) => {
+              const IconComp = feat.icon;
+              return (
+                <div
+                  key={feat.id}
+                  onClick={() => {
+                    playClick();
+                    setSelectedFeature(feat);
+                    setActiveModal('feature');
+                  }}
                   style={{
-                    marginTop: 6,
-                    padding: '12px 20px',
-                    borderRadius: 10,
-                    background: '#10b981',
-                    border: 'none',
-                    color: '#080c14',
-                    fontWeight: 800,
-                    fontSize: 14,
+                    background: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 16,
+                    padding: '28px 24px',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.02)',
                     cursor: 'pointer',
+                    transition: 'all 200ms ease'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 12px 24px -6px rgba(0, 0, 0, 0.08)';
+                    e.currentTarget.style.borderColor = '#cbd5e1';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.02)';
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                  }}
+                >
+                  <div style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: '#f1f5f9',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 8,
-                    boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)'
-                  }}
-                >
-                  {loading ? (
-                    <div className="spinner spinner-sm" style={{ borderTopColor: '#080c14' }} />
-                  ) : (
-                    <>
-                      <span>Complete Registration</span>
-                      <ArrowRight size={16} strokeWidth={2.5} />
-                    </>
-                  )}
-                </motion.button>
-
-                <div style={{ marginTop: 12, textAlign: 'center', fontSize: 12.5, color: '#94a3b8' }}>
-                  Already have an account?{' '}
-                  <span
-                    onClick={() => { playClick(); setAuthMode('signin'); }}
-                    style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    Sign in
-                  </span>
+                    color: '#111827',
+                    marginBottom: 18
+                  }}>
+                    <IconComp size={22} strokeWidth={2} />
+                  </div>
+                  <h3 style={{
+                    fontSize: 17,
+                    fontWeight: 700,
+                    color: '#111827',
+                    margin: '0 0 10px 0'
+                  }}>
+                    {feat.title}
+                  </h3>
+                  <p style={{
+                    fontSize: 13.5,
+                    lineHeight: 1.6,
+                    color: '#64748b',
+                    margin: 0
+                  }}>
+                    {feat.desc}
+                  </p>
+                  <div style={{
+                    marginTop: 16,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: '#111827'
+                  }}>
+                    Learn more <ArrowRight size={13} />
+                  </div>
                 </div>
-              </form>
-            )}
+              );
+            })}
           </div>
-        </motion.div>
-      </main>
+        </div>
+      </section>
 
-      {/* ── SECTION: Live Interactive Feature Showcase & Catalog ── */}
+      {/* ── HOW LIBRAX WORKS: 4 Steps Horizontal Flow ── */}
       <section 
-        ref={featuresRef}
-        id="features"
+        ref={workflowRef}
         style={{
-          maxWidth: 1380,
-          width: '100%',
-          margin: '40px auto 0',
-          padding: '60px 32px',
-          position: 'relative',
-          zIndex: 10,
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)'
+          padding: '80px 48px',
+          background: '#ffffff'
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
-          <div>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: '1px',
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          {/* Section Header */}
+          <div style={{ textAlign: 'center', marginBottom: 54 }}>
+            <span style={{
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '1.5px',
               textTransform: 'uppercase',
-              color: '#10b981',
-              background: 'rgba(16, 185, 129, 0.1)',
-              padding: '4px 12px',
-              borderRadius: 999,
-              marginBottom: 10
+              color: '#6b7280',
+              display: 'block',
+              marginBottom: 8
             }}>
-              <Sparkles size={13} />
-              <span>LIVE REPOSITORY DISCOVERY</span>
-            </div>
+              SEAMLESS WORKFLOW
+            </span>
             <h2 style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: 28,
-              fontWeight: 800,
-              color: '#ffffff'
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 36,
+              fontWeight: 700,
+              color: '#111827',
+              margin: 0
             }}>
-              Curated Books Ready for Instant Checkout
+              How LibraX Works
             </h2>
+            <p style={{
+              fontSize: 15.5,
+              color: '#64748b',
+              marginTop: 10,
+              maxWidth: 580,
+              marginLeft: 'auto',
+              marginRight: 'auto'
+            }}>
+              Four frictionless steps from discovering a breakthrough paper to earning your degree.
+            </p>
           </div>
 
+          {/* 4 Process Step Cards */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: 24,
+            position: 'relative'
+          }}>
+            {WORKFLOW_STEPS.map((s) => (
+              <div 
+                key={s.step}
+                style={{
+                  background: '#fafaf9',
+                  border: '1px solid #f0f0ee',
+                  borderRadius: 16,
+                  padding: '30px 24px',
+                  position: 'relative'
+                }}
+              >
+                <div style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: 28,
+                  fontWeight: 800,
+                  color: '#e2e8f0',
+                  marginBottom: 12
+                }}>
+                  {s.step}
+                </div>
+                <h4 style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: '#111827',
+                  marginBottom: 8
+                }}>
+                  {s.title}
+                </h4>
+                <p style={{
+                  fontSize: 13.5,
+                  lineHeight: 1.6,
+                  color: '#64748b',
+                  margin: 0
+                }}>
+                  {s.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURED IN OUR LIBRARY (Carousel of Popular Books) ── */}
+      <section 
+        ref={booksRef}
+        style={{
+          padding: '80px 48px',
+          background: '#f8fafc',
+          borderTop: '1px solid #f1f5f9'
+        }}
+      >
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'flex-end', 
+            justifyContent: 'space-between',
+            marginBottom: 44
+          }}>
+            <div>
+              <span style={{
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                color: '#6b7280',
+                display: 'block',
+                marginBottom: 8
+              }}>
+                ACADEMIC STACKS
+              </span>
+              <h2 style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 34,
+                fontWeight: 700,
+                color: '#111827',
+                margin: 0
+              }}>
+                Featured in Our Library
+              </h2>
+            </div>
+            <button
+              onClick={() => openAuth('signin', 'student')}
+              style={{
+                fontSize: 13.5,
+                fontWeight: 600,
+                color: '#111827',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              Explore all 10,000+ books <ArrowRight size={14} />
+            </button>
+          </div>
+
+          {/* Book Cards Row */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+            gap: 20
+          }}>
+            {INITIAL_BOOKS.slice(0, 5).map((book) => (
+              <div
+                key={book.id}
+                onClick={() => {
+                  playClick();
+                  setSelectedBook(book);
+                  setActiveModal('book_detail');
+                }}
+                style={{
+                  background: '#ffffff',
+                  borderRadius: 14,
+                  border: '1px solid #e2e8f0',
+                  padding: '16px',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.02)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 200ms ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(0, 0, 0, 0.07)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.02)';
+                }}
+              >
+                {/* Book Cover */}
+                <div style={{
+                  height: 180,
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  background: '#f1f5f9',
+                  marginBottom: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {book.cover_image ? (
+                    <img 
+                      src={book.cover_image} 
+                      alt={book.title} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <BookOpen size={36} color="#94a3b8" />
+                  )}
+                </div>
+
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  {book.category}
+                </div>
+                <h4 style={{
+                  fontSize: 14.5,
+                  fontWeight: 700,
+                  color: '#111827',
+                  margin: '4px 0 2px 0',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {book.title}
+                </h4>
+                <div style={{ fontSize: 12.5, color: '#6b7280', marginBottom: 12 }}>
+                  {book.author}
+                </div>
+
+                <div style={{
+                  marginTop: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingTop: 10,
+                  borderTop: '1px solid #f1f5f9',
+                  fontSize: 12
+                }}>
+                  <span style={{ color: '#10b981', fontWeight: 600 }}>
+                    {book.available_copies} available
+                  </span>
+                  <span style={{
+                    padding: '3px 8px',
+                    borderRadius: 6,
+                    background: '#111827',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    fontSize: 11.5
+                  }}>
+                    Borrow
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── INSPIRATIONAL QUOTE BANNER ── */}
+      <section style={{
+        padding: '60px 48px',
+        background: '#ffffff'
+      }}>
+        <div style={{
+          maxWidth: 1200,
+          margin: '0 auto',
+          background: '#fafaf9',
+          border: '1px solid #f0f0ee',
+          borderRadius: 20,
+          padding: '40px 48px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 36,
+          flexWrap: 'wrap'
+        }}>
+          {/* Left: Stacked books image */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <img 
+              src="/book_stack_quote.jpg" 
+              alt="Books" 
+              style={{
+                width: 110,
+                height: 80,
+                objectFit: 'cover',
+                borderRadius: 12,
+                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.08)'
+              }}
+              onError={e => e.currentTarget.style.display = 'none'}
+            />
+            <div>
+              <div style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 22,
+                fontStyle: 'italic',
+                color: '#111827',
+                lineHeight: 1.3
+              }}>
+                “Books open doors to new worlds.”
+              </div>
+              <div style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>
+                Read. Learn. Grow. Together at SRM IST Central Library.
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Join Portal Button */}
           <button
-            onClick={focusAuthCard}
+            onClick={() => openAuth('signin', 'student')}
             style={{
+              padding: '12px 24px',
+              borderRadius: 9999,
+              background: '#111827',
+              color: '#ffffff',
+              fontWeight: 600,
+              fontSize: 13.5,
               display: 'inline-flex',
               alignItems: 'center',
               gap: 8,
-              fontSize: 13,
-              fontWeight: 600,
-              color: '#10b981',
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              padding: '8px 16px',
-              borderRadius: 8,
-              cursor: 'pointer'
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
             }}
           >
-            <span>Log In to Borrow</span>
-            <ArrowRight size={14} />
+            Access Library Portal <ArrowRight size={14} />
           </button>
-        </div>
-
-        {/* 6 Featured Book Cards Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 20
-        }}>
-          {INITIAL_BOOKS.slice(0, 6).map((book) => (
-            <div
-              key={book.id}
-              onClick={() => {
-                playClick();
-                setSelectedBook(book);
-                setActiveModal('book_detail');
-              }}
-              style={{
-                background: 'rgba(15, 22, 38, 0.7)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: 14,
-                padding: 16,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-                cursor: 'pointer',
-                transition: 'all 200ms ease-out'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 12px 24px -6px rgba(0,0,0,0.5)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              {/* Cover spine preview */}
-              <div style={{
-                height: 120,
-                borderRadius: 8,
-                background: `linear-gradient(135deg, ${book.cover_color}33 0%, ${book.cover_color}11 100%)`,
-                border: `1px solid ${book.cover_color}44`,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                padding: 12
-              }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: book.cover_color, letterSpacing: '0.5px' }}>
-                  {book.id}
-                </span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', lineHeight: 1.2 }}>
-                  {book.title}
-                </span>
-              </div>
-
-              <div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>{book.author}</div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: book.available_copies > 0 ? '#10b981' : '#f43f5e',
-                    background: book.available_copies > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
-                    padding: '2px 8px',
-                    borderRadius: 4
-                  }}>
-                    {book.available_copies > 0 ? `${book.available_copies} Available` : 'All Issued'}
-                  </span>
-                  <span style={{ fontSize: 11, color: '#64748b' }}>Shelf {book.shelf_location}</span>
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
-      {/* ── SECTION: About Newton School Coding Club SRM IST ── */}
-      <section 
-        ref={aboutRef}
-        id="about"
+      {/* ── FOOTER: SRM IST Central Library & NSCC ── */}
+      <footer 
+        ref={contactRef}
         style={{
-          maxWidth: 1380,
-          width: '100%',
-          margin: '0 auto',
-          padding: '60px 32px',
-          position: 'relative',
-          zIndex: 10,
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)'
+          background: '#0f172a',
+          color: '#e2e8f0',
+          padding: '60px 48px 30px 48px'
         }}
       >
         <div style={{
-          background: 'rgba(14, 22, 38, 0.65)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: 20,
-          padding: '40px 36px',
+          maxWidth: 1200,
+          margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: 36,
-          alignItems: 'center'
+          marginBottom: 48
+        }}>
+          {/* Col 1: Brand & Bio */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#0f172a'
+              }}>
+                <BookOpen size={18} strokeWidth={2.4} />
+              </div>
+              <span style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontWeight: 800,
+                fontSize: 20,
+                color: '#ffffff'
+              }}>
+                LibraX
+              </span>
+            </div>
+            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: '#94a3b8', margin: 0 }}>
+              The official next-generation central library automation and research portal for SRM Institute of Science and Technology.
+            </p>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 16 }}>
+              Authored by <strong style={{ color: '#ffffff' }}>Sautrik Roy</strong> (RA2511003010052)
+            </div>
+          </div>
+
+          {/* Col 2: Navigation */}
+          <div>
+            <h5 style={{ fontSize: 13, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 14 }}>
+              Quick Links
+            </h5>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, fontSize: 13.5, color: '#cbd5e1' }}>
+              <button onClick={() => scrollToSection(heroRef, 'home')} style={{ textAlign: 'left', color: '#cbd5e1' }}>Home</button>
+              <button onClick={() => scrollToSection(featuresRef, 'features')} style={{ textAlign: 'left', color: '#cbd5e1' }}>Features</button>
+              <button onClick={() => scrollToSection(booksRef, 'books')} style={{ textAlign: 'left', color: '#cbd5e1' }}>Academic Catalog</button>
+              <button onClick={() => openAuth('signin', 'student')} style={{ textAlign: 'left', color: '#cbd5e1' }}>Student Portal</button>
+              <button onClick={() => openAuth('signin', 'librarian')} style={{ textAlign: 'left', color: '#cbd5e1' }}>Librarian Desk</button>
+            </div>
+          </div>
+
+          {/* Col 3: SRM Campus */}
+          <div>
+            <h5 style={{ fontSize: 13, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 14 }}>
+              Campus Facilities
+            </h5>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, fontSize: 13.5, color: '#cbd5e1' }}>
+              <div>Zone A: Algorithms & Theory</div>
+              <div>Zone B: Software Engineering</div>
+              <div>Zone C: Computer Networks</div>
+              <div>Zone D: Artificial Intelligence</div>
+              <div>24/7 Digital Kiosks & QR Turnstiles</div>
+            </div>
+          </div>
+
+          {/* Col 4: Contact & Help */}
+          <div>
+            <h5 style={{ fontSize: 13, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 14 }}>
+              Contact & Support
+            </h5>
+            <div style={{ fontSize: 13.5, lineHeight: 1.6, color: '#94a3b8' }}>
+              <div>Central Library Building, Ground Floor</div>
+              <div>SRM IST Kattankulathur Campus</div>
+              <div style={{ marginTop: 8 }}>Email: library@srmist.edu.in</div>
+              <div>Phone: +91 44 2741 7000</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom copyright */}
+        <div style={{
+          maxWidth: 1200,
+          margin: '0 auto',
+          paddingTop: 24,
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: 12.5,
+          color: '#64748b',
+          flexWrap: 'wrap',
+          gap: 12
         }}>
           <div>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: '1px',
-              textTransform: 'uppercase',
-              color: '#06b6d4',
-              background: 'rgba(6, 182, 212, 0.1)',
-              padding: '4px 12px',
-              borderRadius: 999,
-              marginBottom: 12
-            }}>
-              <GraduationCap size={14} />
-              <span>CAMPUS TECHNOLOGY INITIATIVE</span>
-            </div>
-            <h3 style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: 24,
-              fontWeight: 800,
-              color: '#ffffff',
-              marginBottom: 12
-            }}>
-              Engineered by Newton School Coding Club
-            </h3>
-            <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.6, marginBottom: 20 }}>
-              LibraX is an institutional library management ecosystem designed specifically for SRM Institute of Science and Technology. Built with zero cloud latency, high-performance SQLite WAL storage, and intuitive QR checkouts, it eliminates physical queues and optimizes library operations across Kattankulathur campus.
-            </p>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#e2e8f0' }}>
-                <Check size={16} color="#10b981" />
-                <span>Zero Cloud Dependency</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#e2e8f0' }}>
-                <Check size={16} color="#10b981" />
-                <span>Instant QR Reticle Scanning</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#e2e8f0' }}>
-                <Check size={16} color="#10b981" />
-                <span>100% Offline-First Architecture</span>
-              </div>
-            </div>
+            © 2026 LibraX · SRM Institute of Science and Technology · Newton School Coding Club.
           </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 16
-          }}>
-            <div style={{
-              background: 'rgba(8, 12, 20, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderRadius: 14,
-              padding: 20,
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: 32, fontWeight: 900, color: '#10b981', marginBottom: 4 }}>30+</div>
-              <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Core Reference Volumes</div>
-            </div>
-            <div style={{
-              background: 'rgba(8, 12, 20, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderRadius: 14,
-              padding: 20,
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: 32, fontWeight: 900, color: '#06b6d4', marginBottom: 4 }}>500+</div>
-              <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>SRM IST Scholars</div>
-            </div>
-            <div style={{
-              background: 'rgba(8, 12, 20, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderRadius: 14,
-              padding: 20,
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: 32, fontWeight: 900, color: '#34d399', marginBottom: 4 }}>0ms</div>
-              <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Local-First Latency</div>
-            </div>
-            <div style={{
-              background: 'rgba(8, 12, 20, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderRadius: 14,
-              padding: 20,
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: 32, fontWeight: 900, color: '#f59e0b', marginBottom: 4 }}>100%</div>
-              <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>System Uptime</div>
-            </div>
+          <div>
+            Designed for Student Excellence · All Rights Reserved
           </div>
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer style={{
-        marginTop: 'auto',
-        borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-        padding: '30px 40px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 16,
-        background: 'rgba(8, 12, 20, 0.95)',
-        position: 'relative',
-        zIndex: 20,
-        fontSize: 13,
-        color: '#64748b'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
-          <span>LibraX v2.4 • Newton School Coding Club SRM IST</span>
-        </div>
-        <div style={{ display: 'flex', gap: 24 }}>
-          <span 
-            onClick={() => scrollToSection(heroRef)}
-            style={{ cursor: 'pointer', transition: 'color 150ms' }}
-            onMouseEnter={e => e.target.style.color = '#fff'}
-            onMouseLeave={e => e.target.style.color = '#64748b'}
-          >
-            Back to Top
-          </span>
-          <span 
-            onClick={() => { playClick(); setActiveModal('contact'); }}
-            style={{ cursor: 'pointer', transition: 'color 150ms' }}
-            onMouseEnter={e => e.target.style.color = '#fff'}
-            onMouseLeave={e => e.target.style.color = '#64748b'}
-          >
-            Help Desk
-          </span>
-          <span 
-            onClick={() => { playClick(); focusAuthCard(); }}
-            style={{ cursor: 'pointer', color: '#10b981', fontWeight: 600 }}
-          >
-            Sign In Portal
-          </span>
         </div>
       </footer>
 
-      {/* ── INTERACTIVE MODAL OVERLAYS ── */}
+      {/* ── EXACT SCREEN 2: LOGIN MODAL (Matching media_1789145323183.jpg Screen 2) ── */}
       <AnimatePresence>
-        {activeModal && (
-          <div 
-            onClick={() => setActiveModal(null)}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0, 0, 0, 0.75)',
-              backdropFilter: 'blur(10px)',
-              zIndex: 100,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 20
-            }}
-          >
+        {showAuthModal && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              onClick={e => e.stopPropagation()}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ duration: 0.2 }}
               style={{
                 width: '100%',
-                maxWidth: activeModal === 'search' ? 680 : 500,
-                background: 'rgba(14, 22, 38, 0.96)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                maxWidth: 860,
+                background: '#ffffff',
                 borderRadius: 20,
-                padding: '28px 24px',
-                boxShadow: '0 25px 60px -10px rgba(0, 0, 0, 0.8)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                overflow: 'hidden',
+                display: 'flex',
+                minHeight: 520,
                 position: 'relative'
               }}
             >
               {/* Close Button */}
               <button
-                onClick={() => { playClick(); setActiveModal(null); }}
+                onClick={() => setShowAuthModal(false)}
                 style={{
                   position: 'absolute',
-                  top: 20,
-                  right: 20,
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  color: '#94a3b8',
+                  top: 18,
+                  right: 18,
+                  width: 34,
+                  height: 34,
+                  borderRadius: '50%',
+                  background: '#f1f5f9',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: 'pointer'
+                  color: '#64748b',
+                  zIndex: 20,
+                  transition: 'background 120ms'
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+                onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
               >
-                <X size={18} />
+                <X size={16} />
               </button>
 
-              {/* MODAL 1: Quick QR Operations */}
-              {activeModal === 'qr' && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <div style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 10,
-                      background: 'rgba(16, 185, 129, 0.15)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#10b981'
-                    }}>
-                      <QrCode size={22} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ffffff' }}>Quick QR Operations</h3>
-                      <p style={{ fontSize: 12.5, color: '#94a3b8' }}>Instant Book Checkout & Return Simulation</p>
-                    </div>
-                  </div>
-
+              {/* LEFT HALF: Form */}
+              <div style={{
+                flex: '1 1 52%',
+                padding: '40px 36px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
+              }}>
+                {/* Header with LibraX branding */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
                   <div style={{
-                    background: 'rgba(8, 12, 20, 0.8)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: 14,
-                    padding: 20,
-                    textAlign: 'center',
-                    marginBottom: 18
+                    width: 26,
+                    height: 26,
+                    borderRadius: 6,
+                    background: '#111827',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff'
                   }}>
-                    <div style={{
-                      width: 160,
-                      height: 160,
-                      margin: '0 auto 16px',
-                      background: '#ffffff',
-                      borderRadius: 12,
-                      padding: 12,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      {/* SVG QR Code Simulation */}
-                      <svg viewBox="0 0 100 100" width="100%" height="100%">
-                        <rect x="10" y="10" width="25" height="25" fill="#080c14" />
-                        <rect x="15" y="15" width="15" height="15" fill="#ffffff" />
-                        <rect x="18" y="18" width="9" height="9" fill="#080c14" />
-                        <rect x="65" y="10" width="25" height="25" fill="#080c14" />
-                        <rect x="70" y="15" width="15" height="15" fill="#ffffff" />
-                        <rect x="73" y="18" width="9" height="9" fill="#080c14" />
-                        <rect x="10" y="65" width="25" height="25" fill="#080c14" />
-                        <rect x="15" y="70" width="15" height="15" fill="#ffffff" />
-                        <rect x="18" y="73" width="9" height="9" fill="#080c14" />
-                        <rect x="42" y="15" width="8" height="15" fill="#080c14" />
-                        <rect x="42" y="42" width="16" height="16" fill="#10b981" />
-                        <rect x="65" y="42" width="12" height="6" fill="#080c14" />
-                        <rect x="65" y="55" width="25" height="10" fill="#080c14" />
-                        <rect x="42" y="70" width="10" height="20" fill="#080c14" />
-                        <rect x="60" y="75" width="30" height="15" fill="#080c14" />
-                      </svg>
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981', marginBottom: 4 }}>
-                      ACTIVE PASS: RA2311003030001
-                    </div>
-                    <div style={{ fontSize: 12, color: '#94a3b8' }}>
-                      Hold up to any campus kiosk or scan via the in-app camera reticle.
-                    </div>
+                    <BookOpen size={14} />
                   </div>
-
-                  <button
-                    onClick={focusAuthCard}
-                    style={{
-                      width: '100%',
-                      padding: '11px',
-                      borderRadius: 10,
-                      background: '#10b981',
-                      color: '#080c14',
-                      fontWeight: 800,
-                      fontSize: 13.5,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Log In to Launch Real Scanner
-                  </button>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#111827', letterSpacing: '-0.3px' }}>
+                    LibraX · SRM IST Library
+                  </span>
                 </div>
-              )}
 
-              {/* MODAL 2: Smart Search & Discovery */}
-              {activeModal === 'search' && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <div style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 10,
-                      background: 'rgba(6, 182, 212, 0.15)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#06b6d4'
-                    }}>
-                      <Search size={22} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ffffff' }}>Instant Repository Search</h3>
-                      <p style={{ fontSize: 12.5, color: '#94a3b8' }}>Search all 30 titles across algorithms, ML, systems, and math</p>
-                    </div>
-                  </div>
+                <h2 style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: 26,
+                  fontWeight: 700,
+                  color: '#111827',
+                  margin: '0 0 6px 0'
+                }}>
+                  {authMode === 'signin' ? 'Welcome Back' : 'Create Student Account'}
+                </h2>
+                <p style={{ fontSize: 13.5, color: '#6b7280', margin: '0 0 20px 0' }}>
+                  {authMode === 'signin' ? 'Sign in to your campus library account' : 'Register with your SRM registration number'}
+                </p>
 
+                {/* Role Switcher Tabs */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 4,
+                  background: '#f1f5f9',
+                  padding: 4,
+                  borderRadius: 10,
+                  marginBottom: 20
+                }}>
+                  {(['student', 'librarian', 'admin']).map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => handleRoleSelect(role)}
+                      style={{
+                        padding: '6px 0',
+                        fontSize: 12.5,
+                        fontWeight: selectedRole === role ? 700 : 500,
+                        color: selectedRole === role ? '#111827' : '#64748b',
+                        background: selectedRole === role ? '#ffffff' : 'transparent',
+                        borderRadius: 7,
+                        boxShadow: selectedRole === role ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none',
+                        textTransform: 'capitalize',
+                        transition: 'all 120ms'
+                      }}
+                    >
+                      {role}
+                    </button>
+                  ))}
+                </div>
+
+                {authMode === 'signin' ? (
+                  /* SIGN IN FORM */
+                  <form onSubmit={handleLoginSubmit}>
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5 }}>
+                        Email or Registration ID
+                      </label>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        border: '1.5px solid #e5e7eb',
+                        borderRadius: 9,
+                        padding: '9px 12px',
+                        background: '#ffffff'
+                      }}>
+                        <Mail size={15} color="#9ca3af" />
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={e => setEmail(e.target.value)}
+                          placeholder="ra2511003010052@srmist.edu.in"
+                          style={{
+                            border: 'none',
+                            outline: 'none',
+                            width: '100%',
+                            fontSize: 13,
+                            color: '#111827'
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>
+                          Password
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => { playClick(); setActiveModal('forgot'); }}
+                          style={{ fontSize: 11.5, color: '#4b5563', fontWeight: 500 }}
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        border: '1.5px solid #e5e7eb',
+                        borderRadius: 9,
+                        padding: '9px 12px',
+                        background: '#ffffff'
+                      }}>
+                        <Lock size={15} color="#9ca3af" />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={e => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          style={{
+                            border: 'none',
+                            outline: 'none',
+                            width: '100%',
+                            fontSize: 13,
+                            color: '#111827'
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          style={{ color: '#9ca3af' }}
+                        >
+                          {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+                      <input
+                        type="checkbox"
+                        id="rememberMe"
+                        checked={rememberMe}
+                        onChange={e => setRememberMe(e.target.checked)}
+                        style={{ accentColor: '#111827', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="rememberMe" style={{ fontSize: 12.5, color: '#6b7280', cursor: 'pointer' }}>
+                        Remember me for 30 days
+                      </label>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      style={{
+                        width: '100%',
+                        padding: '11px',
+                        borderRadius: 9999,
+                        background: '#111827',
+                        color: '#ffffff',
+                        fontWeight: 600,
+                        fontSize: 14,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                        cursor: loading ? 'wait' : 'pointer'
+                      }}
+                    >
+                      {loading ? 'Authenticating...' : 'Sign In →'}
+                    </button>
+                  </form>
+                ) : (
+                  /* REGISTER FORM */
+                  <form onSubmit={handleRegisterSubmit}>
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#374151', marginBottom: 3 }}>Full Name</label>
+                      <input
+                        type="text"
+                        value={regName}
+                        onChange={e => setRegName(e.target.value)}
+                        placeholder="Sautrik Roy"
+                        style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 13 }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#374151', marginBottom: 3 }}>SRM Email</label>
+                      <input
+                        type="email"
+                        value={regEmail}
+                        onChange={e => setRegEmail(e.target.value)}
+                        placeholder="ra2511003010052@srmist.edu.in"
+                        style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 13 }}
+                      />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#374151', marginBottom: 3 }}>Reg No</label>
+                        <input
+                          type="text"
+                          value={regNumber}
+                          onChange={e => setRegNumber(e.target.value)}
+                          placeholder="RA2511003010052"
+                          style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 13 }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#374151', marginBottom: 3 }}>Dept</label>
+                        <select
+                          value={regDept}
+                          onChange={e => setRegDept(e.target.value)}
+                          style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 13, background: '#fff' }}
+                        >
+                          <option value="CSE">CSE</option>
+                          <option value="IT">IT</option>
+                          <option value="ECE">ECE</option>
+                          <option value="MECH">MECH</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#374151', marginBottom: 3 }}>Password</label>
+                      <input
+                        type="password"
+                        value={regPassword}
+                        onChange={e => setRegPassword(e.target.value)}
+                        placeholder="••••••••"
+                        style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 13 }}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      style={{
+                        width: '100%',
+                        padding: '11px',
+                        borderRadius: 9999,
+                        background: '#111827',
+                        color: '#ffffff',
+                        fontWeight: 600,
+                        fontSize: 14
+                      }}
+                    >
+                      {loading ? 'Creating Account...' : 'Complete Registration →'}
+                    </button>
+                  </form>
+                )}
+
+                {/* SRM Single Sign-On */}
+                <div style={{ marginTop: 14 }}>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 10,
-                    background: 'rgba(8, 12, 20, 0.8)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: 10,
-                    padding: '10px 14px',
-                    marginBottom: 16
+                    margin: '12px 0',
+                    fontSize: 11.5,
+                    color: '#9ca3af'
                   }}>
-                    <Search size={16} color="#64748b" />
-                    <input
-                      type="text"
-                      value={searchFilter}
-                      onChange={e => setSearchFilter(e.target.value)}
-                      placeholder="Type book name, author, or category (e.g. Algorithms)..."
-                      autoFocus
-                      style={{
-                        flex: 1,
-                        background: 'transparent',
-                        border: 'none',
-                        outline: 'none',
-                        color: '#ffffff',
-                        fontSize: 13.5
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {filteredCatalog.length > 0 ? (
-                      filteredCatalog.map(b => (
-                        <div
-                          key={b.id}
-                          onClick={() => {
-                            setSelectedBook(b);
-                            setActiveModal('book_detail');
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '10px 14px',
-                            borderRadius: 8,
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>{b.title}</div>
-                            <div style={{ fontSize: 11.5, color: '#94a3b8' }}>{b.author} • {b.category}</div>
-                          </div>
-                          <span style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            color: b.available_copies > 0 ? '#10b981' : '#f43f5e'
-                          }}>
-                            {b.available_copies > 0 ? `Shelf ${b.shelf_location}` : 'Issued'}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: 30, color: '#64748b', fontSize: 13 }}>
-                        No books matching "{searchFilter}"
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* MODAL 3: Real-time Transactions */}
-              {activeModal === 'realtime' && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <div style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 10,
-                      background: 'rgba(245, 158, 11, 0.15)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#f59e0b'
-                    }}>
-                      <Activity size={22} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ffffff' }}>Real-time Transactions</h3>
-                      <p style={{ fontSize: 12.5, color: '#94a3b8' }}>Circulation status, fine calculator, & loan timelines</p>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                    <div style={{ background: 'rgba(8, 12, 20, 0.8)', padding: 14, borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>Standard Loan Duration</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: '#10b981', marginTop: 4 }}>14 Days</div>
-                    </div>
-                    <div style={{ background: 'rgba(8, 12, 20, 0.8)', padding: 14, borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>Overdue Fine Rate</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>₹2.00 / day</div>
-                    </div>
-                  </div>
-
-                  <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.5, marginBottom: 18 }}>
-                    Transactions are computed with automated due-date telemetry and logged directly to local persistent storage. Instant one-tap returns clear outstanding fines immediately.
-                  </p>
-
-                  <button
-                    onClick={focusAuthCard}
-                    style={{
-                      width: '100%',
-                      padding: '11px',
-                      borderRadius: 10,
-                      background: '#10b981',
-                      color: '#080c14',
-                      fontWeight: 800,
-                      fontSize: 13.5,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Sign In to View Your Active Loans
-                  </button>
-                </div>
-              )}
-
-              {/* MODAL 4: Secure & Offline (SQLite) */}
-              {activeModal === 'offline' && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <div style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 10,
-                      background: 'rgba(139, 92, 246, 0.15)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#8b5cf6'
-                    }}>
-                      <ShieldCheck size={22} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ffffff' }}>Secure & Offline (SQLite)</h3>
-                      <p style={{ fontSize: 12.5, color: '#94a3b8' }}>Zero cloud dependencies • 100% Local Reliability</p>
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'rgba(8, 12, 20, 0.8)', padding: 16, borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: 18 }}>
-                    <div style={{ fontSize: 12.5, color: '#e2e8f0', lineHeight: 1.6 }}>
-                      • <strong>SQLite WAL Mode</strong>: Write-Ahead Logging for high-concurrency campus requests.<br />
-                      • <strong>Zero External Cloud</strong>: No Firebase, no Supabase, no external vendor lock-in.<br />
-                      • <strong>Local-First Fallback</strong>: Seamless client storage ensures the system never crashes even during Wi-Fi dropouts.
-                    </div>
+                    <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+                    <span>or continue with</span>
+                    <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
                   </div>
 
                   <button
-                    onClick={() => setActiveModal(null)}
+                    type="button"
+                    onClick={() => {
+                      playSuccessChime();
+                      toast.success('SRM IST SSO Verified: Sautrik Roy (RA2511003010052)');
+                      login('ra2511003010052@srmist.edu.in', 'student123');
+                    }}
                     style={{
                       width: '100%',
-                      padding: '11px',
-                      borderRadius: 10,
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      color: '#ffffff',
-                      fontWeight: 700,
-                      fontSize: 13.5,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Close Specs
-                  </button>
-                </div>
-              )}
-
-              {/* MODAL 5: Contact & Help Desk */}
-              {activeModal === 'contact' && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <div style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 10,
-                      background: 'rgba(16, 185, 129, 0.15)',
+                      padding: '9px',
+                      borderRadius: 9999,
+                      border: '1.5px solid #e5e7eb',
+                      background: '#ffffff',
+                      color: '#374151',
+                      fontSize: 13,
+                      fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#10b981'
-                    }}>
-                      <Phone size={22} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ffffff' }}>SRM IST Library Help Desk</h3>
-                      <p style={{ fontSize: 12.5, color: '#94a3b8' }}>Kattankulathur Central Library Support</p>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: '#cbd5e1' }}>
-                      <MapPin size={16} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} />
-                      <span>Central Library 1st Floor, University Building, SRM IST Kattankulathur - 603203</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#cbd5e1' }}>
-                      <Clock size={16} color="#10b981" style={{ flexShrink: 0 }} />
-                      <span>Mon - Sat: 8:00 AM – 10:00 PM | Sun: 9:00 AM – 4:00 PM</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#cbd5e1' }}>
-                      <Mail size={16} color="#10b981" style={{ flexShrink: 0 }} />
-                      <a href="mailto:library.helpdesk@srmist.edu.in" style={{ color: '#10b981', textDecoration: 'underline' }}>
-                        library.helpdesk@srmist.edu.in
-                      </a>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setActiveModal(null)}
-                    style={{
-                      width: '100%',
-                      padding: '11px',
-                      borderRadius: 10,
-                      background: '#10b981',
-                      color: '#080c14',
-                      fontWeight: 800,
-                      fontSize: 13.5,
-                      cursor: 'pointer'
+                      gap: 8
                     }}
                   >
-                    Done
+                    <GraduationCap size={16} color="#111827" />
+                    Sign in with SRM SSO
                   </button>
                 </div>
-              )}
 
-              {/* MODAL 6: Forgot Password */}
-              {activeModal === 'forgot' && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <div style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 10,
-                      background: 'rgba(245, 158, 11, 0.15)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#f59e0b'
-                    }}>
-                      <KeyRound size={22} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ffffff' }}>Account Recovery</h3>
-                      <p style={{ fontSize: 12.5, color: '#94a3b8' }}>SRM IST Student Identity Verification</p>
-                    </div>
-                  </div>
-
-                  {!resetSuccess ? (
-                    <form onSubmit={handleResetSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 6, display: 'block' }}>
-                          SRM Registration Number
-                        </label>
-                        <input
-                          type="text"
-                          value={resetRegNo}
-                          onChange={e => setResetRegNo(e.target.value)}
-                          placeholder="e.g. RA2311003030002"
-                          required
-                          style={{
-                            width: '100%',
-                            background: 'rgba(8, 12, 20, 0.7)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: 9,
-                            padding: '10px 14px',
-                            color: '#ffffff',
-                            fontSize: 13.5,
-                            textTransform: 'uppercase'
-                          }}
-                        />
-                      </div>
-
-                      <div style={{ fontSize: 12, color: '#64748b' }}>
-                        Notice: For demo access, select any role pill on the login screen to auto-fill credentials.
-                      </div>
-
+                {/* Toggle sign in / register */}
+                <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12.5, color: '#6b7280' }}>
+                  {authMode === 'signin' ? (
+                    <>
+                      New to LibraX?{' '}
                       <button
-                        type="submit"
-                        style={{
-                          padding: '11px',
-                          borderRadius: 10,
-                          background: '#10b981',
-                          color: '#080c14',
-                          fontWeight: 800,
-                          fontSize: 13.5,
-                          cursor: 'pointer'
-                        }}
+                        type="button"
+                        onClick={() => { playClick(); setAuthMode('register'); }}
+                        style={{ color: '#111827', fontWeight: 700 }}
                       >
-                        Generate Temporary Access Pass
+                        Create an account
                       </button>
-                    </form>
+                    </>
                   ) : (
-                    <div style={{ textAlign: 'center', padding: '10px 0' }}>
-                      <div style={{ fontSize: 14, color: '#10b981', fontWeight: 700, marginBottom: 8 }}>
-                        ✓ Temporary Verification Approved
-                      </div>
-                      <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>
-                        Use password <strong>student123</strong> to log into your account.
-                      </p>
+                    <>
+                      Already have an account?{' '}
                       <button
-                        onClick={() => {
-                          setActiveModal(null);
-                          setResetSuccess(false);
-                          setPassword('student123');
-                        }}
-                        style={{
-                          padding: '10px 20px',
-                          borderRadius: 9,
-                          background: '#10b981',
-                          color: '#080c14',
-                          fontWeight: 800,
-                          fontSize: 13,
-                          cursor: 'pointer'
-                        }}
+                        type="button"
+                        onClick={() => { playClick(); setAuthMode('signin'); }}
+                        style={{ color: '#111827', fontWeight: 700 }}
                       >
-                        Return to Sign In
+                        Sign in
                       </button>
-                    </div>
+                    </>
                   )}
                 </div>
-              )}
+              </div>
 
-              {/* MODAL 7: Book Detail Preview */}
-              {activeModal === 'book_detail' && selectedBook && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 16 }}>
-                    <div style={{
-                      width: 48,
-                      height: 64,
-                      borderRadius: 6,
-                      background: `linear-gradient(135deg, ${selectedBook.cover_color}, ${selectedBook.cover_color}88)`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#ffffff',
-                      fontWeight: 800,
-                      fontSize: 11,
-                      flexShrink: 0
-                    }}>
-                      {selectedBook.id}
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ffffff', marginBottom: 4 }}>
-                        {selectedBook.title}
-                      </h3>
-                      <p style={{ fontSize: 13, color: '#94a3b8' }}>
-                        by {selectedBook.author} ({selectedBook.published_year})
-                      </p>
-                    </div>
+              {/* RIGHT HALF: Exact Bookshelf Backdrop with Serif Quote (Margaret Fuller) */}
+              <div style={{
+                flex: '1 1 48%',
+                background: '#111827',
+                position: 'relative',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-end',
+                padding: '40px 36px',
+                color: '#ffffff'
+              }} className="desktop-only">
+                {/* Bookshelf Background Image */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundImage: 'url(/login_bookshelf.jpg)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  opacity: 0.65
+                }} />
+
+                {/* Dark Gradient Overlay */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(180deg, rgba(17, 24, 39, 0.2) 0%, rgba(17, 24, 39, 0.85) 100%)'
+                }} />
+
+                {/* Content over image */}
+                <div style={{ position: 'relative', zIndex: 10 }}>
+                  <div style={{
+                    fontFamily: "'Playfair Display', Georgia, serif",
+                    fontSize: 32,
+                    fontWeight: 700,
+                    lineHeight: 1.25,
+                    marginBottom: 12,
+                    color: '#ffffff'
+                  }}>
+                    Today a reader,<br />
+                    tomorrow a leader.
+                  </div>
+                  <div style={{ fontSize: 13.5, color: '#cbd5e1', fontStyle: 'italic', marginBottom: 24 }}>
+                    — Margaret Fuller
                   </div>
 
-                  <p style={{ fontSize: 13, color: '#cbd5e1', lineHeight: 1.6, marginBottom: 16 }}>
-                    {selectedBook.description}
-                  </p>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
-                    <div style={{ background: 'rgba(8, 12, 20, 0.7)', padding: '10px', borderRadius: 8, textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: '#64748b' }}>Shelf Location</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', marginTop: 2 }}>{selectedBook.shelf_location}</div>
-                    </div>
-                    <div style={{ background: 'rgba(8, 12, 20, 0.7)', padding: '10px', borderRadius: 8, textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: '#64748b' }}>Category</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', marginTop: 2 }}>{selectedBook.category}</div>
-                    </div>
-                    <div style={{ background: 'rgba(8, 12, 20, 0.7)', padding: '10px', borderRadius: 8, textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: '#64748b' }}>Availability</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: selectedBook.available_copies > 0 ? '#10b981' : '#f43f5e', marginTop: 2 }}>
-                        {selectedBook.available_copies} of {selectedBook.total_copies}
+                  {/* Student Pass Badge Preview */}
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.12)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: 12,
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 8,
+                        background: '#10b981',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#ffffff'
+                      }}>
+                        <QrCode size={16} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: '#ffffff' }}>
+                          Sautrik Roy
+                        </div>
+                        <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                          RA2511003010052 · 2nd Year CSE
+                        </div>
                       </div>
                     </div>
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: '#10b981',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      padding: '3px 8px',
+                      borderRadius: 9999
+                    }}>
+                      ACTIVE
+                    </span>
                   </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-                  <button
-                    onClick={focusAuthCard}
+      {/* ── INTERACTIVE MODAL: Book Details ── */}
+      <AnimatePresence>
+        {activeModal === 'book_detail' && selectedBook && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 110,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                width: '100%',
+                maxWidth: 520,
+                background: '#ffffff',
+                borderRadius: 16,
+                padding: 28,
+                position: 'relative'
+              }}
+            >
+              <button
+                onClick={() => setActiveModal(null)}
+                style={{ position: 'absolute', top: 16, right: 16, color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+
+              <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
+                <div style={{
+                  width: 100,
+                  height: 140,
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  background: '#f1f5f9',
+                  flexShrink: 0
+                }}>
+                  <img 
+                    src={selectedBook.cover_image} 
+                    alt={selectedBook.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={e => e.currentTarget.style.display = 'none'}
+                  />
+                </div>
+                <div>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#10b981', textTransform: 'uppercase' }}>
+                    {selectedBook.category}
+                  </span>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '4px 0 2px 0' }}>
+                    {selectedBook.title}
+                  </h3>
+                  <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 8 }}>
+                    by {selectedBook.author}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#4b5563' }}>
+                    ISBN: {selectedBook.isbn || '978-0132350884'} · Shelf: {selectedBook.shelf_location || 'Zone A-101'}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#10b981', fontWeight: 600, marginTop: 4 }}>
+                    {selectedBook.available_copies} of {selectedBook.total_copies} copies available
+                  </div>
+                </div>
+              </div>
+
+              <p style={{ fontSize: 13, color: '#4b5563', lineHeight: 1.6, marginBottom: 20 }}>
+                {selectedBook.description || 'Comprehensive textbook covering foundational computational logic, robust architecture, and production-grade programming techniques.'}
+              </p>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button
+                  onClick={() => {
+                    setActiveModal(null);
+                    openAuth('signin', 'student');
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: 9999,
+                    background: '#111827',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    fontSize: 13.5
+                  }}
+                >
+                  Sign In to Borrow →
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── INTERACTIVE MODAL: Feature Details ── */}
+      <AnimatePresence>
+        {activeModal === 'feature' && selectedFeature && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 110,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                width: '100%',
+                maxWidth: 480,
+                background: '#ffffff',
+                borderRadius: 16,
+                padding: 28,
+                position: 'relative'
+              }}
+            >
+              <button
+                onClick={() => setActiveModal(null)}
+                style={{ position: 'absolute', top: 16, right: 16, color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 12 }}>
+                {selectedFeature.title}
+              </h3>
+              <p style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.6, marginBottom: 20 }}>
+                {selectedFeature.desc}
+              </p>
+              <div style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: 10,
+                padding: 14,
+                fontSize: 12.5,
+                color: '#64748b',
+                marginBottom: 20
+              }}>
+                ✓ Integrated with SRM IST Central Turnstile API<br />
+                ✓ Real-time sync with Sautrik Roy's active borrowings<br />
+                ✓ Works seamlessly on mobile Safari, Chrome & campus kiosks
+              </div>
+
+              <button
+                onClick={() => {
+                  setActiveModal(null);
+                  openAuth('signin', 'student');
+                }}
+                style={{
+                  width: '100%',
+                  padding: '11px',
+                  borderRadius: 9999,
+                  background: '#111827',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: 13.5
+                }}
+              >
+                Try It Live →
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── INTERACTIVE MODAL: Watch Demo Walkthrough ── */}
+      <AnimatePresence>
+        {activeModal === 'demo' && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 110,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                width: '100%',
+                maxWidth: 640,
+                background: '#ffffff',
+                borderRadius: 20,
+                padding: 32,
+                position: 'relative'
+              }}
+            >
+              <button
+                onClick={() => setActiveModal(null)}
+                style={{ position: 'absolute', top: 18, right: 18, color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: '#111827',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff'
+                }}>
+                  <Play size={14} fill="#ffffff" />
+                </div>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: 0 }}>
+                  LibraX Interactive Experience
+                </h3>
+              </div>
+
+              <p style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.6, marginBottom: 20 }}>
+                Experience lightning-fast campus book checkouts, turnstile access passes, and catalog discovery built for SRM Institute of Science & Technology.
+              </p>
+
+              <div style={{
+                borderRadius: 12,
+                overflow: 'hidden',
+                background: '#0f172a',
+                padding: '24px',
+                color: '#ffffff',
+                marginBottom: 24
+              }}>
+                <div style={{ fontSize: 13, color: '#10b981', fontWeight: 700, marginBottom: 8 }}>
+                  ✓ LIVE DEMO PREVIEW
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
+                  Student: Sautrik Roy · Reg: RA2511003010052
+                </div>
+                <div style={{ fontSize: 13, color: '#94a3b8' }}>
+                  • 3 Active Books Borrowed (Clean Code, OS Concepts, DB Systems)<br />
+                  • 0 Overdue Fines · Quota: 3/4 Books Used<br />
+                  • Instant turnstile scanner access in 1 click
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button
+                  onClick={() => {
+                    setActiveModal(null);
+                    openAuth('signin', 'student');
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: 9999,
+                    background: '#111827',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    fontSize: 14
+                  }}
+                >
+                  Enter Library as Sautrik Roy →
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── INTERACTIVE MODAL: Forgot Password ── */}
+      <AnimatePresence>
+        {activeModal === 'forgot' && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 110,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                width: '100%',
+                maxWidth: 440,
+                background: '#ffffff',
+                borderRadius: 16,
+                padding: 28,
+                position: 'relative'
+              }}
+            >
+              <button
+                onClick={() => setActiveModal(null)}
+                style={{ position: 'absolute', top: 16, right: 16, color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 8 }}>
+                Reset Your Password
+              </h3>
+              <p style={{ fontSize: 13.5, color: '#64748b', lineHeight: 1.5, marginBottom: 20 }}>
+                Enter your official SRM Registration Number. We will dispatch a 6-digit recovery OTP to your university mailbox.
+              </p>
+
+              <form onSubmit={handleResetSubmit}>
+                <div style={{ marginBottom: 18 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5 }}>
+                    Registration Number
+                  </label>
+                  <input
+                    type="text"
+                    value={resetRegNo}
+                    onChange={e => setResetRegNo(e.target.value)}
+                    placeholder="RA2511003010052"
                     style={{
                       width: '100%',
-                      padding: '11px',
-                      borderRadius: 10,
-                      background: '#10b981',
-                      color: '#080c14',
-                      fontWeight: 800,
+                      border: '1.5px solid #e5e7eb',
+                      borderRadius: 8,
+                      padding: '9px 12px',
                       fontSize: 13.5,
-                      cursor: 'pointer'
+                      textTransform: 'uppercase'
                     }}
-                  >
-                    Sign In to Check Out This Book
-                  </button>
+                  />
                 </div>
-              )}
+
+                <button
+                  type="submit"
+                  style={{
+                    width: '100%',
+                    padding: '11px',
+                    borderRadius: 9999,
+                    background: '#111827',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    fontSize: 13.5
+                  }}
+                >
+                  Send Recovery Link
+                </button>
+              </form>
             </motion.div>
           </div>
         )}

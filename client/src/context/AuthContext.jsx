@@ -52,9 +52,9 @@ export function AuthProvider({ children }) {
       const fallbackUser = {
         id: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'STU001',
         name: isAdmin ? 'Admin Librarian' : (isLibrarian ? 'Dr. Rajesh Kumar' : 'Sautrik Roy'),
-        email: email || 'sr9973@srmist.edu.in',
-        reg_number: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'RA2311003030001',
-        department: isLibrarian ? 'Library Administration' : 'CSE',
+        email: email || 'ra2511003010052@srmist.edu.in',
+        reg_number: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'RA2511003010052',
+        department: isLibrarian ? 'Library Administration' : 'Computer Science and Engineering',
         role: isLibrarian ? 'librarian' : 'student'
       };
       localStorage.setItem('nscc_token', 'librax_session_' + Date.now());
