@@ -52,6 +52,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
   const [trendPeriod, setTrendPeriod] = useState('week');
   const [hoveredBar, setHoveredBar] = useState(null);
   const [showHoursModal, setShowHoursModal] = useState(false);
+  const [progressPeriod, setProgressPeriod] = useState('semester');
 
   const handleQuickReturn = (book) => {
     returnBook(book);
@@ -663,7 +664,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
       </div>
 
       {/* ── 5 Top Stat Cards in 1 Row (Image 1) ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, alignItems: 'stretch' }}>
         {/* 1. Books Borrowed */}
         <div 
           className="card" 
@@ -748,27 +749,40 @@ export default function Dashboard({ onNavigate = () => {} }) {
           </div>
         </div>
 
-        {/* 4. Outstanding Fines */}
+        {/* 4. Start Scanner (Direct QR Circulation Trigger) */}
         <div 
           className="card" 
-          onClick={() => { playClick(); toast.info("You're all clear! Zero outstanding fines."); }}
-          style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', transition: 'transform 120ms' }}
-          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+          onClick={() => { playClick(); onNavigate('scanner'); }}
+          style={{ 
+            padding: '18px 20px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            cursor: 'pointer', 
+            transition: 'transform 120ms, box-shadow 120ms',
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+            border: 'none',
+            color: '#ffffff',
+            boxShadow: '0 2px 8px rgba(15,23,42,0.12)'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(15,23,42,0.22)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(15,23,42,0.12)'; }}
         >
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
-            <IndianRupee size={20} strokeWidth={2.2} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(56, 189, 248, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
+              <QrCode size={22} strokeWidth={2.2} />
+            </div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', lineHeight: 1.1 }}>
+                Start Scanner
+              </div>
+              <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 3 }}>
+                Scan QR to Issue / Return
+              </div>
+            </div>
           </div>
-          <div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>
-              ₹0
-            </div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginTop: 2 }}>
-              Outstanding Fines
-            </div>
-            <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600, marginTop: 2 }}>
-              You're all clear!
-            </div>
+          <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+            <ArrowRight size={13} />
           </div>
         </div>
 
@@ -985,7 +999,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                 <span style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', background: '#dcfce7', padding: '2px 6px', borderRadius: 999 }}>Open Now</span>
               </div>
               <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-                <Clock size={12} /> 8:00 AM — 10:00 PM <span style={{ fontSize: 11, color: '#94a3b8' }}>· Mon - Sun</span>
+                <Clock size={12} /> 8:00 AM — 11:00 PM <span style={{ fontSize: 11, color: '#94a3b8' }}>· Mon - Sun (All 3 Levels)</span>
               </div>
             </div>
             <ChevronRight size={16} color="#2563eb" />
@@ -1004,7 +1018,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                 </div>
                 <div>
                   <div style={{ fontWeight: 700, color: '#0f172a' }}>Research Paper Workshop</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>20 Sep 2025 · Central Library</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8' }}>20 Sep 2025 · Central Library Level 3</div>
                 </div>
               </div>
 
@@ -1014,7 +1028,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                 </div>
                 <div>
                   <div style={{ fontWeight: 700, color: '#0f172a' }}>New Arrivals: Computer Science</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>24 new books added this week</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8' }}>24 new books added to Level 2</div>
                 </div>
               </div>
 
@@ -1024,7 +1038,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                 </div>
                 <div>
                   <div style={{ fontWeight: 700, color: '#0f172a' }}>Extended Library Hours</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>Open until 10:00 PM during exams</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8' }}>All 3 levels open until 11:00 PM daily</div>
                 </div>
               </div>
             </div>
@@ -1177,9 +1191,25 @@ export default function Dashboard({ onNavigate = () => {} }) {
             <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>
               Reading Progress
             </h2>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: 6 }}>
-              This Semester ▾
-            </span>
+            <select
+              value={progressPeriod}
+              onChange={e => { playClick(); setProgressPeriod(e.target.value); }}
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: '#475569',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                padding: '4px 8px',
+                borderRadius: 6,
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
+              <option value="semester">This Semester</option>
+              <option value="year">Full Academic Year</option>
+              <option value="monthly">This Month</option>
+            </select>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -1187,34 +1217,64 @@ export default function Dashboard({ onNavigate = () => {} }) {
             <div style={{ position: 'relative', width: 90, height: 90, flexShrink: 0 }}>
               <svg width="90" height="90" viewBox="0 0 36 36">
                 <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f1f5f9" strokeWidth="4" />
-                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" strokeWidth="4" strokeDasharray="60, 100" />
+                <path 
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                  fill="none" 
+                  stroke="#10b981" 
+                  strokeWidth="4" 
+                  strokeDasharray={`${progressPeriod === 'year' ? '70, 100' : progressPeriod === 'monthly' ? '80, 100' : '60, 100'}`} 
+                  strokeLinecap="round"
+                />
               </svg>
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                <span style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>12</span>
-                <span style={{ fontSize: 9, color: '#64748b', marginTop: 2 }}>of 20 goal</span>
+                <span style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>
+                  {progressPeriod === 'year' ? '24' : progressPeriod === 'monthly' ? '4' : '12'}
+                </span>
+                <span style={{ fontSize: 9, color: '#64748b', marginTop: 2 }}>
+                  of {progressPeriod === 'year' ? '35' : progressPeriod === 'monthly' ? '5' : '20'} goal
+                </span>
               </div>
             </div>
 
-            {/* Monthly mini bars */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: 70, paddingBottom: 16, borderBottom: '1px solid #f1f5f9', gap: 6 }}>
+            {/* Monthly mini bars with explicit track height */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: 75, paddingBottom: 8, borderBottom: '1px solid #f1f5f9', gap: 6 }}>
               {[
-                { m: 'Jul', val: 35 },
-                { m: 'Aug', val: 55 },
-                { m: 'Sep', val: 75 },
-                { m: 'Oct', val: 45 },
-                { m: 'Nov', val: 60 },
-                { m: 'Dec', val: 40 },
+                { m: 'Jul', books: 2, heightPx: 20 },
+                { m: 'Aug', books: 3, heightPx: 32 },
+                { m: 'Sep', books: 4, heightPx: 48, active: true },
+                { m: 'Oct', books: 2, heightPx: 24 },
+                { m: 'Nov', books: 3, heightPx: 36 },
+                { m: 'Dec', books: 2, heightPx: 22 },
               ].map(b => (
-                <div key={b.m} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  <div style={{ width: 10, height: `${b.val}%`, background: '#3b82f6', borderRadius: '3px 3px 0 0' }} />
-                  <span style={{ fontSize: 9.5, color: '#94a3b8' }}>{b.m}</span>
+                <div key={b.m} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', gap: 6 }}>
+                  <div 
+                    title={`${b.m}: ${b.books} books read`}
+                    style={{ 
+                      width: 12, 
+                      height: `${b.heightPx}px`, 
+                      background: b.active ? '#10b981' : '#3b82f6', 
+                      borderRadius: '4px 4px 0 0',
+                      boxShadow: b.active ? '0 2px 6px rgba(16, 185, 129, 0.35)' : 'none',
+                      transition: 'all 200ms'
+                    }} 
+                  />
+                  <span style={{ fontSize: 10, fontWeight: b.active ? 800 : 500, color: b.active ? '#0f172a' : '#94a3b8' }}>
+                    {b.m}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
           <div style={{ marginTop: 14, fontSize: 12, color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, background: '#f0fdf4', padding: '8px 12px', borderRadius: 8 }}>
-            <Target size={14} /> You're 8 books away from your goal!
+            <Target size={14} /> 
+            <span>
+              {progressPeriod === 'year' 
+                ? "You're 11 books away from your annual goal!" 
+                : progressPeriod === 'monthly'
+                ? "Only 1 book remaining for this month's target!"
+                : "You're 8 books away from your semester goal!"}
+            </span>
           </div>
         </div>
 

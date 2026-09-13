@@ -63,6 +63,7 @@ export default function Scanner({ onNavigate = () => {} }) {
   const [bookCondition, setBookCondition] = useState('Good');
   const [isCompleted, setIsCompleted] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [scannerTarget, setScannerTarget] = useState('student');
   const scannerRef = useRef(null);
 
   const startCamera = async () => {
@@ -290,6 +291,58 @@ export default function Scanner({ onNavigate = () => {} }) {
             flexDirection: 'column',
             gap: 14
           }}>
+            {/* Viewfinder Target Switcher (Student ID Card vs Book Barcode) */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>Sensor Viewfinder</span>
+                <span style={{
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  color: scannerTarget === 'student' ? '#1d4ed8' : '#059669',
+                  background: scannerTarget === 'student' ? '#eff6ff' : '#ecfdf5',
+                  padding: '2px 8px',
+                  borderRadius: 999
+                }}>
+                  {scannerTarget === 'student' ? 'Aligning Student ID' : 'Aligning Book Barcode'}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', background: '#f1f5f9', padding: 2, borderRadius: 8, gap: 2 }}>
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setScannerTarget('student'); }}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: scannerTarget === 'student' ? '#0f172a' : 'transparent',
+                    color: scannerTarget === 'student' ? '#ffffff' : '#64748b',
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  💳 Student ID
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setScannerTarget('book'); }}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: scannerTarget === 'book' ? '#0f172a' : 'transparent',
+                    color: scannerTarget === 'book' ? '#ffffff' : '#64748b',
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  📖 Book Barcode
+                </button>
+              </div>
+            </div>
+
             <div style={{
               position: 'relative',
               width: '100%',
@@ -306,78 +359,219 @@ export default function Scanner({ onNavigate = () => {} }) {
 
               {!activeCamera && (
                 <>
-                  {/* Book / Card Graphic */}
-                  <div style={{
-                    position: 'relative',
-                    width: 200,
-                    height: 230,
-                    borderRadius: 10,
-                    background: 'linear-gradient(135deg, #0a1128 0%, #1c2e4a 100%)',
-                    boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    padding: 14,
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#ffffff' }}>SRM IST Central Library</div>
-                    <div style={{ fontSize: 9.5, color: '#94a3b8', marginTop: 2 }}>Physical Barcode & QR Sensor</div>
+                  {scannerTarget === 'student' ? (
+                    <>
+                      {/* Authentic SRM IST Student Smart Card */}
+                      <div style={{
+                        position: 'relative',
+                        width: 260,
+                        height: 155,
+                        borderRadius: 12,
+                        background: 'linear-gradient(135deg, #09152e 0%, #1e3a8a 100%)',
+                        boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
+                        border: '1.5px solid rgba(56, 189, 248, 0.4)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        overflow: 'hidden'
+                      }}>
+                        {/* Watermark Logo Tint */}
+                        <div style={{
+                          position: 'absolute',
+                          right: -10,
+                          top: -10,
+                          width: 80,
+                          height: 80,
+                          borderRadius: '50%',
+                          background: 'radial-gradient(circle, rgba(56,189,248,0.15) 0%, transparent 70%)',
+                          pointerEvents: 'none'
+                        }} />
 
-                    {/* QR Code Graphic */}
-                    <div style={{
-                      marginTop: 18,
-                      padding: 8,
-                      background: '#ffffff',
-                      borderRadius: 8,
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-                    }}>
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=SRM-LIB-9780132350884`}
-                        alt="QR Code"
-                        style={{ width: 85, height: 85, display: 'block' }}
-                      />
-                      <div style={{ fontSize: 8, fontWeight: 700, color: '#0f172a', marginTop: 3 }}>
-                        BK002 · CLEAN CODE
+                        {/* Card Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: 6 }}>
+                          <div>
+                            <div style={{ fontSize: 9, fontWeight: 800, color: '#38bdf8', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                              SRM Institute of Science & Tech
+                            </div>
+                            <div style={{ fontSize: 7.5, color: '#94a3b8', marginTop: 1 }}>
+                              Central Library · Student Smart Pass
+                            </div>
+                          </div>
+                          <div style={{
+                            width: 18,
+                            height: 14,
+                            borderRadius: 3,
+                            background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)',
+                            border: '1px solid #fef08a',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <div style={{ width: 10, height: 8, border: '0.5px solid #78350f', borderRadius: 1 }} />
+                          </div>
+                        </div>
+
+                        {/* Student Info Body */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                          <img
+                            src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80"
+                            alt="Student"
+                            style={{
+                              width: 42,
+                              height: 42,
+                              borderRadius: 6,
+                              objectFit: 'cover',
+                              border: '1.5px solid rgba(255,255,255,0.3)',
+                              flexShrink: 0
+                            }}
+                          />
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: '#ffffff', lineHeight: 1.1 }}>
+                              {selectedStudent?.name || 'Sautrik Roy'}
+                            </div>
+                            <div style={{ fontSize: 10, color: '#38bdf8', fontFamily: 'monospace', fontWeight: 700, marginTop: 2 }}>
+                              {selectedStudent?.reg || 'RA2511003010052'}
+                            </div>
+                            <div style={{ fontSize: 9, color: '#cbd5e1', marginTop: 1 }}>
+                              {selectedStudent?.dept || 'CSE'} · Year {selectedStudent?.year || '2'} · SRM KTR
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Barcode Strip */}
+                        <div style={{ background: 'rgba(255,255,255,0.95)', padding: '2px 8px', borderRadius: 4, marginTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, height: 12, width: '90%' }}>
+                            {[2,1,3,1,1,2,3,1,2,1,1,3,2,1,2,1,3,1,1,2,3,1,2,1,1,2].map((w, i) => (
+                              <div key={i} style={{ width: w, height: '100%', background: '#0f172a' }} />
+                            ))}
+                          </div>
+                          <div style={{ fontSize: 7, fontFamily: 'monospace', color: '#0f172a', fontWeight: 800, letterSpacing: 0.8 }}>
+                            *{selectedStudent?.reg || 'RA2511003010052'}*
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Corner Reticle Brackets */}
-                  <div style={{
-                    position: 'absolute',
-                    width: 230,
-                    height: 230,
-                    border: '2px solid rgba(255, 255, 255, 0.85)',
-                    borderRadius: 14,
-                    pointerEvents: 'none',
-                    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.45)'
-                  }}>
-                    {/* Glowing Laser Scan Bar */}
-                    <div style={{
-                      position: 'absolute',
-                      top: '48%',
-                      left: 0,
-                      width: '100%',
-                      height: 2,
-                      background: 'linear-gradient(90deg, transparent 0%, #38bdf8 50%, transparent 100%)',
-                      boxShadow: '0 0 10px #38bdf8'
-                    }} />
-                  </div>
+                      {/* Corner Reticle Brackets for Card */}
+                      <div style={{
+                        position: 'absolute',
+                        width: 290,
+                        height: 185,
+                        border: '2px solid rgba(56, 189, 248, 0.85)',
+                        borderRadius: 14,
+                        pointerEvents: 'none',
+                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.45)'
+                      }}>
+                        {/* Animated Laser Beam */}
+                        <motion.div
+                          animate={{ top: ['8%', '86%', '8%'] }}
+                          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            width: '100%',
+                            height: 2,
+                            background: 'linear-gradient(90deg, transparent 0%, #38bdf8 50%, transparent 100%)',
+                            boxShadow: '0 0 12px #38bdf8'
+                          }}
+                        />
+                      </div>
 
-                  <div style={{
-                    position: 'absolute',
-                    bottom: 12,
-                    padding: '5px 12px',
-                    borderRadius: 16,
-                    background: 'rgba(15, 23, 42, 0.75)',
-                    backdropFilter: 'blur(6px)',
-                    color: '#ffffff',
-                    fontSize: 11.5,
-                    fontWeight: 600
-                  }}>
-                    Align Student ID Card or Book Barcode in Viewfinder
-                  </div>
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 12,
+                        padding: '5px 14px',
+                        borderRadius: 16,
+                        background: 'rgba(15, 23, 42, 0.85)',
+                        backdropFilter: 'blur(6px)',
+                        color: '#ffffff',
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.1)'
+                      }}>
+                        Align Student ID Card in Viewfinder
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Book Barcode Graphic */}
+                      <div style={{
+                        position: 'relative',
+                        width: 200,
+                        height: 210,
+                        borderRadius: 10,
+                        background: 'linear-gradient(135deg, #0a1128 0%, #1c2e4a 100%)',
+                        boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        padding: 14,
+                        textAlign: 'center'
+                      }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: '#ffffff' }}>SRM IST Central Library</div>
+                        <div style={{ fontSize: 9.5, color: '#94a3b8', marginTop: 2 }}>Physical Barcode & QR Sensor</div>
+
+                        {/* QR Code Graphic */}
+                        <div style={{
+                          marginTop: 14,
+                          padding: 8,
+                          background: '#ffffff',
+                          borderRadius: 8,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                        }}>
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=SRM-LIB-9780132350884`}
+                            alt="QR Code"
+                            style={{ width: 80, height: 80, display: 'block' }}
+                          />
+                          <div style={{ fontSize: 8, fontWeight: 700, color: '#0f172a', marginTop: 3 }}>
+                            {selectedBook?.id || 'BK002'} · {selectedBook?.title || 'CLEAN CODE'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Corner Reticle Brackets for Book */}
+                      <div style={{
+                        position: 'absolute',
+                        width: 230,
+                        height: 230,
+                        border: '2px solid rgba(255, 255, 255, 0.85)',
+                        borderRadius: 14,
+                        pointerEvents: 'none',
+                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.45)'
+                      }}>
+                        {/* Animated Laser Beam */}
+                        <motion.div
+                          animate={{ top: ['10%', '88%', '10%'] }}
+                          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            width: '100%',
+                            height: 2,
+                            background: 'linear-gradient(90deg, transparent 0%, #38bdf8 50%, transparent 100%)',
+                            boxShadow: '0 0 10px #38bdf8'
+                          }}
+                        />
+                      </div>
+
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 12,
+                        padding: '5px 14px',
+                        borderRadius: 16,
+                        background: 'rgba(15, 23, 42, 0.85)',
+                        backdropFilter: 'blur(6px)',
+                        color: '#ffffff',
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.1)'
+                      }}>
+                        Align Book Barcode in Viewfinder
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -435,28 +629,40 @@ export default function Scanner({ onNavigate = () => {} }) {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 <button
                   type="button"
-                  onClick={() => handleScannedCode('RA2511003010052')}
+                  onClick={() => {
+                    setScannerTarget('student');
+                    handleScannedCode('RA2511003010052');
+                  }}
                   style={{ padding: '4px 10px', borderRadius: 6, background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: 11, fontWeight: 700, color: '#1d4ed8', cursor: 'pointer' }}
                 >
                   💳 Sautrik Roy (ID Card)
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleScannedCode('Atomic Habits')}
+                  onClick={() => {
+                    setScannerTarget('book');
+                    handleScannedCode('Atomic Habits');
+                  }}
                   style={{ padding: '4px 10px', borderRadius: 6, background: '#f8fafc', border: '1px solid #cbd5e1', fontSize: 11, fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}
                 >
                   ⚡ Atomic Habits
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleScannedCode('BK002')}
+                  onClick={() => {
+                    setScannerTarget('book');
+                    handleScannedCode('BK002');
+                  }}
                   style={{ padding: '4px 10px', borderRadius: 6, background: '#f8fafc', border: '1px solid #cbd5e1', fontSize: 11, fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}
                 >
                   ⚡ Clean Code
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleScannedCode('BK006')}
+                  onClick={() => {
+                    setScannerTarget('book');
+                    handleScannedCode('BK006');
+                  }}
                   style={{ padding: '4px 10px', borderRadius: 6, background: '#f8fafc', border: '1px solid #cbd5e1', fontSize: 11, fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}
                 >
                   ⚡ OS Concepts

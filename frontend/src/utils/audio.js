@@ -1,6 +1,10 @@
 // Web Audio API synthesizer — zero external audio files
 let _audioCtx = null;
-let _soundEnabled = localStorage.getItem('librax_sfx_enabled') !== 'false';
+let _soundLevel = parseInt(localStorage.getItem('librax_sound_level') ?? '2', 10);
+if (isNaN(_soundLevel) || _soundLevel < 0 || _soundLevel > 2) {
+  _soundLevel = localStorage.getItem('librax_sfx_enabled') === 'false' ? 0 : 2;
+}
+let _soundEnabled = _soundLevel > 0;
 
 function getCtx() {
   if (!_audioCtx) {
@@ -16,24 +20,41 @@ function getCtx() {
 }
 
 export function isSoundEnabled() {
-  return _soundEnabled;
+  return _soundLevel > 0;
 }
 
-export function setSoundEnabled(enabled) {
-  _soundEnabled = !!enabled;
+export function getSoundLevel() {
+  return _soundLevel; // 0 = Off, 1 = Soft, 2 = Normal
+}
+
+export function setSoundLevel(level) {
+  _soundLevel = Math.max(0, Math.min(2, parseInt(level, 10) || 0));
+  _soundEnabled = _soundLevel > 0;
+  localStorage.setItem('librax_sound_level', _soundLevel.toString());
   localStorage.setItem('librax_sfx_enabled', _soundEnabled ? 'true' : 'false');
   if (_soundEnabled) {
     playClick();
   }
+  return _soundLevel;
+}
+
+export function setSoundEnabled(enabled) {
+  return setSoundLevel(enabled ? 2 : 0);
 }
 
 export function toggleSound() {
-  setSoundEnabled(!_soundEnabled);
-  return _soundEnabled;
+  // Cycle between 0 (Muted) and 2 (Normal), or 0 -> 1 -> 2
+  const nextLevel = _soundLevel === 0 ? 2 : 0;
+  return setSoundLevel(nextLevel);
+}
+
+export function cycleSoundLevel() {
+  const next = (_soundLevel + 1) % 3;
+  return setSoundLevel(next);
 }
 
 function playTone(freq, duration, type = 'sine', gainVal = 0.25) {
-  if (!_soundEnabled) return;
+  if (_soundLevel === 0) return;
   try {
     const ctx = getCtx();
     if (!ctx) return;
@@ -43,7 +64,10 @@ function playTone(freq, duration, type = 'sine', gainVal = 0.25) {
     gain.connect(ctx.destination);
     osc.type = type;
     osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+    // Scale gain by sound level (Level 1: 50% volume, Level 2: 100% volume)
+    const multiplier = _soundLevel === 1 ? 0.45 : 1.0;
+    const scaledGain = gainVal * multiplier;
+    gain.gain.setValueAtTime(scaledGain, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + duration);

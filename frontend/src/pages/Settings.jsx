@@ -12,13 +12,16 @@ import {
   Moon, 
   Laptop, 
   Send,
-  ShieldCheck
+  ShieldCheck,
+  Volume2,
+  Volume1,
+  VolumeX
 } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import { useAuth } from '../context/AuthContext';
 import { useLibrary } from '../context/LibraryContext';
 import { toast } from '../context/ToastContext';
-import { playClick, playSuccessChime } from '../utils/audio';
+import { playClick, playSuccessChime, getSoundLevel, setSoundLevel } from '../utils/audio';
 
 export default function Settings({ onNavigate = () => {}, initialTab = 'profile' }) {
   const { user } = useAuth();
@@ -52,6 +55,7 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
 
   const [readingGoal, setReadingGoal] = useState(15);
   const [defaultView, setDefaultView] = useState('grid');
+  const [soundLevel, setSoundLevelState] = useState(() => getSoundLevel());
   const [newCatInput, setNewCatInput] = useState('');
   const [showAddCat, setShowAddCat] = useState(false);
 
@@ -585,6 +589,55 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
                     >
                       <Icon size={14} />
                       {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Audio Effects & Volume (3 Levels) */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 8 }}>
+                Library Audio & Effects (3 Volume Levels)
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                {[
+                  { level: 0, label: 'Off / Muted', desc: 'Zero sound', icon: VolumeX, color: '#ef4444' },
+                  { level: 1, label: 'Soft Ambient', desc: 'Subtle clicks (50%)', icon: Volume1, color: '#0284c7' },
+                  { level: 2, label: 'Normal / Full', desc: 'Full audio chimes', icon: Volume2, color: '#10b981' }
+                ].map(lvl => {
+                  const active = soundLevel === lvl.level;
+                  const Icon = lvl.icon;
+                  return (
+                    <button
+                      key={lvl.level}
+                      type="button"
+                      onClick={() => {
+                        setSoundLevel(lvl.level);
+                        setSoundLevelState(lvl.level);
+                        if (lvl.level === 0) toast.info('Audio muted (Level 0: Off) 🔇');
+                        else if (lvl.level === 1) toast.info('Audio set to Soft / Ambient (Level 1) 🔉');
+                        else toast.success('Audio set to Normal / Full (Level 2) 🔊');
+                      }}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 5,
+                        padding: '12px 10px',
+                        borderRadius: 10,
+                        border: active ? '2px solid #0f172a' : '1px solid #e2e8f0',
+                        background: active ? '#f8fafc' : '#ffffff',
+                        color: active ? '#0f172a' : '#64748b',
+                        cursor: 'pointer',
+                        transition: 'all 120ms',
+                        textAlign: 'center'
+                      }}
+                    >
+                      <Icon size={18} color={lvl.color} />
+                      <span style={{ fontSize: 12, fontWeight: 700 }}>{lvl.label}</span>
+                      <span style={{ fontSize: 10, color: '#94a3b8' }}>{lvl.desc}</span>
                     </button>
                   );
                 })}

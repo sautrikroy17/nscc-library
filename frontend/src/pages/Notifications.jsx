@@ -506,7 +506,7 @@ export default function Notifications({ onNavigate = () => {} }) {
               </div>
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
                 <div style={{ fontWeight: 700, color: '#0f172a' }}>Extended Hours for Exams</div>
-                <div style={{ color: '#64748b', fontSize: 11.5, marginTop: 2 }}>Open until 10:00 PM IST daily</div>
+                <div style={{ color: '#64748b', fontSize: 11.5, marginTop: 2 }}>All 3 levels open until 11:00 PM IST daily</div>
               </div>
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
                 <div style={{ fontWeight: 700, color: '#0f172a' }}>IEEE & Springer Journal Access</div>

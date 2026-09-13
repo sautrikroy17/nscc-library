@@ -2015,11 +2015,11 @@ export default function Catalog({
         </div>
       </div>
 
-      {/* ── Main Catalog Layout: 4-Column Book Cards (Left 75%) + Filters Sidebar (Right 25%) ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 24, alignItems: 'start' }}>
+      {/* ── Main Catalog Layout: Responsive Book Grid + Filters Sidebar ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 260px', gap: 20, alignItems: 'start' }}>
         
         {/* Left Book Grid & Pagination */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
           
           {paginatedBooks.length === 0 ? (
             <div style={{
@@ -2055,7 +2055,7 @@ export default function Catalog({
           ) : (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: viewMode === 'grid' ? 'repeat(4, 1fr)' : '1fr',
+              gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(200px, 1fr))' : '1fr',
               gap: 16
             }}>
               {paginatedBooks.map(book => {
@@ -2075,8 +2075,10 @@ export default function Catalog({
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                       position: 'relative',
+                      minWidth: 0,
+                      boxSizing: 'border-box',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                       transition: 'transform 120ms, box-shadow 120ms'
                     }}
                     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.06)'; }}
@@ -2380,6 +2382,10 @@ export default function Catalog({
 
         {/* ── Right Filter Sidebar matching Screenshot 2 ── */}
         <div style={{
+          width: 260,
+          minWidth: 260,
+          flexShrink: 0,
+          boxSizing: 'border-box',
           background: '#ffffff',
           border: '1px solid #e2e8f0',
           borderRadius: 14,

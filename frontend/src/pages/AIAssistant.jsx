@@ -17,7 +17,8 @@ import {
   Smile,
   Zap,
   Coffee,
-  Compass
+  Compass,
+  Trash2
 } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import BookCover from '../components/BookCover';
@@ -33,6 +34,243 @@ const MOODS = [
   { id: 'placement', emoji: '🚀', label: 'Career & Placement Hustle', query: 'I want to crack tech placements! Give me the best system design and DSA books.' },
   { id: 'geek', emoji: '🧠', label: 'Hardcore Tech Geek', query: 'I want hardcore deep tech: low-level kernels, compilers, and distributed architectures.' }
 ];
+
+function renderInlineFormatting(str) {
+  if (!str) return '';
+  const parts = str.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} style={{ color: '#0f172a', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return <em key={i} style={{ fontStyle: 'italic', color: '#475569' }}>{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+}
+
+function FormattedAIMessage({ text }) {
+  if (!text) return null;
+
+  // Pre-normalize squashed lines from LLM
+  const normalized = text
+    .replace(/(\S)\s*###\s*/g, '$1\n\n### ')
+    .replace(/(\S)\s*\*\s*\*\*\[/g, '$1\n\n* **[')
+    .replace(/\*\s*\*\*Availability:\*\*/gi, '\n  • **Availability:**')
+    .replace(/\*\s*\*\*Location:\*\*/gi, '\n  • **Location:**')
+    .replace(/\*\s*\*Lyra's Note:\*/gi, '\n  💡 *Lyra\'s Note:*')
+    .replace(/\*\s*\*Status:\*/gi, '\n  ⚠️ *Status:*');
+
+  const lines = normalized.split('\n');
+  const elements = [];
+  let currentList = [];
+
+  const flushList = () => {
+    if (currentList.length > 0) {
+      elements.push(
+        <div key={`list-${elements.length}`} style={{ display: 'flex', flexDirection: 'column', gap: 6, margin: '6px 0 10px 0' }}>
+          {currentList}
+        </div>
+      );
+      currentList = [];
+    }
+  };
+
+  lines.forEach((line, idx) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushList();
+      return;
+    }
+
+    // Section Header: ### Category
+    if (trimmed.startsWith('###') || trimmed.startsWith('##')) {
+      flushList();
+      const headingText = trimmed.replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/📁/g, '').trim();
+      elements.push(
+        <div 
+          key={`header-${idx}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            margin: '18px 0 10px 0',
+            padding: '8px 14px',
+            background: 'linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%)',
+            border: '1px solid #bae6fd',
+            borderRadius: 8,
+            color: '#0369a1',
+            fontWeight: 800,
+            fontSize: 13.5
+          }}
+        >
+          <BookOpen size={15} color="#0284c7" />
+          <span>{headingText}</span>
+        </div>
+      );
+      return;
+    }
+
+    // Book Entry: * **[BK001] "Title"** by Author
+    const bookMatch = trimmed.match(/^[\*•-]?\s*\*\*\[?(BK\d{3})\]?\s*["“]?([^"”*]+)["”]?\*\*(?:\s*by\s*([^*]+))?/i);
+    if (bookMatch) {
+      flushList();
+      const [, bookId, bookTitle, author] = bookMatch;
+      elements.push(
+        <div
+          key={`book-${idx}`}
+          style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 10,
+            padding: '10px 14px',
+            margin: '8px 0 4px 0',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 8
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{
+              background: '#ede9fe',
+              color: '#6d28d9',
+              padding: '3px 8px',
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 800,
+              fontFamily: 'monospace'
+            }}>
+              {bookId}
+            </span>
+            <div>
+              <strong style={{ color: '#0f172a', fontSize: 13.5 }}>{bookTitle.trim()}</strong>
+              {author && <span style={{ color: '#64748b', fontSize: 12 }}> by {author.trim()}</span>}
+            </div>
+          </div>
+        </div>
+      );
+      return;
+    }
+
+    // Availability / Location Sub-bullets
+    if (trimmed.includes('Availability:') || trimmed.includes('Location:')) {
+      const isAvail = trimmed.includes('Availability:');
+      const textAfter = trimmed.replace(/^[\*•-]?\s*\*\*(?:Availability|Location):\*\*/i, '').trim();
+      const isZero = textAfter.startsWith('0/') || textAfter.toLowerCase().includes('all on loan');
+      
+      currentList.push(
+        <div key={`sub-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, paddingLeft: 12 }}>
+          {isAvail ? (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '2px 8px',
+              borderRadius: 6,
+              background: isZero ? '#fef2f2' : '#ecfdf5',
+              color: isZero ? '#dc2626' : '#059669',
+              fontWeight: 700,
+              fontSize: 11.5
+            }}>
+              {isZero ? '✕' : '✓'} {textAfter}
+            </span>
+          ) : (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '2px 8px',
+              borderRadius: 6,
+              background: '#f1f5f9',
+              color: '#475569',
+              fontSize: 11.5,
+              fontWeight: 600
+            }}>
+              📍 {textAfter}
+            </span>
+          )}
+        </div>
+      );
+      return;
+    }
+
+    // Lyra's Note callout
+    if (trimmed.includes("Lyra's Note:") || trimmed.includes("💡")) {
+      flushList();
+      const noteContent = trimmed.replace(/^[\*•-]?\s*(?:💡\s*)?(?:\*Lyra's Note:\*|Lyra's Note:)\s*/i, '').replace(/\*+/g, '').trim();
+      elements.push(
+        <div 
+          key={`note-${idx}`}
+          style={{
+            margin: '4px 0 10px 12px',
+            padding: '8px 12px',
+            background: '#faf5ff',
+            borderLeft: '3px solid #a855f7',
+            borderRadius: '0 8px 8px 0',
+            fontSize: 12.5,
+            color: '#581c87',
+            fontStyle: 'italic',
+            lineHeight: 1.5
+          }}
+        >
+          <span style={{ fontStyle: 'normal', marginRight: 6 }}>💡</span>
+          <span>{noteContent}</span>
+        </div>
+      );
+      return;
+    }
+
+    // Status warning callout
+    if (trimmed.includes("Status:") || trimmed.includes("⚠️")) {
+      flushList();
+      const statusContent = trimmed.replace(/^[\*•-]?\s*(?:⚠️\s*)?(?:\*Status:\*|Status:)\s*/i, '').replace(/\*+/g, '').trim();
+      elements.push(
+        <div 
+          key={`status-${idx}`}
+          style={{
+            margin: '4px 0 10px 12px',
+            padding: '8px 12px',
+            background: '#fffbeb',
+            borderLeft: '3px solid #f59e0b',
+            borderRadius: '0 8px 8px 0',
+            fontSize: 12,
+            color: '#92400e',
+            fontWeight: 600
+          }}
+        >
+          <span>⚠️ {statusContent}</span>
+        </div>
+      );
+      return;
+    }
+
+    // Generic bullet point
+    if (trimmed.startsWith('*') || trimmed.startsWith('•') || trimmed.startsWith('-')) {
+      const bulletContent = trimmed.replace(/^[\*•-]\s*/, '');
+      currentList.push(
+        <div key={`bullet-${idx}`} style={{ display: 'flex', alignItems: 'start', gap: 8, fontSize: 13, color: '#334155', lineHeight: 1.5, paddingLeft: 6 }}>
+          <span style={{ color: '#8b5cf6', marginTop: 3 }}>•</span>
+          <span>{renderInlineFormatting(bulletContent)}</span>
+        </div>
+      );
+      return;
+    }
+
+    // Normal paragraph text
+    flushList();
+    elements.push(
+      <p key={`p-${idx}`} style={{ margin: '6px 0', fontSize: 13.5, color: '#1e293b', lineHeight: 1.6 }}>
+        {renderInlineFormatting(trimmed)}
+      </p>
+    );
+  });
+
+  flushList();
+  return <div style={{ display: 'flex', flexDirection: 'column' }}>{elements}</div>;
+}
 
 export default function AIAssistant({ onNavigate = () => {} }) {
   const [messages, setMessages] = useState([
@@ -180,6 +418,20 @@ export default function AIAssistant({ onNavigate = () => {} }) {
     }
   };
 
+  const handleDeleteChat = () => {
+    playClick();
+    setMessages([
+      {
+        id: `ai_welcome_${Date.now()}`,
+        sender: 'ai',
+        text: "Hello! I'm Lyra, your campus library AI companion. Previous chat messages have been cleared. How can I assist your reading or studies today? ✨",
+        books: []
+      }
+    ]);
+    setActiveMood(null);
+    toast.success('Chat history cleared');
+  };
+
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* ── Top Bar with BackButton & Header ── */}
@@ -215,21 +467,48 @@ export default function AIAssistant({ onNavigate = () => {} }) {
           </div>
         </div>
 
-        {/* Powered by AI Badge */}
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '6px 14px',
-          borderRadius: 20,
-          background: '#f5f3ff',
-          border: '1px solid #ddd6fe',
-          color: '#7c3aed',
-          fontSize: 12.5,
-          fontWeight: 700
-        }}>
-          <Sparkles size={14} />
-          <span>Powered by Lyra AI</span>
+        {/* Top Right Action Badges */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            onClick={handleDeleteChat}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 14px',
+              borderRadius: 20,
+              background: '#ffffff',
+              border: '1px solid #fee2e2',
+              color: '#ef4444',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 120ms'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; }}
+            title="Clear all chat history"
+          >
+            <Trash2 size={13} />
+            <span>Delete Chat</span>
+          </button>
+
+          {/* Powered by AI Badge */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 14px',
+            borderRadius: 20,
+            background: '#f5f3ff',
+            border: '1px solid #ddd6fe',
+            color: '#7c3aed',
+            fontSize: 12.5,
+            fontWeight: 700
+          }}>
+            <Sparkles size={14} />
+            <span>Powered by Lyra AI</span>
+          </div>
         </div>
       </div>
 
@@ -342,7 +621,7 @@ export default function AIAssistant({ onNavigate = () => {} }) {
                 </div>
 
                 <div style={{ fontSize: 13.5, color: '#1e293b', lineHeight: 1.6, marginBottom: 12 }}>
-                  {msg.text}
+                  <FormattedAIMessage text={msg.text} />
                 </div>
 
                 {/* Recommended Books List */}

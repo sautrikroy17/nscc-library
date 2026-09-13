@@ -3,17 +3,19 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { 
   Volume2, 
   VolumeX, 
+  Volume1,
   Clock, 
   Search, 
   Bell,
-  BookOpen,
-  X,
-  QrCode,
-  Sun,
-  Moon
+  BookOpen, 
+  X, 
+  QrCode, 
+  Sun, 
+  Moon 
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 import { useLibrary } from './context/LibraryContext';
+import { toast } from './context/ToastContext';
 import { stats as statsApi } from './api';
 import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
@@ -27,7 +29,7 @@ import StudyRoom from './pages/StudyRoom';
 import History from './pages/History';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
-import { isSoundEnabled, toggleSound, playClick } from './utils/audio';
+import { isSoundEnabled, getSoundLevel, cycleSoundLevel, toggleSound, playClick } from './utils/audio';
 
 function PageWrapper({ children }) {
   return (
@@ -85,7 +87,7 @@ export default function App() {
   const { theme, toggleTheme } = useLibrary();
   const [activePage, setActivePage] = useState('dashboard');
   const [overdueCount, setOverdueCount] = useState(0);
-  const [soundOn, setSoundOn] = useState(isSoundEnabled());
+  const [soundLevel, setSoundLevelState] = useState(getSoundLevel()); // 0 = Off, 1 = Soft, 2 = Normal
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -97,7 +99,7 @@ export default function App() {
       .catch(() => {});
   }, [user]);
 
-  // Handle keyboard shortcuts (CMD+K for catalog search, CMD+D for theme toggle)
+  // Handle keyboard shortcuts (CMD+K for catalog search, CMD+D for theme toggle, CMD+M for sound level)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -108,14 +110,21 @@ export default function App() {
         e.preventDefault();
         toggleTheme();
       }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        handleCycleSound();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleTheme]);
 
-  const handleSoundToggle = () => {
-    const newState = toggleSound();
-    setSoundOn(newState);
+  const handleCycleSound = () => {
+    const next = cycleSoundLevel();
+    setSoundLevelState(next);
+    if (next === 0) toast.info('Audio muted (Level 0: Off) 🔇');
+    else if (next === 1) toast.info('Audio set to Soft / Ambient (Level 1) 🔉');
+    else toast.success('Audio set to Normal / Full (Level 2) 🔊');
   };
 
   if (loading) return <LoadingScreen />;
@@ -313,6 +322,57 @@ export default function App() {
               }}
             >
               {isDark ? <Sun size={17} /> : <Moon size={16} />}
+            </button>
+
+            {/* Sound Volume & Mute Toggle Button (3 Levels: Mute / Soft / Full, ⌘M) */}
+            <button
+              onClick={handleCycleSound}
+              title={`Audio: ${soundLevel === 0 ? 'Muted (Click to switch on)' : soundLevel === 1 ? 'Soft Ambient (Click for Full)' : 'Full Crystal (Click to Mute)'} (⌘M)`}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: isDark ? '#1e293b' : '#f8fafc',
+                border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+                color: soundLevel === 0 ? '#94a3b8' : soundLevel === 1 ? '#38bdf8' : (isDark ? '#34d399' : '#10b981'),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'all 150ms ease-out'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'scale(1.06)';
+                e.currentTarget.style.borderColor = isDark ? '#38bdf8' : '#94a3b8';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.borderColor = isDark ? '#334155' : '#e2e8f0';
+              }}
+            >
+              {soundLevel === 0 ? (
+                <VolumeX size={16} />
+              ) : soundLevel === 1 ? (
+                <Volume1 size={16} />
+              ) : (
+                <Volume2 size={16} />
+              )}
+              {/* Level indicator dot */}
+              <span style={{
+                position: 'absolute',
+                top: 4,
+                right: 4,
+                fontSize: 8.5,
+                fontWeight: 800,
+                lineHeight: 1,
+                padding: '1px 3px',
+                borderRadius: 999,
+                background: soundLevel === 0 ? '#ef4444' : soundLevel === 1 ? '#0284c7' : '#10b981',
+                color: '#ffffff'
+              }}>
+                {soundLevel === 0 ? '0' : soundLevel === 1 ? '1' : '2'}
+              </span>
             </button>
 
             {/* Notification Bell */}

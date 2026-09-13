@@ -122,10 +122,10 @@ export default function LibraryHoursModal({ isOpen, onClose }) {
                 Weekdays (Mon – Fri)
               </div>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
-                8:00 AM – 10:00 PM
+                8:00 AM – 11:00 PM
               </div>
               <div style={{ fontSize: 11, color: '#16a34a', marginTop: 3, fontWeight: 600 }}>
-                Circulation Desk: 8:30 AM – 8:00 PM
+                Circulation Desk: 8:30 AM – 10:00 PM
               </div>
             </div>
 
@@ -134,10 +134,10 @@ export default function LibraryHoursModal({ isOpen, onClose }) {
                 Weekends (Sat & Sun)
               </div>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
-                9:00 AM – 8:00 PM
+                9:00 AM – 11:00 PM
               </div>
               <div style={{ fontSize: 11, color: '#2563eb', marginTop: 3, fontWeight: 600 }}>
-                Reading Stacks & WiFi Fully Active
+                Reading Stacks & WiFi Active till 11 PM
               </div>
             </div>
           </div>
@@ -155,29 +155,28 @@ export default function LibraryHoursModal({ isOpen, onClose }) {
             <Sparkles size={20} color="#d97706" style={{ marginTop: 2, flexShrink: 0 }} />
             <div>
               <div style={{ fontSize: 13.5, fontWeight: 800, color: '#92400e' }}>
-                24/7 Reading Hall During Exam Weeks
+                24/7 Extended Reading Hall During Exams
               </div>
               <div style={{ fontSize: 12, color: '#b45309', marginTop: 2, lineHeight: 1.4 }}>
-                The Ground Floor Air-Conditioned Reading Hall remains open 24 hours daily during SRM Semester Final Examinations with turnstile student ID entry.
+                The Ground Floor Air-Conditioned Reading Hall remains open 24 hours daily during SRM Semester Examinations. All 3 levels operate till 11:00 PM daily.
               </div>
             </div>
           </div>
 
-          {/* Floor Directory */}
+          {/* Floor Directory (3 Levels) */}
           <div>
             <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <MapPin size={15} color="#2563eb" /> Floor Directory & Access
+              <MapPin size={15} color="#2563eb" /> Central Library 3 Levels Directory
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12.5 }}>
               {[
-                { floor: 'Level 1 (Ground)', desc: 'Circulation Counter, Newspaper & Periodicals Lounge, Head Librarian Office (Dr. Rajesh Kumar)' },
-                { floor: 'Level 2', desc: 'Computer Science, IT, Electronics & Mathematics Stacks, Quiet Study Cabins' },
-                { floor: 'Level 3', desc: 'Mechanical, Civil, Biotechnology & Science Disciplines, Academic Bound Journals' },
-                { floor: 'Level 4 (Top)', desc: 'Digital Research Library, IEEE & Springer Terminal Access, Video Conferencing Hall' }
+                { floor: 'Level 1 (Ground Floor)', desc: 'Circulation Desk, Fast QR Kiosks, Periodicals Lounge, Head Librarian Office (Dr. Rajesh Kumar) · Open till 11:00 PM' },
+                { floor: 'Level 2 (First Floor)', desc: 'Computer Science, IT, Electronics, AI & Mathematics Stacks, Quiet Study Pods · Open till 11:00 PM' },
+                { floor: 'Level 3 (Second Floor)', desc: 'Science & Core Engineering Stacks, IEEE Digital Terminals, Silent Research Reading Hall · Open till 11:00 PM' }
               ].map(f => (
-                <div key={f.floor} style={{ display: 'flex', gap: 12, padding: '8px 12px', background: '#f8fafc', borderRadius: 8 }}>
-                  <span style={{ fontWeight: 700, color: '#0f172a', minWidth: 120 }}>{f.floor}</span>
-                  <span style={{ color: '#64748b' }}>{f.desc}</span>
+                <div key={f.floor} style={{ display: 'flex', gap: 12, padding: '10px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <span style={{ fontWeight: 800, color: '#0f172a', minWidth: 155 }}>{f.floor}</span>
+                  <span style={{ color: '#475569' }}>{f.desc}</span>
                 </div>
               ))}
             </div>

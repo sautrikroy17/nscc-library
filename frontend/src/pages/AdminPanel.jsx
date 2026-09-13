@@ -1172,7 +1172,7 @@ function SettingsProfile({ initialSubTab = 'profile' }) {
     phone: isStudent ? '+91 98765 12345' : '+91 98765 43210',
     designation: isStudent ? 'Student' : 'Head Librarian',
     dept: isStudent ? 'Computer Science & Engineering' : 'Central Library',
-    hours: isStudent ? 'N/A' : '08:00 AM - 10:00 PM IST',
+    hours: isStudent ? 'N/A' : '08:00 AM - 11:00 PM IST',
     overdueDigests: true,
     studentAlerts: true,
     inventoryAlerts: true,
