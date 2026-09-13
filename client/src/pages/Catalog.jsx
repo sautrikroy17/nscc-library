@@ -6,170 +6,247 @@ import {
   ArrowLeft, 
   Heart, 
   ChevronDown, 
-  Check,
-  RotateCcw,
-  Clock,
-  Sparkles,
-  Plus
+  Check, 
+  RotateCcw, 
+  Clock, 
+  Sparkles, 
+  Plus,
+  LayoutGrid,
+  List,
+  SlidersHorizontal,
+  Bookmark,
+  MoreVertical,
+  HelpCircle,
+  Calendar,
+  AlertCircle,
+  Lightbulb,
+  ExternalLink,
+  ChevronRight,
+  ShieldCheck,
+  TrendingUp,
+  Tag
 } from 'lucide-react';
-import { books as booksApi, transactions as txApi } from '../api';
+import BackButton from '../components/BackButton';
+import BookCover from '../components/BookCover';
 import { localStore } from '../data/localStore';
+import { INITIAL_BOOKS } from '../data/seedData';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
-import { playClick, playSuccessChime } from '../utils/audio';
-import { INITIAL_BOOKS } from '../data/seedData';
-
-const BOOK_METAS = {
-  'BK002': {
-    rating: '4.8',
-    reviews: '1.2k',
-    isbn: '978-0132350884',
-    publisher: 'Prentice Hall',
-    year: '2008',
-    copies: '3 / 5',
-    tags: ['Programming', 'Software Engineering', 'Best Practices'],
-    desc: 'Even bad code can work. But if code isn\'t clean, it can bring a development organization to its knees. Clean Code provides practical advice on how to write clean, maintainable code, with real-world examples and best practices.'
-  },
-  'BK006': {
-    rating: '4.7',
-    reviews: '980',
-    isbn: '978-1119456339',
-    publisher: 'Wiley',
-    year: '2018',
-    copies: '5 / 5',
-    tags: ['Operating Systems', 'Kernel', 'Computer Science'],
-    desc: 'The tenth edition of Operating System Concepts has been revised to keep it fresh and up-to-date with contemporary examples of how operating systems function.'
-  },
-  'BK007': {
-    rating: '4.6',
-    reviews: '850',
-    isbn: '978-0078022159',
-    publisher: 'McGraw-Hill',
-    year: '2019',
-    copies: '4 / 4',
-    tags: ['Databases', 'SQL', 'System Architecture'],
-    desc: 'Database System Concepts presents the fundamental concepts of database management in an intuitive manner geared toward allowing students to begin working with databases as quickly as possible.'
-  },
-  'BK001': {
-    rating: '4.9',
-    reviews: '2.4k',
-    isbn: '978-0262046305',
-    publisher: 'MIT Press',
-    year: '2022',
-    copies: '1 / 3',
-    tags: ['Algorithms', 'Data Structures', 'Theory'],
-    desc: 'Introduction to Algorithms uniquely combines rigor and comprehensiveness. The book covers a broad range of algorithms in depth, yet makes their design and analysis accessible.'
-  },
-  'BK004': {
-    rating: '4.8',
-    reviews: '1.5k',
-    isbn: '978-0201633610',
-    publisher: 'Addison-Wesley',
-    year: '1994',
-    copies: '2 / 2',
-    tags: ['Design Patterns', 'Architecture', 'OOP'],
-    desc: 'Capturing a wealth of experience about the design of object-oriented software, four top-notch designers present a catalog of simple and succinct solutions to commonly occurring design problems.'
-  },
-  'BK005': {
-    rating: '4.7',
-    reviews: '1.1k',
-    isbn: '978-0132126953',
-    publisher: 'Pearson',
-    year: '2010',
-    copies: '3 / 3',
-    tags: ['Networking', 'Protocols', 'TCP/IP'],
-    desc: 'Computer Networks is the ideal introduction to today\'s and tomorrow\'s networks. This classic bestseller has been thoroughly updated to reflect the newest technologies.'
-  }
-};
+import { playClick, playSuccessChime, playReturnChime } from '../utils/audio';
 
 export default function Catalog({ 
   onNavigate = () => {},
   searchQuery = '',
   onSearchChange = () => {},
-  initialTab = 'all'
+  initialTab = 'all' // 'all' | 'borrowings' | 'wishlist'
 }) {
   const { user } = useAuth();
   const [booksList, setBooksList] = useState([]);
-  const [activeLoans, setActiveLoans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedBook, setSelectedBook] = useState(null);
-  const [activeSubTab, setActiveSubTab] = useState(initialTab === 'history' ? 'history' : 'borrowed');
-  const [detailTab, setDetailTab] = useState('overview');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+  
+  // Category Pill Filter matching Screenshot 2
+  const [categoryPill, setCategoryPill] = useState('All Books');
 
-  // Filters (Panel 4)
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  // Sub-bar dropdown filters
   const [selectedAuthor, setSelectedAuthor] = useState('All');
   const [selectedAvailability, setSelectedAvailability] = useState('All');
   const [selectedSort, setSelectedSort] = useState('Popular');
 
-  // Wishlist state
-  const [wishlist, setWishlist] = useState(['BK004', 'BK008', 'BK009', 'BK012']);
+  // Right sidebar filters
+  const [sideSearch, setSideSearch] = useState('');
+  const [selectedSideCategories, setSelectedSideCategories] = useState([]);
+  const [availabilityRadio, setAvailabilityRadio] = useState('All');
+  const [pubYear, setPubYear] = useState(2025);
+  const [selectedRatings, setSelectedRatings] = useState([]);
 
-  // Borrowings & History state (Panel 8)
+  // Wishlist state matching Screenshot 3 Bottom (5 items default)
+  const [wishlist, setWishlist] = useState(['BK004', 'BK003', 'BK005', 'BK026', 'BK015']);
+
+  // Borrowings state matching Screenshot 3 Top (3 items default)
   const [borrowedItems, setBorrowedItems] = useState([
-    { id: '1', book_id: 'BK002', title: 'Clean Code', issue: '01 Sep 2025', due: '15 Sep 2025', status: 'Due in 2 days', color: '#ef4444', bg: '#fef2f2' },
-    { id: '2', book_id: 'BK006', title: 'Operating System Concepts', issue: '28 Aug 2025', due: '12 Sep 2025', status: 'Due in 5 days', color: '#f59e0b', bg: '#fffbeb' },
-    { id: '3', book_id: 'BK007', title: 'Database System Concepts', issue: '20 Aug 2025', due: '05 Sep 2025', status: 'Due in 12 days', color: '#64748b', bg: '#f8fafc' }
+    {
+      id: 'b1',
+      bookId: 'BK002',
+      title: 'Clean Code',
+      author: 'Robert C. Martin',
+      tags: ['Software Engineering', 'Best Practices'],
+      issue: '01 Sep 2025',
+      due: '15 Sep 2025',
+      dueText: 'Due in 2 days',
+      dueColor: '#ef4444',
+      dueBg: '#fef2f2',
+      cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'b2',
+      bookId: 'BK006',
+      title: 'Operating System Concepts',
+      author: 'Silberschatz, Galvin, Gagne',
+      tags: ['Operating Systems', 'Systems Programming'],
+      issue: '28 Aug 2025',
+      due: '12 Sep 2025',
+      dueText: 'Due in 5 days',
+      dueColor: '#d97706',
+      dueBg: '#fffbeb',
+      cover: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=300&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'b3',
+      bookId: 'BK007',
+      title: 'Database System Concepts',
+      author: 'Silberschatz, Korth, Sudarshan',
+      tags: ['Database', 'Data Management'],
+      issue: '20 Aug 2025',
+      due: '05 Sep 2025',
+      dueText: 'Due in 12 days',
+      dueColor: '#2563eb',
+      dueBg: '#eff6ff',
+      cover: 'https://images.unsplash.com/photo-1507842229452-710892015502?w=300&auto=format&fit=crop&q=80'
+    }
   ]);
 
-  const [historyItems, setHistoryItems] = useState([
-    { id: '4', book_id: 'BK005', title: 'Computer Networks', issue: '10 Aug 2025', returned: '24 Aug 2025', status: 'Returned', color: '#10b981', bg: '#ecfdf5' },
-    { id: '5', book_id: 'BK001', title: 'Introduction to Algorithms', issue: '15 Jul 2025', returned: '29 Jul 2025', status: 'Returned', color: '#10b981', bg: '#ecfdf5' }
-  ]);
+  const [borrowingsTab, setBorrowingsTab] = useState('current'); // 'current' | 'returned' | 'overdue'
+  const [wishlistTab, setWishlistTab] = useState('all'); // 'all' | 'available' | 'unavailable'
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
 
   useEffect(() => {
     try {
-      const localBooks = localStore.listBooks({ limit: 100 });
-      const bList = (localBooks?.books && localBooks.books.length > 0) ? localBooks.books : INITIAL_BOOKS;
-      setBooksList(bList);
-      const localTx = localStore.listTransactions();
-      setActiveLoans(localTx.filter(t => t.status !== 'returned'));
-    } catch (e) {
+      const stored = localStore.listBooks({ limit: 100 });
+      if (stored?.books && stored.books.length > 0) {
+        setBooksList(stored.books);
+      } else {
+        setBooksList(INITIAL_BOOKS);
+      }
+    } catch {
       setBooksList(INITIAL_BOOKS);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const handleBorrow = (book) => {
+  // Filter and sort books
+  const effectiveSearch = (sideSearch || searchQuery || '').trim().toLowerCase();
+
+  const filteredBooks = booksList.filter(book => {
+    // Search query match
+    if (effectiveSearch) {
+      const matches = 
+        book.title.toLowerCase().includes(effectiveSearch) ||
+        book.author.toLowerCase().includes(effectiveSearch) ||
+        (book.isbn && book.isbn.toLowerCase().includes(effectiveSearch)) ||
+        (book.category && book.category.toLowerCase().includes(effectiveSearch));
+      if (!matches) return false;
+    }
+
+    // Category Pill match (Screenshot 2 pills)
+    if (categoryPill !== 'All Books') {
+      if (book.category !== categoryPill) return false;
+    }
+
+    // Sidebar Category Checklist match
+    if (selectedSideCategories.length > 0) {
+      if (!selectedSideCategories.includes(book.category)) return false;
+    }
+
+    // Author dropdown
+    if (selectedAuthor !== 'All') {
+      if (!book.author.toLowerCase().includes(selectedAuthor.toLowerCase())) return false;
+    }
+
+    // Availability Filter (from subbar or sidebar radio)
+    const availRule = availabilityRadio !== 'All' ? availabilityRadio : selectedAvailability;
+    const copies = book.available_copies ?? 2;
+    if (availRule === 'Available' && copies <= 0) return false;
+    if (availRule === 'Limited' && (copies <= 0 || copies > 2)) return false;
+    if (availRule === 'Not Available' && copies > 0) return false;
+
+    // Publication Year slider
+    if (book.published_year && book.published_year > pubYear) return false;
+
+    // Star Rating
+    if (selectedRatings.length > 0) {
+      const r = book.rating || 4.5;
+      const passRating = selectedRatings.some(minR => r >= minR);
+      if (!passRating) return false;
+    }
+
+    return true;
+  }).sort((a, b) => {
+    if (selectedSort === 'Title') return a.title.localeCompare(b.title);
+    if (selectedSort === 'Newest') return (b.published_year || 2024) - (a.published_year || 2024);
+    if (selectedSort === 'Rating') return (b.rating || 4.5) - (a.rating || 4.5);
+    return (b.review_count || 1000) - (a.review_count || 1000); // Popular default
+  });
+
+  const totalFound = filteredBooks.length;
+  const totalPages = Math.max(1, Math.ceil(totalFound / pageSize));
+  const paginatedBooks = filteredBooks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const handleBorrowBook = (book) => {
     playClick();
     playSuccessChime();
+
+    // Decrement available copy
     setBooksList(prev => prev.map(b => b.id === book.id ? { ...b, available_copies: Math.max(0, (b.available_copies ?? 2) - 1) } : b));
-    setBorrowedItems(prev => [
-      {
-        id: `loan_${Date.now()}`,
+    
+    // Add to student borrowed books
+    const newBorrow = {
+      id: `b_${Date.now()}`,
+      bookId: book.id,
+      title: book.title,
+      author: book.author,
+      tags: book.tags || ['General', book.category || 'Reference'],
+      issue: '13 Sep 2026',
+      due: '27 Sep 2026',
+      dueText: 'Due in 14 days',
+      dueColor: '#059669',
+      dueBg: '#ecfdf5',
+      cover: book.cover_url
+    };
+    setBorrowedItems(prev => [newBorrow, ...prev]);
+
+    // Create local transaction
+    try {
+      localStore.createTransaction({
         book_id: book.id,
-        title: book.title,
-        issue: '13 Sep 2026',
-        due: '27 Sep 2026',
-        status: 'Due in 14 days',
-        color: '#10b981',
-        bg: '#ecfdf5'
-      },
-      ...prev
-    ]);
+        borrower_name: user?.name || 'Sautrik Roy',
+        borrower_reg: user?.reg_number || 'RA2511003010052',
+        borrower_dept: user?.department || 'CSE',
+        loan_days: 14,
+        type: 'borrow'
+      });
+    } catch {}
+
     toast.success(`"${book.title}" borrowed successfully! Return due in 14 days.`);
   };
 
   const handleReturnItem = (item) => {
     playClick();
     playReturnChime();
+
     setBorrowedItems(prev => prev.filter(b => b.id !== item.id));
-    setHistoryItems(prev => [
-      {
-        id: `ret_${Date.now()}`,
-        book_id: item.book_id || item.id,
-        title: item.title,
-        issue: item.issue,
-        returned: '13 Sep 2026',
-        status: 'Returned',
-        color: '#10b981',
-        bg: '#ecfdf5'
-      },
-      ...prev
-    ]);
-    setBooksList(prev => prev.map(b => (b.id === item.book_id || b.title === item.title) ? { ...b, available_copies: (b.available_copies ?? 0) + 1 } : b));
-    toast.success(`"${item.title}" returned successfully! Fine assessment: ₹0`);
+    setBooksList(prev => prev.map(b => (b.id === item.bookId || b.title === item.title) ? { ...b, available_copies: (b.available_copies ?? 0) + 1 } : b));
+
+    toast.success(`"${item.title}" returned to Central Library Stacks. Outstanding fines: ₹0`);
+  };
+
+  const handleRenewItem = (item) => {
+    playClick();
+    playSuccessChime();
+    setBorrowedItems(prev => prev.map(b => b.id === item.id ? { ...b, dueText: 'Due in 28 days', dueColor: '#2563eb', dueBg: '#eff6ff' } : b));
+    toast.success(`"${item.title}" renewed! New return deadline extended by 14 days.`);
+  };
+
+  const handleRenewAllEligible = () => {
+    playClick();
+    playSuccessChime();
+    setBorrowedItems(prev => prev.map(b => ({ ...b, dueText: 'Due in 28 days', dueColor: '#2563eb', dueBg: '#eff6ff' })));
+    toast.success('All eligible borrowed books renewed successfully! Next due date: 11 Oct 2026');
   };
 
   const toggleWishlist = (bookId) => {
@@ -178,314 +255,195 @@ export default function Catalog({
       setWishlist(wishlist.filter(id => id !== bookId));
       toast.info('Removed from your Wishlist');
     } else {
-      setWishlist([...wishlist, bookId]);
       playSuccessChime();
+      setWishlist([...wishlist, bookId]);
       toast.success('Added to your Wishlist!');
     }
   };
 
-  // Filtered & Sorted books
-  const filteredBooks = booksList.filter(book => {
-    const q = (searchQuery || '').toLowerCase();
-    const matchesSearch = !q || 
-      book.title.toLowerCase().includes(q) ||
-      book.author.toLowerCase().includes(q) ||
-      (book.isbn && book.isbn.toLowerCase().includes(q));
-    const matchesCat = selectedCategory === 'All' || book.category === selectedCategory;
-    const matchesAuthor = selectedAuthor === 'All' || book.author.toLowerCase().includes(selectedAuthor.toLowerCase());
-    const matchesAvail = selectedAvailability === 'All' || 
-      (selectedAvailability === 'Available' && (book.available_copies ?? 2) > 0);
-    return matchesSearch && matchesCat && matchesAuthor && matchesAvail;
-  }).sort((a, b) => {
-    if (selectedSort === 'Title') return a.title.localeCompare(b.title);
-    if (selectedSort === 'Newest') return (b.published_year || 2024) - (a.published_year || 2024);
-    return 0; // Popular default
-  });
+  const resetAllFilters = () => {
+    playClick();
+    setCategoryPill('All Books');
+    setSelectedAuthor('All');
+    setSelectedAvailability('All');
+    setSelectedSort('Popular');
+    setSideSearch('');
+    onSearchChange('');
+    setSelectedSideCategories([]);
+    setAvailabilityRadio('All');
+    setPubYear(2025);
+    setSelectedRatings([]);
+    setCurrentPage(1);
+    toast.info('All filters reset.');
+  };
 
   /* ═══════════════════════════════════════════════════════════
-     SCREEN 5: BOOK DETAILS VIEW (Panel 5 in Mockup)
+     VIEW 1: BOOK DETAILS VIEW
      ═══════════════════════════════════════════════════════════ */
   if (selectedBook) {
-    const meta = BOOK_METAS[selectedBook.id] || {
-      rating: '4.8',
-      reviews: '1.2k',
-      isbn: selectedBook.isbn || '978-0132350884',
-      publisher: 'Prentice Hall',
-      year: '2008',
-      copies: `${selectedBook.available_copies ?? 3} / ${selectedBook.total_copies ?? 5}`,
-      tags: ['Programming', 'Software Engineering', 'Best Practices'],
-      desc: selectedBook.description || 'Comprehensive textbook with core academic foundations, case studies, and engineering practices.'
-    };
-
     const isWishlisted = wishlist.includes(selectedBook.id);
+    const isAvail = (selectedBook.available_copies ?? 2) > 0;
 
     return (
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {/* Back Link */}
-        <button
-          onClick={() => { playClick(); setSelectedBook(null); }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            color: '#64748b',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            padding: '4px 0',
-            width: 'fit-content'
-          }}
-          onMouseEnter={e => e.currentTarget.style.color = '#0f172a'}
-          onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
-        >
-          <ArrowLeft size={15} />
-          <span>Back to Browse</span>
-        </button>
+        {/* Back Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BackButton onClick={() => setSelectedBook(null)} label="Back to Browse" />
+        </div>
 
-        {/* Book Details Container */}
-        <div className="card" style={{ padding: '36px 40px' }}>
+        {/* Detailed Book Card */}
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: 16,
+          padding: '36px 40px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+        }}>
           <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 40, alignItems: 'start' }}>
-            {/* Left Cover Image */}
+            {/* Cover Column */}
             <div>
-              <img
-                src={selectedBook.cover_url || '/covers/clean_code.jpg'}
-                alt={selectedBook.title}
-                style={{
-                  width: '100%',
-                  height: 340,
-                  borderRadius: 8,
-                  objectFit: 'cover',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)'
-                }}
-                onError={e => {
-                  e.currentTarget.src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&auto=format&fit=crop&q=80';
-                }}
-              />
-            </div>
-
-            {/* Right Details */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
-                  {selectedBook.title}
-                </h1>
-                <div style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>
-                  {selectedBook.author}
-                </div>
+              <div style={{ width: '100%', height: 360, borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+                <BookCover
+                  bookId={selectedBook.id}
+                  title={selectedBook.title}
+                  author={selectedBook.author}
+                  coverUrl={selectedBook.cover_url}
+                />
               </div>
 
-              {/* Star Rating */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                <div style={{ display: 'flex', color: '#f59e0b' }}>
-                  <Star size={16} fill="#f59e0b" color="#f59e0b" />
-                </div>
-                <span style={{ fontWeight: 700, color: '#0f172a' }}>{meta.rating}</span>
-                <span style={{ color: '#64748b' }}>({meta.reviews} reviews)</span>
-              </div>
+              <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {isAvail ? (
+                  <button
+                    onClick={() => handleBorrowBook(selectedBook)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 0',
+                      borderRadius: 8,
+                      background: '#0f172a',
+                      color: '#ffffff',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 120ms'
+                    }}
+                  >
+                    Borrow Book
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => toast.info(`Reservation queued for "${selectedBook.title}". Notification alert active.`)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 0',
+                      borderRadius: 8,
+                      background: '#fffbeb',
+                      border: '1px solid #fde68a',
+                      color: '#d97706',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Reserve Volume
+                  </button>
+                )}
 
-              {/* Genre Tags */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {meta.tags.map(tag => (
-                  <span key={tag} style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: '#475569',
-                    background: '#f1f5f9',
-                    padding: '4px 12px',
-                    borderRadius: 6
-                  }}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* 4-Box Specs Grid */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: 12,
-                padding: '16px 18px',
-                background: '#f8fafc',
-                borderRadius: 10,
-                border: '1px solid #e2e8f0',
-                marginTop: 4
-              }}>
-                <div>
-                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>Publisher</div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a', marginTop: 2 }}>{meta.publisher}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>Year</div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a', marginTop: 2 }}>{meta.year}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>ISBN</div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a', marginTop: 2 }}>{meta.isbn}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>Available Copies</div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#10b981', marginTop: 2 }}>{meta.copies}</div>
-                </div>
-              </div>
-
-              {/* Action Buttons (Panel 5) */}
-              <div style={{ display: 'flex', gap: 14, marginTop: 8 }}>
-                <button
-                  onClick={() => handleBorrow(selectedBook)}
-                  style={{
-                    padding: '11px 28px',
-                    borderRadius: 8,
-                    background: '#111827',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: 13.5,
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                  }}
-                >
-                  Borrow Book
-                </button>
                 <button
                   onClick={() => toggleWishlist(selectedBook.id)}
                   style={{
-                    padding: '11px 22px',
+                    width: '100%',
+                    padding: '10px 0',
                     borderRadius: 8,
-                    border: '1.5px solid #e2e8f0',
+                    border: '1px solid #e2e8f0',
                     background: '#ffffff',
-                    color: isWishlisted ? '#ef4444' : '#0f172a',
+                    color: isWishlisted ? '#e11d48' : '#475569',
+                    fontSize: 13,
                     fontWeight: 600,
-                    fontSize: 13.5,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8
+                    justifyContent: 'center',
+                    gap: 6
                   }}
                 >
-                  <Heart size={16} fill={isWishlisted ? '#ef4444' : 'none'} color={isWishlisted ? '#ef4444' : '#0f172a'} />
-                  <span>{isWishlisted ? 'In Wishlist' : 'Add to Wishlist'}</span>
+                  <Heart size={15} fill={isWishlisted ? '#e11d48' : 'none'} color={isWishlisted ? '#e11d48' : '#64748b'} />
+                  <span>{isWishlisted ? 'Saved in Wishlist' : 'Add to Wishlist'}</span>
                 </button>
               </div>
+            </div>
 
-              {/* Tabs: Overview, Details, Reviews, Related Books */}
-              <div style={{ marginTop: 18, borderTop: '1px solid #f1f5f9', paddingTop: 18 }}>
-                <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid #e2e8f0', paddingBottom: 10 }}>
-                  {[
-                    { id: 'overview', label: 'Overview' },
-                    { id: 'details', label: 'Details' },
-                    { id: 'reviews', label: 'Reviews' },
-                    { id: 'related_books', label: 'Related Books' }
-                  ].map(tab => {
-                    const isActive = detailTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setDetailTab(tab.id)}
-                        style={{
-                          fontSize: 13,
-                          fontWeight: isActive ? 700 : 500,
-                          color: isActive ? '#0f172a' : '#64748b',
-                          borderBottom: isActive ? '2px solid #0f172a' : '2px solid transparent',
-                          paddingBottom: 8,
-                          cursor: 'pointer',
-                          background: 'none',
-                          border: 'none'
-                        }}
-                      >
-                        {tab.label}
-                      </button>
-                    );
-                  })}
+            {/* Metadata Column */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '3px 10px', borderRadius: 6 }}>
+                  {selectedBook.category || 'Computer Science'}
+                </span>
+                <span style={{ fontSize: 12, color: '#64748b' }}>
+                  Shelf: {selectedBook.shelf_location || 'Central Library - R3, Shelf B2'}
+                </span>
+              </div>
+
+              <h1 style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0', letterSpacing: '-0.4px' }}>
+                {selectedBook.title}
+              </h1>
+              <div style={{ fontSize: 15, color: '#475569', marginBottom: 16 }}>
+                by <span style={{ fontWeight: 700, color: '#0f172a' }}>{selectedBook.author}</span>
+              </div>
+
+              {/* Rating & Availability Badges */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 18, borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#f59e0b' }}>
+                  <Star size={16} fill="#f59e0b" />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{selectedBook.rating || '4.8'}</span>
+                  <span style={{ fontSize: 12.5, color: '#64748b' }}>({selectedBook.review_count || '12.4K'} reviews)</span>
                 </div>
 
-                <div style={{ paddingTop: 14 }}>
-                  {detailTab === 'overview' && (
-                    <div style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.65 }}>
-                      <p style={{ margin: '0 0 10px 0' }}>{meta.desc}</p>
-                      <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
-                        Curriculum relevance: Recommended syllabus reference for B.Tech Computer Science and IT semesters at SRM Institute of Science and Technology.
-                      </p>
-                    </div>
-                  )}
-
-                  {detailTab === 'details' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                        <span style={{ color: '#64748b' }}>Full Title</span>
-                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{selectedBook.title}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                        <span style={{ color: '#64748b' }}>Primary Author</span>
-                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{selectedBook.author}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                        <span style={{ color: '#64748b' }}>ISBN-13</span>
-                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{meta.isbn}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                        <span style={{ color: '#64748b' }}>Language</span>
-                        <span style={{ fontWeight: 600, color: '#0f172a' }}>English</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                        <span style={{ color: '#64748b' }}>Print Length</span>
-                        <span style={{ fontWeight: 600, color: '#0f172a' }}>464 Pages</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                        <span style={{ color: '#64748b' }}>Classification</span>
-                        <span style={{ fontWeight: 600, color: '#0f172a' }}>QA76.73 .J38 M37</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {detailTab === 'reviews' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {[
-                        { name: 'Dr. K. Ramanathan', role: 'Faculty, CSE Dept', rating: 5, date: '2 weeks ago', text: 'Essential reading for any software engineering student. Clear examples and principles that every graduate should master.' },
-                        { name: 'Ananya Iyer', role: '3rd Year B.Tech', rating: 5, date: 'Last month', text: 'Helped me immensely during technical interview preparations for core placement season!' },
-                        { name: 'Vignesh M.', role: '2nd Year CSE', rating: 4, date: '2 months ago', text: 'Great practical guidelines on refactoring and writing readable code.' }
-                      ].map((rev, i) => (
-                        <div key={i} style={{ padding: 12, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{rev.name} <span style={{ fontWeight: 400, color: '#64748b', fontSize: 11.5 }}>· {rev.role}</span></div>
-                            <span style={{ fontSize: 11, color: '#94a3b8' }}>{rev.date}</span>
-                          </div>
-                          <div style={{ fontSize: 12.5, color: '#475569', lineHeight: 1.5 }}>{rev.text}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {detailTab === 'related_books' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-                      {booksList.filter(b => b.id !== selectedBook.id).slice(0, 3).map(rb => (
-                        <div 
-                          key={rb.id}
-                          onClick={() => { playClick(); setSelectedBook(rb); }}
-                          style={{
-                            padding: 10,
-                            borderRadius: 8,
-                            border: '1px solid #e2e8f0',
-                            background: '#f8fafc',
-                            cursor: 'pointer',
-                            textAlign: 'center',
-                            transition: 'transform 120ms'
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                          onMouseLeave={e => e.currentTarget.style.transform = 'none'}
-                        >
-                          <img
-                            src={rb.cover_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80'}
-                            alt={rb.title}
-                            style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 4, marginBottom: 8 }}
-                          />
-                          <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rb.title}</div>
-                          <div style={{ fontSize: 11, color: '#64748b' }}>{rb.author}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <div style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: isAvail ? '#059669' : '#d97706',
+                  background: isAvail ? '#ecfdf5' : '#fffbeb'
+                }}>
+                  {isAvail ? `• Available (${selectedBook.available_copies ?? 4} copies in stack)` : '• Checked out by students'}
                 </div>
               </div>
+
+              {/* Description & Syllabus */}
+              <div style={{ marginTop: 20 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Overview</h3>
+                <p style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.65, margin: '0 0 16px 0' }}>
+                  {selectedBook.description || 'Essential academic textbook recommended by SRM IST department faculty. Covers fundamental concepts, real-world case studies, and practical applications.'}
+                </p>
+
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Curriculum Relevance</h3>
+                <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+                  Recommended syllabus textbook for SRM Institute of Science and Technology engineering degree programs. Includes problem sets, laboratory exercises, and exam preparation material.
+                </p>
+              </div>
+
+              {/* Specifications Table */}
+              <div style={{ marginTop: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13 }}>
+                <div style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <span style={{ color: '#64748b' }}>ISBN-13: </span>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{selectedBook.isbn || '978-0132350884'}</span>
+                </div>
+                <div style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <span style={{ color: '#64748b' }}>Published: </span>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{selectedBook.published_year || 2022}</span>
+                </div>
+                <div style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <span style={{ color: '#64748b' }}>Language: </span>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>English</span>
+                </div>
+                <div style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <span style={{ color: '#64748b' }}>Total Volumes: </span>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{selectedBook.total_copies || 5} copies</span>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -494,503 +452,1440 @@ export default function Catalog({
   }
 
   /* ═══════════════════════════════════════════════════════════
-     SCREEN 7: MY WISHLIST VIEW (Panel 7 in Mockup)
+     VIEW 2: MY BORROWINGS VIEW (Screenshot 3 Top)
      ═══════════════════════════════════════════════════════════ */
-  if (initialTab === 'wishlist') {
+  if (initialTab === 'borrowings') {
     return (
-      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>
-              My Wishlist
-            </h1>
-            <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
-              Titles saved for future reading and research
+      <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Top Bar with BackButton & Header matching Screenshot 3 Top */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <BackButton onClick={() => onNavigate('dashboard')} />
+            <div>
+              <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
+                My Borrowings
+              </h1>
+              <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+                Manage your borrowed books, track due dates, and renew if needed.
+              </div>
             </div>
           </div>
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: '#64748b' }}>
-            {wishlist.length} saved titles
-          </span>
+
+          <button
+            onClick={handleRenewAllEligible}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 18px',
+              borderRadius: 8,
+              background: '#0f172a',
+              color: '#ffffff',
+              fontSize: 13,
+              fontWeight: 700,
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 120ms'
+            }}
+          >
+            <RotateCcw size={14} />
+            <span>Renew All Eligible</span>
+          </button>
         </div>
 
-        <div className="card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {wishlist.length === 0 ? (
-            <div style={{ padding: '40px 0', textAlign: 'center', color: '#64748b', fontSize: 13.5 }}>
-              Your wishlist is empty. Browse books and click "Add to Wishlist" to save titles here!
-            </div>
-          ) : (
-            booksList.filter(b => wishlist.includes(b.id)).map(item => {
-              const isAvail = (item.available_copies ?? 2) > 0;
-              return (
+        {/* Filter Tabs */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[
+            { id: 'current', label: `Currently Borrowed (${borrowedItems.length})` },
+            { id: 'returned', label: 'Returned (12)' },
+            { id: 'overdue', label: 'Overdue (0)' }
+          ].map(tab => {
+            const active = borrowingsTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => { playClick(); setBorrowingsTab(tab.id); }}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: 8,
+                  fontSize: 12.5,
+                  fontWeight: active ? 700 : 500,
+                  background: active ? '#0f172a' : '#ffffff',
+                  color: active ? '#ffffff' : '#64748b',
+                  border: active ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                  cursor: 'pointer',
+                  transition: 'all 120ms'
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Main Content Layout: Left Rows + Right Summary Sidebar */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: 24, alignItems: 'start' }}>
+          
+          {/* Left Borrowings List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {borrowedItems.length === 0 ? (
+              <div style={{ padding: '60px 20px', textAlign: 'center', background: '#ffffff', borderRadius: 14, border: '1px solid #e2e8f0', color: '#64748b' }}>
+                You have zero books currently checked out. Browse the catalog to borrow books!
+              </div>
+            ) : (
+              borrowedItems.map(item => (
                 <div
                   key={item.id}
                   style={{
+                    background: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 14,
+                    padding: '18px 22px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '14px 18px',
-                    borderRadius: 10,
-                    border: '1px solid #f1f5f9',
-                    background: '#ffffff',
-                    transition: 'all 120ms'
+                    gap: 16
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#f1f5f9'; e.currentTarget.style.background = '#ffffff'; }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <img
-                      src={item.cover_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80'}
-                      alt={item.title}
-                      style={{ width: 44, height: 60, borderRadius: 4, objectFit: 'cover', border: '1px solid #e2e8f0' }}
-                    />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+                    {/* Cover */}
+                    <div style={{ width: 50, height: 68, borderRadius: 6, overflow: 'hidden', flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}>
+                      <BookCover bookId={item.bookId} title={item.title} author={item.author} coverUrl={item.cover} />
+                    </div>
+
+                    {/* Info */}
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{item.title}</div>
-                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{item.author} · Shelf: {item.shelf_location || 'A-102'}</div>
-                      <div style={{ fontSize: 11, color: isAvail ? '#16a34a' : '#ea580c', fontWeight: 600, marginTop: 4 }}>
-                        {isAvail ? `• ${item.available_copies ?? 2} copies in stock` : '• Checked out by readers'}
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>{item.title}</div>
+                      <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 2 }}>{item.author}</div>
+                      
+                      {/* Tags */}
+                      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                        {item.tags.map(t => (
+                          <span key={t} style={{ fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', padding: '2px 8px', borderRadius: 4 }}>
+                            {t}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {isAvail ? (
+                  {/* Dates & Due Status */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                    <div style={{ fontSize: 12, textAlign: 'left' }}>
+                      <div style={{ color: '#64748b' }}>Issue Date</div>
+                      <div style={{ fontWeight: 600, color: '#0f172a', marginTop: 2 }}>{item.issue}</div>
+                    </div>
+
+                    <div style={{ fontSize: 12, textAlign: 'left' }}>
+                      <div style={{ color: '#64748b' }}>Due Date</div>
+                      <div style={{ fontWeight: 600, color: '#0f172a', marginTop: 2 }}>{item.due}</div>
+                    </div>
+
+                    {/* Due Badge */}
+                    <span style={{
+                      padding: '4px 10px',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: item.dueColor,
+                      background: item.dueBg,
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {item.dueText}
+                    </span>
+
+                    {/* Action Buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <button
-                        onClick={() => {
-                          handleBorrow(item);
-                          setWishlist(prev => prev.filter(id => id !== item.id));
-                        }}
+                        onClick={() => handleReturnItem(item)}
                         style={{
-                          padding: '8px 22px',
-                          borderRadius: 8,
-                          background: '#111827',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          padding: '6px 14px',
+                          borderRadius: 6,
+                          background: '#0f172a',
                           color: '#ffffff',
-                          fontWeight: 700,
-                          fontSize: 12.5,
-                          cursor: 'pointer',
-                          border: 'none'
-                        }}
-                      >
-                        Borrow
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => { playClick(); toast.info(`Reservation alert registered! We will notify you when "${item.title}" is returned.`); }}
-                        style={{
-                          padding: '8px 18px',
-                          borderRadius: 8,
-                          background: '#fffbeb',
-                          border: '1px solid #fde68a',
-                          color: '#d97706',
-                          fontWeight: 700,
-                          fontSize: 12.5,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          border: 'none',
                           cursor: 'pointer'
                         }}
                       >
-                        Notify Me
+                        <RotateCcw size={12} />
+                        <span>Return</span>
                       </button>
-                    )}
+
+                      <button
+                        onClick={() => handleRenewItem(item)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          padding: '5px 14px',
+                          borderRadius: 6,
+                          border: '1px solid #e2e8f0',
+                          background: '#ffffff',
+                          color: '#0f172a',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <RotateCcw size={12} />
+                        <span>Renew</span>
+                      </button>
+                    </div>
 
                     <button
-                      onClick={() => toggleWishlist(item.id)}
-                      title="Remove from Wishlist"
-                      style={{
-                        padding: '8px 12px',
-                        borderRadius: 8,
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        color: '#64748b',
-                        fontSize: 12,
-                        cursor: 'pointer'
-                      }}
+                      onClick={() => toast.info(`Options for ${item.title}`)}
+                      style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
                     >
-                      Remove
+                      <MoreVertical size={16} />
                     </button>
                   </div>
                 </div>
-              );
-            })
-          )}
+              ))
+            )}
+          </div>
+
+          {/* Right Sidebar matching Screenshot 3 Top */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            
+            {/* Borrowing Summary Card */}
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: 14,
+              padding: '20px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Borrowing Summary</div>
+                <button
+                  onClick={() => onNavigate('history')}
+                  style={{ background: 'none', border: 'none', fontSize: 11.5, color: '#2563eb', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                >
+                  View History →
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#2563eb' }}>
+                    <BookOpen size={16} />
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{borrowedItems.length}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Currently Borrowed</div>
+                </div>
+
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ef4444' }}>
+                    <Clock size={16} />
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>0</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Overdue</div>
+                </div>
+
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#059669' }}>
+                    <ShieldCheck size={16} />
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>10</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Total Borrowed</div>
+                </div>
+
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#7c3aed' }}>
+                    <TrendingUp size={16} />
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>5</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>This Semester</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Library Guidelines Card */}
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: 14,
+              padding: '20px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>
+                <BookOpen size={16} />
+                <span>Library Guidelines</span>
+              </div>
+
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: '#475569', lineHeight: 1.8 }}>
+                <li>Standard loan period: 14 days</li>
+                <li>You can renew a book up to 2 times</li>
+                <li>Late returns may incur a fine</li>
+                <li>Keep books in good condition</li>
+              </ul>
+
+              <button
+                onClick={() => toast.info('Central Library Borrowing Policy: 5 books allowed per student card for 14 days.')}
+                style={{
+                  marginTop: 16,
+                  width: '100%',
+                  padding: '8px 0',
+                  borderRadius: 8,
+                  border: '1px solid #e2e8f0',
+                  background: '#f8fafc',
+                  color: '#0f172a',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                View All Policies
+              </button>
+            </div>
+
+            {/* Need more time? Bulb Callout */}
+            <div style={{
+              padding: '16px 18px',
+              borderRadius: 12,
+              background: '#eff6ff',
+              border: '1px solid #dbeafe',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 12
+            }}>
+              <Lightbulb size={18} color="#2563eb" style={{ marginTop: 2, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#1e40af' }}>Need more time?</div>
+                <div style={{ fontSize: 12, color: '#3b82f6', marginTop: 2, lineHeight: 1.4 }}>
+                  You can renew your books if no one else has reserved them.
+                </div>
+              </div>
+            </div>
+
+          </div>
+
         </div>
       </div>
     );
   }
 
   /* ═══════════════════════════════════════════════════════════
-     SCREEN 8: MY BORROWINGS & HISTORY VIEW (Panel 8 in Mockup)
+     VIEW 3: MY WISHLIST VIEW (Screenshot 3 Bottom)
      ═══════════════════════════════════════════════════════════ */
-  if (initialTab === 'borrowings' || initialTab === 'history') {
-    const tableItems = [
-      { id: '1', title: 'Clean Code', issue: '01 Sep 2025', due: '15 Sep 2025', status: 'Due in 2 days', color: '#ef4444', bg: '#fef2f2' },
-      { id: '2', title: 'OS Concepts', issue: '28 Aug 2025', due: '12 Sep 2025', status: 'Due in 5 days', color: '#f59e0b', bg: '#fffbeb' },
-      { id: '3', title: 'DBMS Concepts', issue: '20 Aug 2025', due: '05 Sep 2025', status: 'Due in 12 days', color: '#64748b', bg: '#f8fafc' }
-    ];
-
-    const historyItems = [
-      { id: '4', title: 'Computer Networks', issue: '10 Aug 2025', returned: '24 Aug 2025', status: 'Returned', color: '#10b981', bg: '#ecfdf5' },
-      { id: '5', title: 'Introduction to Algorithms', issue: '15 Jul 2025', returned: '29 Jul 2025', status: 'Returned', color: '#10b981', bg: '#ecfdf5' }
-    ];
+  if (initialTab === 'wishlist') {
+    const wishlistedBooks = booksList.filter(b => wishlist.includes(b.id));
 
     return (
-      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>
-          My Borrowings
-        </h1>
-
-        {/* Tabs: Currently Borrowed / History */}
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={() => setActiveSubTab('borrowed')}
-            style={{
-              padding: '8px 18px',
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: activeSubTab === 'borrowed' ? 700 : 500,
-              background: activeSubTab === 'borrowed' ? '#ffffff' : '#f1f5f9',
-              color: activeSubTab === 'borrowed' ? '#0f172a' : '#64748b',
-              border: activeSubTab === 'borrowed' ? '1px solid #e2e8f0' : 'none',
-              boxShadow: activeSubTab === 'borrowed' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-              cursor: 'pointer'
-            }}
-          >
-            Currently Borrowed
-          </button>
-          <button
-            onClick={() => setActiveSubTab('history')}
-            style={{
-              padding: '8px 18px',
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: activeSubTab === 'history' ? 700 : 500,
-              background: activeSubTab === 'history' ? '#ffffff' : '#f1f5f9',
-              color: activeSubTab === 'history' ? '#0f172a' : '#64748b',
-              border: activeSubTab === 'history' ? '1px solid #e2e8f0' : 'none',
-              boxShadow: activeSubTab === 'history' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-              cursor: 'pointer'
-            }}
-          >
-            History
-          </button>
-        </div>
-
-        {/* Table (Panel 8) */}
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          {(activeSubTab === 'borrowed' ? borrowedItems : historyItems).length === 0 ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b', fontSize: 13 }}>
-              {activeSubTab === 'borrowed' 
-                ? 'You currently have zero borrowed books. Browse library to issue titles!' 
-                : 'No returned loan history recorded yet.'}
+      <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Top Bar with BackButton & Header matching Screenshot 3 Bottom */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <BackButton onClick={() => onNavigate('dashboard')} />
+            <div>
+              <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Heart size={22} fill="#ef4444" color="#ef4444" />
+                <span>My Wishlist</span>
+              </h1>
+              <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+                Your saved books for future reading. Keep track of what you're interested in.
+              </div>
             </div>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                  <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Book</th>
-                  <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Issue Date</th>
-                  <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>
-                    {activeSubTab === 'borrowed' ? 'Due Date' : 'Return Date'}
-                  </th>
-                  <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Status</th>
-                  <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(activeSubTab === 'borrowed' ? borrowedItems : historyItems).map(row => (
-                  <tr key={row.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '16px 20px', fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>
-                      {row.title}
-                    </td>
-                    <td style={{ padding: '16px 20px', fontSize: 13, color: '#64748b' }}>
-                      {row.issue}
-                    </td>
-                    <td style={{ padding: '16px 20px', fontSize: 13, color: '#64748b' }}>
-                      {row.due || row.returned}
-                    </td>
-                    <td style={{ padding: '16px 20px' }}>
-                      <span style={{
-                        fontSize: 11.5,
-                        fontWeight: 600,
-                        color: row.color,
-                        background: row.bg,
-                        padding: '4px 10px',
-                        borderRadius: 6
-                      }}>
-                        {row.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '16px 20px' }}>
-                      {activeSubTab === 'borrowed' ? (
-                        <button
-                          onClick={() => handleReturnItem(row)}
-                          style={{
-                            padding: '6px 14px',
-                            borderRadius: 6,
-                            border: '1px solid #e2e8f0',
-                            background: '#ffffff',
-                            color: '#0f172a',
-                            fontWeight: 600,
-                            fontSize: 12,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Return
-                        </button>
-                      ) : (
-                        <span style={{ fontSize: 12, color: '#94a3b8' }}>Returned</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  /* ═══════════════════════════════════════════════════════════
-     SCREEN 4: BROWSE BOOKS VIEW (Panel 4 in Mockup)
-     ═══════════════════════════════════════════════════════════ */
-  return (
-    <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
-            Browse Library
-          </h1>
-          <div style={{ fontSize: 13.5, color: '#64748b' }}>
-            Discover knowledge across all domains
           </div>
-        </div>
-        {user?.role === 'librarian' && (
+
           <button
-            onClick={() => onNavigate?.('admin')}
+            onClick={() => onNavigate('catalog')}
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: 8,
-              padding: '9px 18px',
-              borderRadius: 10,
+              gap: 6,
+              padding: '8px 18px',
+              borderRadius: 8,
               background: '#0f172a',
               color: '#ffffff',
-              fontWeight: 700,
               fontSize: 13,
+              fontWeight: 700,
               border: 'none',
               cursor: 'pointer'
             }}
           >
-            <Plus size={16} /> Add Book
+            <Plus size={15} />
+            <span>Add Book</span>
           </button>
-        )}
+        </div>
+
+        {/* Filter Tabs & Grid/List Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+              { id: 'all', label: `All (${wishlistedBooks.length})` },
+              { id: 'available', label: `To Borrow (${wishlistedBooks.filter(b => (b.available_copies ?? 2) > 0).length})` },
+              { id: 'unavailable', label: `Not Available (${wishlistedBooks.filter(b => (b.available_copies ?? 2) === 0).length})` }
+            ].map(tab => {
+              const active = wishlistTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => { playClick(); setWishlistTab(tab.id); }}
+                  style={{
+                    padding: '7px 16px',
+                    borderRadius: 8,
+                    fontSize: 12.5,
+                    fontWeight: active ? 700 : 500,
+                    background: active ? '#0f172a' : '#ffffff',
+                    color: active ? '#ffffff' : '#64748b',
+                    border: active ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', background: '#e2e8f0', padding: 2, borderRadius: 8 }}>
+              <button
+                onClick={() => setViewMode('grid')}
+                style={{
+                  padding: 6,
+                  borderRadius: 6,
+                  border: 'none',
+                  background: viewMode === 'grid' ? '#ffffff' : 'transparent',
+                  color: viewMode === 'grid' ? '#0f172a' : '#64748b',
+                  cursor: 'pointer'
+                }}
+              >
+                <LayoutGrid size={15} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                style={{
+                  padding: 6,
+                  borderRadius: 6,
+                  border: 'none',
+                  background: viewMode === 'list' ? '#ffffff' : 'transparent',
+                  color: viewMode === 'list' ? '#0f172a' : '#64748b',
+                  cursor: 'pointer'
+                }}
+              >
+                <List size={15} />
+              </button>
+            </div>
+
+            <span style={{ fontSize: 12.5, color: '#64748b' }}>Sort by: <strong>Recently Added ▾</strong></span>
+          </div>
+        </div>
+
+        {/* Wishlist Main Grid (Left 75%) + Wishlist Stats & Recommendations (Right 25%) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 24, alignItems: 'start' }}>
+          
+          {/* Book Cards Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(180px, 1fr))' : '1fr',
+            gap: 16
+          }}>
+            {wishlistedBooks.length === 0 ? (
+              <div style={{ gridColumn: '1 / -1', padding: '60px 0', textAlign: 'center', background: '#ffffff', borderRadius: 14, border: '1px solid #e2e8f0', color: '#64748b' }}>
+                Your wishlist is empty. Browse books and click the bookmark/heart icon to save them here!
+              </div>
+            ) : (
+              wishlistedBooks.map(book => {
+                const isAvail = (book.available_copies ?? 2) > 0;
+                return (
+                  <div
+                    key={book.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 12,
+                      padding: 14,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                      position: 'relative'
+                    }}
+                  >
+                    {/* Top Bookmark Badge */}
+                    <button
+                      onClick={() => toggleWishlist(book.id)}
+                      title="Remove from Wishlist"
+                      style={{
+                        position: 'absolute',
+                        top: 20,
+                        right: 20,
+                        zIndex: 10,
+                        width: 28,
+                        height: 28,
+                        borderRadius: 6,
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        color: '#ef4444',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.06)'
+                      }}
+                    >
+                      <Bookmark size={14} fill="#ef4444" />
+                    </button>
+
+                    <div onClick={() => setSelectedBook(book)} style={{ cursor: 'pointer' }}>
+                      <div style={{ width: '100%', height: 170, borderRadius: 6, overflow: 'hidden', marginBottom: 10 }}>
+                        <BookCover bookId={book.id} title={book.title} author={book.author} coverUrl={book.cover_url} />
+                      </div>
+
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {book.title}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {book.author}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#f59e0b', marginTop: 6, fontSize: 11.5 }}>
+                        <Star size={12} fill="#f59e0b" />
+                        <span style={{ fontWeight: 700, color: '#0f172a' }}>{book.rating || '4.5'}</span>
+                        <span style={{ color: '#94a3b8' }}>({book.review_count || '5.1K'})</span>
+                      </div>
+
+                      <div style={{ marginTop: 8 }}>
+                        <span style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: isAvail ? '#059669' : '#d97706',
+                          background: isAvail ? '#ecfdf5' : '#fffbeb',
+                          padding: '2px 6px',
+                          borderRadius: 4
+                        }}>
+                          {isAvail ? `• Available • ${book.available_copies ?? 2} copies` : '• Not Available'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 12 }}>
+                      {isAvail ? (
+                        <button
+                          onClick={() => handleBorrowBook(book)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 0',
+                            borderRadius: 6,
+                            background: '#0f172a',
+                            color: '#ffffff',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            border: 'none',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Borrow
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => toast.info(`Reservation alert set for "${book.title}"`)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 0',
+                            borderRadius: 6,
+                            background: '#fffbeb',
+                            border: '1px solid #fde68a',
+                            color: '#d97706',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Notify Me
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Right Sidebar matching Screenshot 3 Bottom */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            
+            {/* Wishlist Stats Card */}
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: 14,
+              padding: '20px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>
+                Wishlist Stats
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#e11d48' }}>
+                    <Heart size={16} fill="#e11d48" />
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{wishlistedBooks.length}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Total Books</div>
+                </div>
+
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#059669' }}>
+                    <Clock size={16} />
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
+                      {wishlistedBooks.filter(b => (b.available_copies ?? 2) > 0).length}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Available Now</div>
+                </div>
+
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#d97706' }}>
+                    <AlertCircle size={16} />
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
+                      {wishlistedBooks.filter(b => (b.available_copies ?? 2) === 0).length}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Notify Me</div>
+                </div>
+
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#2563eb' }}>
+                    <BookOpen size={16} />
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>CSE</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Top Category</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recommended For You Card */}
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: 14,
+              padding: '20px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Recommended For You</div>
+                <button
+                  onClick={() => onNavigate('catalog')}
+                  style={{ background: 'none', border: 'none', fontSize: 11.5, color: '#2563eb', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                >
+                  View All →
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {[
+                  {
+                    id: 'BK008',
+                    title: 'Clean Architecture',
+                    author: 'R. C. Martin',
+                    cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&auto=format&fit=crop&q=80'
+                  },
+                  {
+                    id: 'BK027',
+                    title: 'Refactoring',
+                    author: 'Martin Fowler',
+                    cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80'
+                  }
+                ].map(rec => (
+                  <div key={rec.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 34, height: 46, borderRadius: 4, overflow: 'hidden', flexShrink: 0 }}>
+                        <BookCover bookId={rec.id} title={rec.title} author={rec.author} coverUrl={rec.cover} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a' }}>{rec.title}</div>
+                        <div style={{ fontSize: 11, color: '#64748b' }}>{rec.author}</div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => toggleWishlist(rec.id)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        border: '1px solid #e2e8f0',
+                        background: '#ffffff',
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        color: '#0f172a',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      + Add
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     VIEW 4: BROWSE LIBRARY VIEW (Screenshot 2)
+     ═══════════════════════════════════════════════════════════ */
+  return (
+    <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* ── Header with BackButton & Literary Banner matching Screenshot 2 ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BackButton onClick={() => onNavigate('dashboard')} />
+          <div>
+            <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.4px' }}>
+              Browse Library
+            </h1>
+            <div style={{ fontSize: 13.5, color: '#64748b', marginTop: 3 }}>
+              Discover knowledge across all domains. Explore, learn, and grow.
+            </div>
+          </div>
+        </div>
+
+        {/* Top Right Stephen King Quote Banner with Book Stack Photo */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          padding: '8px 16px',
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: 12,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+        }}>
+          <img
+            src="/book_stack_quote.jpg"
+            alt="Books Stack"
+            style={{ width: 52, height: 38, objectFit: 'cover', borderRadius: 6, border: '1px solid #e2e8f0' }}
+          />
+          <div>
+            <div style={{ fontSize: 12, color: '#334155', fontStyle: 'italic' }}>
+              "Books are a uniquely portable magic."
+            </div>
+            <div style={{ fontSize: 11, color: '#64748b', textAlign: 'right', marginTop: 2 }}>
+              — Stephen King
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Filter Row (Panel 4) */}
+      {/* ── Category Filter Pills matching Screenshot 2 ── */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {[
+          'All Books',
+          'Computer Science',
+          'Engineering',
+          'Mathematics',
+          'Science',
+          'Management',
+          'Humanities',
+          'More ▾'
+        ].map(cat => {
+          const isMore = cat === 'More ▾';
+          const active = categoryPill === cat;
+          return (
+            <button
+              key={cat}
+              onClick={() => {
+                playClick();
+                if (!isMore) {
+                  setCategoryPill(cat);
+                  setCurrentPage(1);
+                } else {
+                  toast.info('Additional academic disciplines: Architecture, Law, Biotechnology, Medicine');
+                }
+              }}
+              style={{
+                padding: '7px 16px',
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: active ? 700 : 500,
+                background: active ? '#0f172a' : '#ffffff',
+                color: active ? '#ffffff' : '#64748b',
+                border: active ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                cursor: 'pointer',
+                transition: 'all 120ms',
+                boxShadow: active ? '0 1px 2px rgba(0,0,0,0.06)' : 'none'
+              }}
+            >
+              {cat}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Sub-Filter Bar matching Screenshot 2 ── */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: 12
+        gap: 12,
+        padding: '12px 16px',
+        background: '#ffffff',
+        border: '1px solid #e2e8f0',
+        borderRadius: 12
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          {/* Category Dropdown */}
-          <select
-            value={selectedCategory}
-            onChange={e => setSelectedCategory(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: '1px solid #e2e8f0',
-              background: '#ffffff',
-              fontSize: 12.5,
-              fontWeight: 500,
-              color: '#334155',
-              cursor: 'pointer',
-              outline: 'none'
-            }}
-          >
-            <option value="All">Category: All</option>
-            <option value="Computer Science">Computer Science</option>
-            <option value="Programming">Programming</option>
-            <option value="Database">Database</option>
-            <option value="Mathematics">Mathematics</option>
-            <option value="Fiction">Fiction</option>
-          </select>
-
           {/* Author Dropdown */}
-          <select
-            value={selectedAuthor}
-            onChange={e => setSelectedAuthor(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: '1px solid #e2e8f0',
-              background: '#ffffff',
-              fontSize: 12.5,
-              fontWeight: 500,
-              color: '#334155',
-              cursor: 'pointer',
-              outline: 'none'
-            }}
-          >
-            <option value="All">Author: All</option>
-            <option value="Martin">Robert C. Martin</option>
-            <option value="Silberschatz">Silberschatz</option>
-            <option value="Tanenbaum">Tanenbaum</option>
-            <option value="Russell">Stuart Russell</option>
-          </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#64748b' }}>
+            <span>Author:</span>
+            <select
+              value={selectedAuthor}
+              onChange={e => { setSelectedAuthor(e.target.value); setCurrentPage(1); }}
+              style={{
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: '1px solid #cbd5e1',
+                background: '#f8fafc',
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: '#0f172a',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="All">All</option>
+              <option value="Robert C. Martin">Robert C. Martin</option>
+              <option value="Cormen">Cormen, Leiserson et al.</option>
+              <option value="Silberschatz">Silberschatz et al.</option>
+              <option value="Tanenbaum">Andrew S. Tanenbaum</option>
+              <option value="Gamma">Gamma et al.</option>
+              <option value="Alex Xu">Alex Xu</option>
+              <option value="Goodfellow">Ian Goodfellow</option>
+            </select>
+          </div>
 
           {/* Availability Dropdown */}
-          <select
-            value={selectedAvailability}
-            onChange={e => setSelectedAvailability(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: '1px solid #e2e8f0',
-              background: '#ffffff',
-              fontSize: 12.5,
-              fontWeight: 500,
-              color: '#334155',
-              cursor: 'pointer',
-              outline: 'none'
-            }}
-          >
-            <option value="All">Availability: All</option>
-            <option value="Available">Available Now</option>
-          </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#64748b' }}>
+            <span>Availability:</span>
+            <select
+              value={selectedAvailability}
+              onChange={e => { setSelectedAvailability(e.target.value); setCurrentPage(1); }}
+              style={{
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: '1px solid #cbd5e1',
+                background: '#f8fafc',
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: '#0f172a',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="All">All</option>
+              <option value="Available">Available Now</option>
+              <option value="Limited">Limited (1-2 copies)</option>
+              <option value="Not Available">Not Available</option>
+            </select>
+          </div>
 
-          {/* Sort By Dropdown */}
-          <select
-            value={selectedSort}
-            onChange={e => setSelectedSort(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: '1px solid #e2e8f0',
-              background: '#ffffff',
-              fontSize: 12.5,
-              fontWeight: 500,
-              color: '#334155',
-              cursor: 'pointer',
-              outline: 'none'
-            }}
-          >
-            <option value="Popular">Sort by: Popular</option>
-            <option value="Newest">Sort by: Newest</option>
-            <option value="Title">Sort by: Title A-Z</option>
-          </select>
+          {/* Sort Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#64748b' }}>
+            <span>Sort by:</span>
+            <select
+              value={selectedSort}
+              onChange={e => setSelectedSort(e.target.value)}
+              style={{
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: '1px solid #cbd5e1',
+                background: '#f8fafc',
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: '#0f172a',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="Popular">Popular</option>
+              <option value="Rating">Highest Rated</option>
+              <option value="Newest">Newest</option>
+              <option value="Title">Title A-Z</option>
+            </select>
+          </div>
         </div>
 
-        {/* Book Count Pill */}
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-          {filteredBooks.length} Books Available
+        {/* Right Book Count & View Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#64748b' }}>
+            {totalFound} books found
+          </span>
+
+          <div style={{ display: 'flex', background: '#f1f5f9', padding: 2, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+            <button
+              onClick={() => setViewMode('grid')}
+              style={{
+                padding: '5px 8px',
+                borderRadius: 6,
+                border: 'none',
+                background: viewMode === 'grid' ? '#ffffff' : 'transparent',
+                color: viewMode === 'grid' ? '#0f172a' : '#64748b',
+                cursor: 'pointer'
+              }}
+            >
+              <LayoutGrid size={15} />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              style={{
+                padding: '5px 8px',
+                borderRadius: 6,
+                border: 'none',
+                background: viewMode === 'list' ? '#ffffff' : 'transparent',
+                color: viewMode === 'list' ? '#0f172a' : '#64748b',
+                cursor: 'pointer'
+              }}
+            >
+              <List size={15} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 4-Column Book Grid (Panel 4) */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: 20,
-        marginTop: 4
-      }}>
-        {filteredBooks.length === 0 ? (
-          <div style={{ gridColumn: '1 / -1', padding: '60px 0', textAlign: 'center', color: '#64748b' }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>No books matched your filter criteria</div>
-            <div style={{ fontSize: 13, marginTop: 4 }}>Try clearing the search query or selecting "All" in the filters</div>
-          </div>
-        ) : (
-          filteredBooks.slice(0, 24).map(book => {
-          const isAvail = (book.available_copies ?? 2) > 0;
-          return (
-            <div
-              key={book.id}
-              className="card"
-              style={{
-                padding: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'transform 150ms, box-shadow 150ms'
-              }}
-            >
-              <div 
-                onClick={() => { playClick(); setSelectedBook(book); }}
-                style={{ cursor: 'pointer' }}
-              >
-                <img
-                  src={book.cover_url || '/covers/clean_code.jpg'}
-                  alt={book.title}
-                  style={{
-                    width: '100%',
-                    height: 180,
-                    borderRadius: 6,
-                    objectFit: 'cover',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)'
-                  }}
-                  onError={e => {
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80';
-                  }}
-                />
-                <div style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: '#0f172a',
-                  marginTop: 12,
-                  lineHeight: 1.3,
-                  overflow: 'hidden',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 1,
-                  WebkitBoxOrient: 'vertical'
-                }}>
-                  {book.title}
-                </div>
-                <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
-                  {book.author}
-                </div>
-
-                {/* Status Pill */}
-                <div style={{ marginTop: 10 }}>
-                  <span style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: isAvail ? '#059669' : '#d97706',
-                    background: isAvail ? '#ecfdf5' : '#fffbeb',
-                    padding: '3px 8px',
-                    borderRadius: 4
-                  }}>
-                    {isAvail ? `• Available • ${book.available_copies ?? 2} copies` : '• Limited • 1 copy'}
-                  </span>
-                </div>
+      {/* ── Main Catalog Layout: 4-Column Book Cards (Left 75%) + Filters Sidebar (Right 25%) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 24, alignItems: 'start' }}>
+        
+        {/* Left Book Grid & Pagination */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          
+          {paginatedBooks.length === 0 ? (
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: 14,
+              padding: '60px 20px',
+              textAlign: 'center',
+              color: '#64748b'
+            }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 6 }}>
+                No books match your selected filters
               </div>
-
-              {/* Borrow Button */}
+              <p style={{ fontSize: 13, margin: '0 0 16px 0' }}>
+                Try adjusting the category, year slider, or resetting all filters.
+              </p>
               <button
-                onClick={() => handleBorrow(book)}
+                onClick={resetAllFilters}
                 style={{
-                  marginTop: 14,
-                  width: '100%',
-                  padding: '7px 0',
-                  borderRadius: 6,
-                  border: '1.5px solid #e2e8f0',
-                  background: '#ffffff',
-                  color: '#0f172a',
-                  fontWeight: 600,
+                  padding: '8px 18px',
+                  borderRadius: 8,
+                  background: '#0f172a',
+                  color: '#ffffff',
                   fontSize: 12.5,
-                  cursor: 'pointer',
-                  transition: 'all 120ms'
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer'
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#111827'; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.borderColor = '#111827'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.color = '#0f172a'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
               >
-                Borrow
+                Reset All Filters
               </button>
             </div>
-          );
-        }))}
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: viewMode === 'grid' ? 'repeat(4, 1fr)' : '1fr',
+              gap: 16
+            }}>
+              {paginatedBooks.map(book => {
+                const copies = book.available_copies ?? 2;
+                const isAvail = copies > 0;
+                const isLimited = copies === 1;
+                const isWishlisted = wishlist.includes(book.id);
+
+                return (
+                  <div
+                    key={book.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 12,
+                      padding: 14,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                      position: 'relative',
+                      transition: 'transform 120ms, box-shadow 120ms'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.06)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)'; }}
+                  >
+                    {/* 3 Dots Menu Button */}
+                    <button
+                      onClick={() => toast.info(`${book.title} (ISBN: ${book.isbn || 'N/A'}) - Shelf ${book.shelf_location || 'A-102'}`)}
+                      style={{
+                        position: 'absolute',
+                        top: 18,
+                        right: 18,
+                        zIndex: 10,
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: 6,
+                        width: 24,
+                        height: 24,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#64748b',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <MoreVertical size={13} />
+                    </button>
+
+                    {/* Book Cover Thumbnail with Spine */}
+                    <div onClick={() => setSelectedBook(book)} style={{ cursor: 'pointer' }}>
+                      <div style={{ width: '100%', height: 180, borderRadius: 6, overflow: 'hidden', marginBottom: 12 }}>
+                        <BookCover
+                          bookId={book.id}
+                          title={book.title}
+                          author={book.author}
+                          coverUrl={book.cover_url}
+                        />
+                      </div>
+
+                      {/* Title & Author */}
+                      <div style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: '#0f172a',
+                        lineHeight: 1.3,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {book.title}
+                      </div>
+
+                      <div style={{
+                        fontSize: 12,
+                        color: '#64748b',
+                        marginTop: 2,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {book.author}
+                      </div>
+
+                      {/* Star Rating & Review Count */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#f59e0b', marginTop: 6, fontSize: 12 }}>
+                        <Star size={13} fill="#f59e0b" />
+                        <span style={{ fontWeight: 700, color: '#0f172a' }}>{book.rating || '4.6'}</span>
+                        <span style={{ color: '#94a3b8' }}>({book.review_count ? `${(book.review_count / 1000).toFixed(1)}K` : '4.2K'})</span>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div style={{ marginTop: 8 }}>
+                        {isAvail ? (
+                          isLimited ? (
+                            <span style={{ fontSize: 11, fontWeight: 600, color: '#d97706', background: '#fffbeb', padding: '2px 8px', borderRadius: 4 }}>
+                              • Limited · 1 copy
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', padding: '2px 8px', borderRadius: 4 }}>
+                              • Available · {copies} copies
+                            </span>
+                          )
+                        ) : (
+                          <span style={{ fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2', padding: '2px 8px', borderRadius: 4 }}>
+                            • Not Available · 0 copies
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action Button & Bookmark Row matching Screenshot 2 */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
+                      {isAvail ? (
+                        isLimited ? (
+                          <button
+                            onClick={() => toast.info(`Reserved "${book.title}". Collect from Central Library Issue Desk.`)}
+                            style={{
+                              flex: 1,
+                              padding: '7px 0',
+                              borderRadius: 6,
+                              background: '#ffffff',
+                              border: '1.5px solid #e2e8f0',
+                              color: '#0f172a',
+                              fontSize: 12.5,
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Reserve
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleBorrowBook(book)}
+                            style={{
+                              flex: 1,
+                              padding: '7px 0',
+                              borderRadius: 6,
+                              background: '#0f172a',
+                              color: '#ffffff',
+                              fontSize: 12.5,
+                              fontWeight: 700,
+                              border: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Borrow
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          onClick={() => toast.info(`Alert registered for "${book.title}". We will notify you upon check-in.`)}
+                          style={{
+                            flex: 1,
+                            padding: '7px 0',
+                            borderRadius: 6,
+                            background: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            color: '#64748b',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Notify Me
+                        </button>
+                      )}
+
+                      {/* Bookmark Button */}
+                      <button
+                        onClick={() => toggleWishlist(book.id)}
+                        title={isWishlisted ? 'Saved in Wishlist' : 'Add to Wishlist'}
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 6,
+                          border: '1px solid #e2e8f0',
+                          background: '#ffffff',
+                          color: isWishlisted ? '#ef4444' : '#64748b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Bookmark size={14} fill={isWishlisted ? '#ef4444' : 'none'} />
+                      </button>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Pagination Bar matching Screenshot 2 ── */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12,
+            padding: '16px 20px',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12
+          }}>
+            <span style={{ fontSize: 13, color: '#64748b' }}>
+              Showing {Math.min(totalFound, (currentPage - 1) * pageSize + 1)}-{Math.min(totalFound, currentPage * pageSize)} of {totalFound} books
+            </span>
+
+            {/* Pagination Numbers */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: 6,
+                  border: '1px solid #e2e8f0',
+                  background: '#ffffff',
+                  color: currentPage === 1 ? '#cbd5e1' : '#0f172a',
+                  cursor: currentPage === 1 ? 'default' : 'pointer'
+                }}
+              >
+                &lt;
+              </button>
+
+              {[1, 2, 3, 4, 5].map(num => {
+                if (num > totalPages && num > 1) return null;
+                const active = currentPage === num;
+                return (
+                  <button
+                    key={num}
+                    onClick={() => setCurrentPage(num)}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 6,
+                      border: active ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                      background: active ? '#0f172a' : '#ffffff',
+                      color: active ? '#ffffff' : '#334155',
+                      fontWeight: active ? 700 : 500,
+                      fontSize: 12.5,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {num}
+                  </button>
+                );
+              })}
+
+              {totalPages > 5 && (
+                <>
+                  <span style={{ color: '#94a3b8', padding: '0 2px' }}>...</span>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 6,
+                      border: currentPage === totalPages ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                      background: currentPage === totalPages ? '#0f172a' : '#ffffff',
+                      color: currentPage === totalPages ? '#ffffff' : '#334155',
+                      fontWeight: currentPage === totalPages ? 700 : 500,
+                      fontSize: 12.5,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: 6,
+                  border: '1px solid #e2e8f0',
+                  background: '#ffffff',
+                  color: currentPage === totalPages ? '#cbd5e1' : '#0f172a',
+                  cursor: currentPage === totalPages ? 'default' : 'pointer'
+                }}
+              >
+                &gt;
+              </button>
+            </div>
+
+            {/* Books per page */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748b' }}>
+              <span>Books per page</span>
+              <select
+                value={pageSize}
+                onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  border: '1px solid #cbd5e1',
+                  background: '#f8fafc',
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  color: '#0f172a',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value={8}>8</option>
+                <option value={12}>12</option>
+                <option value={16}>16</option>
+                <option value={24}>24</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+
+        {/* ── Right Filter Sidebar matching Screenshot 2 ── */}
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: 14,
+          padding: '20px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 20
+        }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>Filters</div>
+            <button
+              onClick={resetAllFilters}
+              style={{ background: 'none', border: 'none', fontSize: 12, color: '#2563eb', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+            >
+              Reset All
+            </button>
+          </div>
+
+          {/* Search Box */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Search</div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 10px',
+              borderRadius: 8,
+              border: '1px solid #cbd5e1',
+              background: '#f8fafc'
+            }}>
+              <Search size={14} color="#94a3b8" />
+              <input
+                type="text"
+                placeholder="Search books..."
+                value={sideSearch}
+                onChange={e => { setSideSearch(e.target.value); setCurrentPage(1); }}
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontSize: 12.5,
+                  color: '#0f172a',
+                  width: '100%'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Category Checklist */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Category</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                { name: 'Computer Science', count: 96 },
+                { name: 'Engineering', count: 48 },
+                { name: 'Mathematics', count: 32 },
+                { name: 'Science', count: 28 },
+                { name: 'Management', count: 18 },
+                { name: 'Humanities', count: 14 }
+              ].map(cat => {
+                const checked = selectedSideCategories.includes(cat.name);
+                return (
+                  <label key={cat.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 12.5 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#334155' }}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          if (checked) {
+                            setSelectedSideCategories(selectedSideCategories.filter(c => c !== cat.name));
+                          } else {
+                            setSelectedSideCategories([...selectedSideCategories, cat.name]);
+                          }
+                          setCurrentPage(1);
+                        }}
+                        style={{ width: 15, height: 15, accentColor: '#0f172a', cursor: 'pointer' }}
+                      />
+                      <span>{cat.name}</span>
+                    </div>
+                    <span style={{ fontSize: 11.5, color: '#94a3b8' }}>({cat.count})</span>
+                  </label>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => toast.info('All 6 primary academic disciplines displayed.')}
+              style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', marginTop: 8, padding: 0 }}
+            >
+              Show more ▾
+            </button>
+          </div>
+
+          {/* Availability Radios */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Availability</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {['All', 'Available', 'Limited', 'Not Available'].map(opt => (
+                <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12.5, color: '#334155' }}>
+                  <input
+                    type="radio"
+                    name="availSide"
+                    checked={availabilityRadio === opt}
+                    onChange={() => { setAvailabilityRadio(opt); setCurrentPage(1); }}
+                    style={{ width: 15, height: 15, accentColor: '#0f172a', cursor: 'pointer' }}
+                  />
+                  <span>{opt === 'Limited' ? 'Limited (1–2 copies)' : opt}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Publication Year Slider */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>
+              <span>Publication Year</span>
+              <span style={{ color: '#0f172a' }}>≤ {pubYear}</span>
+            </div>
+            <input
+              type="range"
+              min={1950}
+              max={2025}
+              value={pubYear}
+              onChange={e => { setPubYear(Number(e.target.value)); setCurrentPage(1); }}
+              style={{ width: '100%', accentColor: '#0f172a', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+              <span>1950</span>
+              <span>2025</span>
+            </div>
+          </div>
+
+          {/* Rating Checkboxes */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Rating</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                { r: 4, label: '★★★★☆ 4+' },
+                { r: 3, label: '★★★☆☆ 3+' },
+                { r: 2, label: '★★☆☆☆ 2+' },
+                { r: 1, label: '★☆☆☆☆ 1+' }
+              ].map(rate => {
+                const checked = selectedRatings.includes(rate.r);
+                return (
+                  <label key={rate.r} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12.5, color: '#f59e0b' }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        if (checked) {
+                          setSelectedRatings(selectedRatings.filter(x => x !== rate.r));
+                        } else {
+                          setSelectedRatings([...selectedRatings, rate.r]);
+                        }
+                        setCurrentPage(1);
+                      }}
+                      style={{ width: 15, height: 15, accentColor: '#0f172a', cursor: 'pointer' }}
+                    />
+                    <span style={{ color: '#334155' }}>{rate.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
+
       </div>
     </div>
   );

@@ -21,6 +21,9 @@ import Transactions from './pages/Transactions';
 import AdminPanel from './pages/AdminPanel';
 import AIAssistant from './pages/AIAssistant';
 import StudyRoom from './pages/StudyRoom';
+import History from './pages/History';
+import Notifications from './pages/Notifications';
+import Settings from './pages/Settings';
 import { isSoundEnabled, toggleSound, playClick } from './utils/audio';
 
 function PageWrapper({ children }) {
@@ -116,29 +119,43 @@ export default function App() {
 
   const renderPage = () => {
     switch (activePage) {
-      case 'dashboard':    return <Dashboard onNavigate={setActivePage} />;
+      case 'dashboard':     return <Dashboard onNavigate={setActivePage} />;
       case 'catalog':      
-      case 'search':       
-      case 'wishlist':     
-      case 'borrowings':
-      case 'history':      return (
+      case 'search':        return (
         <Catalog 
           onNavigate={setActivePage} 
           searchQuery={searchQuery} 
           onSearchChange={setSearchQuery} 
-          initialTab={activePage === 'catalog' || activePage === 'search' ? 'all' : activePage} 
+          initialTab="all" 
         />
       );
-      case 'scanner':      return <Scanner />;
-      case 'transactions': return <Transactions />;
-      case 'students':     return <AdminPanel defaultTab="students" />;
-      case 'admin':        return <AdminPanel defaultTab="overdue" />;
-      case 'reports':      return <AdminPanel defaultTab="reports" />;
-      case 'study':        return <StudyRoom />;
-      case 'ai':           return <AIAssistant />;
-      case 'settings':     return <AdminPanel defaultTab="settings" />;
-      case 'notifications': return <AdminPanel defaultTab="settings" initialSubTab="notifications" />;
-      default:             return <Dashboard onNavigate={setActivePage} />;
+      case 'borrowings':    return (
+        <Catalog 
+          onNavigate={setActivePage} 
+          searchQuery={searchQuery} 
+          onSearchChange={setSearchQuery} 
+          initialTab="borrowings" 
+        />
+      );
+      case 'wishlist':      return (
+        <Catalog 
+          onNavigate={setActivePage} 
+          searchQuery={searchQuery} 
+          onSearchChange={setSearchQuery} 
+          initialTab="wishlist" 
+        />
+      );
+      case 'history':       return <History onNavigate={setActivePage} />;
+      case 'notifications': return <Notifications onNavigate={setActivePage} />;
+      case 'scanner':       return <Scanner onNavigate={setActivePage} />;
+      case 'transactions':  return <Transactions onNavigate={setActivePage} />;
+      case 'students':      return <AdminPanel defaultTab="students" onNavigate={setActivePage} />;
+      case 'admin':         return <AdminPanel defaultTab="overdue" onNavigate={setActivePage} />;
+      case 'reports':       return <AdminPanel defaultTab="reports" onNavigate={setActivePage} />;
+      case 'study':         return <StudyRoom onNavigate={setActivePage} />;
+      case 'ai':            return <AIAssistant onNavigate={setActivePage} />;
+      case 'settings':      return isStudent ? <Settings onNavigate={setActivePage} /> : <AdminPanel defaultTab="settings" onNavigate={setActivePage} />;
+      default:              return <Dashboard onNavigate={setActivePage} />;
     }
   };
 

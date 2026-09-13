@@ -1,508 +1,504 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, 
   Send, 
   BookOpen, 
-  Bot, 
-  ArrowRight, 
-  RotateCcw,
-  Zap,
-  Search,
-  CheckCircle2,
-  Bookmark
+  FileText, 
+  Lightbulb, 
+  Target, 
+  Mic, 
+  MicOff, 
+  Plus, 
+  Check, 
+  ArrowRight,
+  Bot
 } from 'lucide-react';
-import { ai as aiApi, transactions as txApi } from '../api';
-import { GROQ_MODELS } from '../services/groqService';
-import { useAuth } from '../context/AuthContext';
+import BackButton from '../components/BackButton';
+import BookCover from '../components/BookCover';
+import { playClick, playSuccessChime } from '../utils/audio';
 import { toast } from '../context/ToastContext';
-import { playClick, playSuccessChime, playErrorBeep } from '../utils/audio';
-import VoiceInputButton from '../components/VoiceInputButton';
 
-const QUICK_PROMPTS = [
-  "Suggest books on System Design",
-  "Find books by Robert C. Martin",
-  "Show recently added books",
-  "What's trending this month?",
-];
-
-function TypingDots() {
-  return (
-    <div style={{ display: 'flex', gap: 5, padding: '6px 4px', alignItems: 'center' }}>
-      {[0, 1, 2].map(i => (
-        <motion.div
-          key={i}
-          style={{ width: 6, height: 6, borderRadius: '50%', background: '#64748b' }}
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
-        />
-      ))}
-    </div>
-  );
-}
-
-function FormattedAiText({ text }) {
-  if (!text) return null;
-  const lines = text.split('\n');
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, lineHeight: 1.6, color: '#1e293b' }}>
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-        if (!trimmed) return <div key={idx} style={{ height: 4 }} />;
-
-        if (trimmed.startsWith('### ') || trimmed.startsWith('## ')) {
-          return (
-            <div key={idx} style={{ fontWeight: 800, fontSize: 14.5, color: '#0f172a', marginTop: 8 }}>
-              {trimmed.replace(/^#+\s*/, '')}
-            </div>
-          );
-        }
-
-        if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
-          const content = trimmed.replace(/^[\*\-•]\s*/, '');
-          return (
-            <div key={idx} style={{ display: 'flex', gap: 8, paddingLeft: 4 }}>
-              <span style={{ color: '#0f172a', fontWeight: 800 }}>•</span>
-              <span dangerouslySetInnerHTML={{ __html: formatInline(content) }} />
-            </div>
-          );
-        }
-
-        return (
-          <div key={idx} dangerouslySetInnerHTML={{ __html: formatInline(trimmed) }} />
-        );
-      })}
-    </div>
-  );
-}
-
-function formatInline(str) {
-  return str
-    .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#0f172a; font-weight:700;">$1</strong>')
-    .replace(/\[(BK\d{3})\]/g, '<span style="background:#f1f5f9; color:#0f172a; font-family:monospace; padding:1px 5px; border-radius:4px; font-weight:700; border:1px solid #e2e8f0; font-size:11.5px;">$1</span>')
-    .replace(/`([^`]+)`/g, '<code style="background:#f1f5f9; color:#2563eb; padding:1px 5px; border-radius:4px; font-family:monospace; font-size:12px;">$1</code>');
-}
-
-function BookCardMini({ book, onBorrow }) {
-  const isAvail = book.available_copies > 0;
-
-  return (
-    <div style={{
-      background: '#ffffff',
-      border: '1px solid #e2e8f0',
-      borderRadius: 10,
-      padding: '10px 14px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-      marginTop: 8
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{
-            fontSize: 10.5,
-            fontFamily: 'JetBrains Mono, monospace',
-            fontWeight: 700,
-            color: '#475569',
-            background: '#f1f5f9',
-            padding: '1px 5px',
-            borderRadius: 4
-          }}>
-            {book.id}
-          </span>
-          <span style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {book.title}
-          </span>
-        </div>
-        <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
-          {book.author} · Shelf {book.shelf_location || 'Zone A'}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: isAvail ? '#16a34a' : '#dc2626',
-          background: isAvail ? '#f0fdf4' : '#fef2f2',
-          padding: '2px 8px',
-          borderRadius: 6
-        }}>
-          {isAvail ? `${book.available_copies} avail` : 'Checked Out'}
-        </span>
-
-        {onBorrow && isAvail && (
-          <button
-            onClick={() => onBorrow(book)}
-            style={{
-              padding: '5px 12px',
-              borderRadius: 6,
-              background: '#0f172a',
-              border: 'none',
-              color: '#ffffff',
-              fontSize: 11.5,
-              fontWeight: 700,
-              cursor: 'pointer'
-            }}
-          >
-            Borrow
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-export default function AIAssistant() {
-  const { user } = useAuth();
+export default function AIAssistant({ onNavigate = () => {} }) {
   const [messages, setMessages] = useState([
     {
-      id: 1,
-      role: 'ai',
-      content: `Hello! I'm your AI library assistant. How can I help you today? You can ask me to find books, check availability, or recommend reading material.`,
+      id: 'm1',
+      sender: 'user',
+      text: 'Suggest some books on system design for beginners'
+    },
+    {
+      id: 'm2',
+      sender: 'ai',
+      text: 'Here are some great books on System Design for beginners:',
+      books: [
+        {
+          id: 'BK014',
+          num: 1,
+          title: 'System Design Interview',
+          author: 'Alex Xu',
+          coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80'
+        },
+        {
+          id: 'BK012',
+          num: 2,
+          title: 'Designing Data-Intensive Applications',
+          author: 'Martin Kleppmann',
+          coverUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=200&auto=format&fit=crop&q=80'
+        },
+        {
+          id: 'BK008',
+          num: 3,
+          title: 'Clean Architecture',
+          author: 'Robert C. Martin',
+          coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&auto=format&fit=crop&q=80'
+        }
+      ],
+      followUp: 'Would you like more recommendations based on distributed systems, scalability, or interviews?'
     }
   ]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef(null);
+
+  const [inputVal, setInputVal] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [addedIds, setAddedIds] = useState([]);
+  const chatBottomRef = useRef(null);
+
+  const scrollToBottom = () => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+    scrollToBottom();
+  }, [messages]);
 
-  const handleBorrow = async (book) => {
+  const handleSend = (textToSend) => {
+    const query = (textToSend || inputVal).trim();
+    if (!query) return;
+
     playClick();
-    if (book.available_copies <= 0) {
-      toast.error(`${book.title} is currently checked out.`);
+    const newMsg = {
+      id: `usr_${Date.now()}`,
+      sender: 'user',
+      text: query
+    };
+
+    setMessages(prev => [...prev, newMsg]);
+    setInputVal('');
+
+    setTimeout(() => {
+      generateAiResponse(query);
+    }, 600);
+  };
+
+  const generateAiResponse = (query) => {
+    playSuccessChime();
+    const qLower = query.toLowerCase();
+
+    if (qLower.includes('os') || qLower.includes('operating system')) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ai_${Date.now()}`,
+          sender: 'ai',
+          text: 'Here are top recommendations for Operating Systems and Kernels:',
+          books: [
+            { id: 'BK006', num: 1, title: 'Operating System Concepts', author: 'Silberschatz, Galvin, Gagne', coverUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK011', num: 2, title: 'Modern Operating Systems', author: 'Andrew S. Tanenbaum', coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80' }
+          ],
+          followUp: 'Would you also like lecture companion notes from SRM CSE faculty?'
+        }
+      ]);
+    } else if (qLower.includes('clean code') || qLower.includes('summarize')) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ai_${Date.now()}`,
+          sender: 'ai',
+          text: 'Summary of Clean Code by Robert C. Martin:\n\n• Meaningful Names: Reveal intent and avoid disinformation.\n• Functions: Should do one thing and do it well (under 20 lines).\n• Comments: Do not make up for bad code; refactor instead.\n• TDD: The three laws of Test Driven Development ensure maintainability.',
+          books: [
+            { id: 'BK002', num: 1, title: 'Clean Code', author: 'Robert C. Martin', coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80' }
+          ],
+          followUp: 'Would you like to borrow Clean Code right now? 4 copies available in Central Library - Shelf B2.'
+        }
+      ]);
+    } else if (qLower.includes('dsa') || qLower.includes('algorithm')) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ai_${Date.now()}`,
+          sender: 'ai',
+          text: 'Here are foundational textbooks for Data Structures & Algorithms:',
+          books: [
+            { id: 'BK001', num: 1, title: 'Introduction to Algorithms (CLRS)', author: 'Cormen, Leiserson, Rivest, Stein', coverUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK013', num: 2, title: 'Cracking the Coding Interview', author: 'Gayle Laakmann McDowell', coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&auto=format&fit=crop&q=80' }
+          ],
+          followUp: 'Should I filter by semester 3 curriculum syllabus?'
+        }
+      ]);
+    } else {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ai_${Date.now()}`,
+          sender: 'ai',
+          text: `Here are curated titles from the SRM Central Library catalog matching "${query}":`,
+          books: [
+            { id: 'BK004', num: 1, title: 'Design Patterns', author: 'Gamma, Helm, Johnson, Vlissides', coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK009', num: 2, title: 'The Pragmatic Programmer', author: 'Hunt & Thomas', coverUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=200&auto=format&fit=crop&q=80' }
+          ],
+          followUp: 'Would you like me to reserve any of these for pickup today?'
+        }
+      ]);
+    }
+  };
+
+  const handleAddBook = (book) => {
+    playSuccessChime();
+    setAddedIds(prev => [...prev, book.id]);
+    toast.success(`"${book.title}" added to your Wishlist!`);
+  };
+
+  const toggleVoice = () => {
+    playClick();
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.info('Speech recognition not supported in this browser. Type your query below.');
       return;
     }
-    try {
-      const res = await txApi.issue({
-        book_id: book.id,
-        borrower_name: user?.name || 'Sautrik Roy',
-        borrower_reg: user?.reg_number || 'RA2511003010052',
-        borrower_dept: user?.department || 'CSE',
-        loan_days: 14
-      });
-      playSuccessChime();
-      toast.success(res.message || `Checked out ${book.title}!`);
-    } catch (err) {
-      playErrorBeep();
-      toast.error(err.message || 'Borrow failed');
-    }
-  };
 
-  const handleResetChat = () => {
-    playClick();
-    setMessages([
-      {
-        id: Date.now(),
-        role: 'ai',
-        content: `Conversation reset. Ready for your next library or computer science inquiry!`,
-      }
-    ]);
-  };
-
-  const sendMessage = async (text) => {
-    const msg = (text || input).trim();
-    if (!msg || loading) return;
-
-    playClick();
-    const userMsg = { id: Date.now(), role: 'user', content: msg };
-    setMessages(prev => [...prev, userMsg]);
-    setInput('');
-    setLoading(true);
-
-    try {
-      const history = messages.slice(-6).map(m => ({
-        role: m.role === 'ai' ? 'assistant' : 'user',
-        content: m.content
-      }));
-
-      const res = await aiApi.chat(msg, history, GROQ_MODELS.SPEED);
-      playSuccessChime();
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1,
-        role: 'ai',
-        content: res.reply,
-        books: res.books,
-        model: res.model,
-        latencyMs: res.latencyMs
-      }]);
-    } catch (err) {
-      playErrorBeep();
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1,
-        role: 'ai',
-        content: `I couldn't reach the neural assistant: ${err.message}. Please try again shortly.`,
-      }]);
-    } finally {
-      setLoading(false);
+    if (isListening) {
+      setIsListening(false);
+    } else {
+      setIsListening(true);
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        setInputVal(transcript);
+        setIsListening(false);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.start();
     }
   };
 
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto', paddingBottom: 40 }}>
-      {/* ── Header matching Panel 14 ── */}
-      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <div style={{
-              width: 34,
-              height: 34,
-              borderRadius: 9,
-              background: '#0f172a',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Sparkles size={18} />
-            </div>
-            <h1 style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 800,
-              fontSize: 26,
-              color: '#0f172a',
-              margin: 0,
-              letterSpacing: '-0.5px'
-            }}>
-              Ask LibraX
+    <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* ── Top Bar with BackButton & Header matching Screenshot 5 Top-Left ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BackButton onClick={() => onNavigate('dashboard')} />
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
+              AI Assistant
             </h1>
+            <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+              Your personal library companion. Ask, explore, get recommendations, and more.
+            </div>
           </div>
-          <p style={{ fontSize: 13.5, color: '#64748b', margin: 0 }}>
-            Your library companion. Search, explore, get recommendations.
-          </p>
         </div>
 
-        <button
-          onClick={handleResetChat}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '8px 14px',
-            borderRadius: 8,
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            color: '#64748b',
-            fontSize: 12.5,
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-        >
-          <RotateCcw size={13} /> Reset Chat
-        </button>
+        {/* Powered by AI Badge */}
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '6px 14px',
+          borderRadius: 20,
+          background: '#f5f3ff',
+          border: '1px solid #ddd6fe',
+          color: '#7c3aed',
+          fontSize: 12.5,
+          fontWeight: 700
+        }}>
+          <Sparkles size={14} />
+          <span>Powered by AI</span>
+        </div>
       </div>
 
-      {/* ── Main Chat Container matching Panel 14 ── */}
+      {/* ── Welcome Center & 4 Prompt Cards matching Screenshot 5 ── */}
       <div style={{
         background: '#ffffff',
         border: '1px solid #e2e8f0',
-        borderRadius: 16,
-        display: 'flex',
-        flexDirection: 'column',
-        height: 640,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-        overflow: 'hidden'
+        borderRadius: 14,
+        padding: '24px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+        textAlign: 'center'
       }}>
-        {/* Messages Stream Viewport */}
-        <div style={{
-          flex: 1,
-          padding: '24px',
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 18
-        }}>
-          {messages.map(msg => {
-            const isAi = msg.role === 'ai';
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+          Hi Sautrik! 👋
+        </h2>
+        <div style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>
+          How can I help you today?
+        </div>
+
+        {/* 4 Prompt Cards Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          {[
+            { id: 'find', title: 'Find Books', desc: 'Get recommendations', icon: BookOpen, query: 'Recommend top rated books in Computer Science' },
+            { id: 'summarize', title: 'Summarize a Book', desc: 'Key insights in seconds', icon: FileText, query: 'Summarize Clean Code by Robert C. Martin' },
+            { id: 'explain', title: 'Explain a Concept', desc: 'Simplify complex topics', icon: Lightbulb, query: 'Explain ACID properties in database systems' },
+            { id: 'suggest', title: 'Suggest for Me', desc: 'Based on your interests', icon: Target, query: 'Suggest books on software architecture' }
+          ].map(card => {
+            const Icon = card.icon;
             return (
               <div
-                key={msg.id}
+                key={card.id}
+                onClick={() => handleSend(card.query)}
                 style={{
-                  display: 'flex',
-                  gap: 12,
-                  alignItems: 'flex-start',
-                  flexDirection: isAi ? 'row' : 'row-reverse'
-                }}
-              >
-                {/* Avatar */}
-                <div style={{
-                  width: 34,
-                  height: 34,
+                  padding: '16px',
                   borderRadius: 10,
-                  background: isAi ? '#0f172a' : '#e2e8f0',
-                  color: isAi ? '#ffffff' : '#0f172a',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  flexShrink: 0
-                }}>
-                  {isAi ? <Bot size={18} /> : (user?.name?.[0] || 'S')}
+                  border: '1px solid #e2e8f0',
+                  background: '#f8fafc',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 120ms'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.transform = 'none'; }}
+              >
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: '#ffffff', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', marginBottom: 12 }}>
+                  <Icon size={16} />
                 </div>
-
-                {/* Message Bubble */}
-                <div style={{
-                  maxWidth: '80%',
-                  background: isAi ? '#f8fafc' : '#0f172a',
-                  color: isAi ? '#0f172a' : '#ffffff',
-                  border: isAi ? '1px solid #e2e8f0' : 'none',
-                  borderRadius: 14,
-                  padding: '14px 18px',
-                  lineHeight: 1.6
-                }}>
-                  {isAi ? (
-                    <FormattedAiText text={msg.content} />
-                  ) : (
-                    <div style={{ fontSize: 13.5 }}>{msg.content}</div>
-                  )}
-
-                  {/* Embedded Matching Book Cards */}
-                  {msg.books && msg.books.length > 0 && (
-                    <div style={{ marginTop: 12, borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
-                        Matching Books in Catalog
-                      </div>
-                      {msg.books.map(b => (
-                        <BookCardMini key={b.id} book={b} onBorrow={handleBorrow} />
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{card.title}</div>
+                <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 3 }}>{card.desc}</div>
               </div>
             );
           })}
+        </div>
+      </div>
 
-          {loading && (
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      {/* ── Chat Feed matching Screenshot 5 ── */}
+      <div style={{
+        background: '#ffffff',
+        border: '1px solid #e2e8f0',
+        borderRadius: 14,
+        padding: '24px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+        minHeight: 380,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 20
+      }}>
+        {messages.map(msg => {
+          if (msg.sender === 'user') {
+            return (
+              <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <div style={{
+                  maxWidth: '70%',
+                  padding: '10px 16px',
+                  borderRadius: '14px 14px 2px 14px',
+                  background: '#eff6ff',
+                  border: '1px solid #dbeafe',
+                  color: '#1e3a8a',
+                  fontSize: 13.5,
+                  lineHeight: 1.5
+                }}>
+                  {msg.text}
+                </div>
+                <img
+                  src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60&auto=format&fit=crop&q=80"
+                  alt="User"
+                  style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }}
+                />
+              </div>
+            );
+          }
+
+          return (
+            <div key={msg.id} style={{ display: 'flex', alignItems: 'start', gap: 12 }}>
               <div style={{
-                width: 34,
-                height: 34,
-                borderRadius: 10,
-                background: '#0f172a',
-                color: '#ffffff',
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: '#f5f3ff',
+                border: '1px solid #ddd6fe',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                color: '#7c3aed',
                 flexShrink: 0
               }}>
                 <Bot size={18} />
               </div>
-              <div style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: 14,
-                padding: '12px 18px'
-              }}>
-                <TypingDots />
+
+              <div style={{ flex: 1, maxWidth: '85%' }}>
+                <div style={{ fontSize: 13.5, color: '#0f172a', lineHeight: 1.5, marginBottom: 12 }}>
+                  {msg.text}
+                </div>
+
+                {/* Recommended Books List matching Screenshot 5 */}
+                {msg.books && msg.books.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+                    {msg.books.map(b => {
+                      const isAdded = addedIds.includes(b.id);
+                      return (
+                        <div
+                          key={b.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 14px',
+                            background: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: 10,
+                            gap: 12
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#64748b', width: 14 }}>{b.num}</span>
+                            <div style={{ width: 34, height: 46, borderRadius: 4, overflow: 'hidden', flexShrink: 0 }}>
+                              <BookCover bookId={b.id} title={b.title} author={b.author} coverUrl={b.coverUrl} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{b.title}</div>
+                              <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 1 }}>{b.author}</div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <button
+                              onClick={() => onNavigate('catalog')}
+                              style={{
+                                padding: '5px 12px',
+                                borderRadius: 6,
+                                border: '1px solid #e2e8f0',
+                                background: '#ffffff',
+                                color: '#0f172a',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              View Book
+                            </button>
+
+                            <button
+                              onClick={() => handleAddBook(b)}
+                              style={{
+                                padding: '5px 12px',
+                                borderRadius: 6,
+                                border: '1px solid #e2e8f0',
+                                background: isAdded ? '#ecfdf5' : '#ffffff',
+                                color: isAdded ? '#059669' : '#0f172a',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4
+                              }}
+                            >
+                              {isAdded ? <Check size={12} /> : <Plus size={12} />}
+                              <span>{isAdded ? 'Added' : '+ Add'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {msg.followUp && (
+                  <div style={{ fontSize: 12.5, color: '#64748b', fontStyle: 'italic' }}>
+                    {msg.followUp}
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          );
+        })}
+        <div ref={chatBottomRef} />
+      </div>
 
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* ── Prompt Shortcut Pills matching Panel 14 ── */}
+      {/* ── Chat Input Container with Mic & Shortcuts matching Screenshot 5 ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{
-          padding: '12px 24px',
-          borderTop: '1px solid #f1f5f9',
-          background: '#fcfcfd',
           display: 'flex',
-          gap: 8,
-          overflowX: 'auto'
-        }}>
-          {QUICK_PROMPTS.map(p => (
-            <button
-              key={p}
-              onClick={() => sendMessage(p)}
-              disabled={loading}
-              style={{
-                padding: '6px 14px',
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                color: '#475569',
-                transition: 'all 150ms',
-                flexShrink: 0
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = '#0f172a';
-                e.currentTarget.style.color = '#0f172a';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = '#e2e8f0';
-                e.currentTarget.style.color = '#475569';
-              }}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Bottom Input Form matching Panel 14 ── */}
-        <div style={{
-          padding: '16px 24px',
-          borderTop: '1px solid #e2e8f0',
-          display: 'flex',
-          gap: 12,
           alignItems: 'center',
-          background: '#ffffff'
+          gap: 10,
+          background: '#ffffff',
+          border: '1px solid #cbd5e1',
+          borderRadius: 12,
+          padding: '8px 14px',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
         }}>
           <input
+            type="text"
+            value={inputVal}
+            onChange={e => setInputVal(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSend()}
+            placeholder="Ask anything about books, concepts, or the library..."
             style={{
               flex: 1,
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: 10,
-              padding: '12px 16px',
-              color: '#0f172a',
+              border: 'none',
+              outline: 'none',
               fontSize: 13.5,
-              outline: 'none'
+              color: '#0f172a',
+              background: 'transparent'
             }}
-            placeholder="Ask about books, authors, topics..."
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-            disabled={loading}
-          />
-
-          <VoiceInputButton
-            onTranscript={transcript => setInput(transcript)}
-            disabled={loading}
-            accentColor="#0f172a"
-            title="Voice Prompt"
           />
 
           <button
-            onClick={() => sendMessage()}
-            disabled={loading || !input.trim()}
+            onClick={toggleVoice}
+            title="Voice input"
             style={{
-              padding: '12px 20px',
-              borderRadius: 10,
-              background: '#0f172a',
+              background: 'none',
               border: 'none',
-              color: '#ffffff',
-              fontWeight: 700,
-              fontSize: 13.5,
+              color: isListening ? '#ef4444' : '#64748b',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              opacity: loading || !input.trim() ? 0.6 : 1
+              padding: '6px'
             }}
           >
-            <span>Ask</span>
-            <Send size={15} />
+            {isListening ? <MicOff size={18} /> : <Mic size={18} />}
           </button>
+
+          <button
+            onClick={() => handleSend()}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              background: '#0f172a',
+              color: '#ffffff',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <Send size={16} />
+          </button>
+        </div>
+
+        {/* Quick Suggestion Chips below input */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            'Recommend OS books',
+            'Summarize Clean Code',
+            'Best books for DSA',
+            'Latest arrivals in AI'
+          ].map(chip => (
+            <button
+              key={chip}
+              onClick={() => handleSend(chip)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 20,
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                color: '#475569',
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 120ms'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#0f172a'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569'; }}
+            >
+              {chip}
+            </button>
+          ))}
         </div>
       </div>
     </div>

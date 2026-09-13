@@ -29,6 +29,7 @@ const STUDENT_NAV = [
   { id: 'wishlist', label: 'Wishlist', icon: Heart },
   { id: 'history', label: 'History', icon: Clock },
   { id: 'notifications', label: 'Notifications', icon: Bell, badge: '3' },
+  { id: 'scanner', label: 'Scan QR (Issue Book)', icon: QrCode },
   { id: 'ai', label: 'AI Assistant', icon: Sparkles },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
@@ -197,6 +198,53 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
             );
           })}
         </nav>
+
+        {/* SRM IST Campus Quote Card matching exact screenshot */}
+        <div style={{
+          marginTop: 'auto',
+          marginBottom: 10,
+          padding: '10px',
+          borderRadius: 12,
+          background: '#f8fafc',
+          border: '1px solid #f1f5f9',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 7
+        }}>
+          <img
+            src="/srm_campus_sidebar.jpg"
+            alt="SRM IST Campus"
+            style={{
+              width: '100%',
+              height: 70,
+              borderRadius: 8,
+              objectFit: 'cover',
+              border: '1px solid #e2e8f0'
+            }}
+          />
+          <div>
+            <div style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 12,
+              fontStyle: 'italic',
+              fontWeight: 600,
+              color: '#334155',
+              lineHeight: 1.25
+            }}>
+              Knowledge Builds Brighter Futures
+            </div>
+            <div style={{
+              fontSize: 8.5,
+              fontWeight: 700,
+              color: '#94a3b8',
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase',
+              marginTop: 2
+            }}>
+              SRM INSTITUTE OF SCIENCE AND TECHNOLOGY
+            </div>
+          </div>
+        </div>
 
         {/* Bottom Log Out Section */}
         <div style={{ paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>

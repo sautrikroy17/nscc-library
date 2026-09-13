@@ -1,10 +1,10 @@
 import { INITIAL_USERS, INITIAL_BOOKS, INITIAL_TRANSACTIONS } from './seedData';
 
 const STORAGE_KEYS = {
-  BOOKS: 'librax_books_v3',
-  TRANSACTIONS: 'librax_transactions_v3',
-  USERS: 'librax_users_v3',
-  ACTIVE_USER: 'librax_cached_user_v3'
+  BOOKS: 'librax_books_v4',
+  TRANSACTIONS: 'librax_transactions_v4',
+  USERS: 'librax_users_v4',
+  ACTIVE_USER: 'librax_cached_user_v4'
 };
 
 // Initialize localStorage if not present or backfill new books
@@ -15,11 +15,15 @@ function initStore() {
   } else {
     try {
       const stored = JSON.parse(existingBooksRaw);
-      // Ensure all seed books exist in storage
+      // Ensure all seed books exist in storage and have updated cover_url
       let updated = false;
       for (const seedBook of INITIAL_BOOKS) {
-        if (!stored.some(b => b.id.toLowerCase() === seedBook.id.toLowerCase())) {
+        const idx = stored.findIndex(b => b.id.toLowerCase() === seedBook.id.toLowerCase());
+        if (idx === -1) {
           stored.push(seedBook);
+          updated = true;
+        } else if (!stored[idx].cover_url || stored[idx].category !== seedBook.category) {
+          stored[idx] = { ...stored[idx], ...seedBook };
           updated = true;
         }
       }

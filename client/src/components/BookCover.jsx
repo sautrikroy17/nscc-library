@@ -208,7 +208,53 @@ export const BOOK_ARTWORKS = {
   }
 };
 
-export default function BookCover({ bookId, title, author, width = '100%', height = '100%', style = {}, className = '' }) {
+export default function BookCover({ bookId, title, author, coverUrl, width = '100%', height = '100%', style = {}, className = '' }) {
+  const [imgFailed, setImgFailed] = React.useState(false);
+
+  // If a valid coverUrl is provided and hasn't failed, render it with realistic book spine
+  if (coverUrl && !imgFailed) {
+    return (
+      <div 
+        className={`book-cover-card ${className}`}
+        style={{
+          width,
+          height,
+          position: 'relative',
+          borderRadius: 8,
+          overflow: 'hidden',
+          background: '#0f172a',
+          boxShadow: '0 4px 14px rgba(0, 0, 0, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.1)',
+          aspectRatio: '3 / 4.2',
+          flexShrink: 0,
+          ...style
+        }}
+      >
+        <img
+          src={coverUrl}
+          alt={title || 'Book Cover'}
+          onError={() => setImgFailed(true)}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block'
+          }}
+        />
+        {/* Realistic Book Spine Highlight */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '5%',
+          height: '100%',
+          background: 'linear-gradient(90deg, rgba(255, 255, 255, 0.3) 0%, rgba(0, 0, 0, 0.25) 100%)',
+          zIndex: 2,
+          pointerEvents: 'none'
+        }} />
+      </div>
+    );
+  }
+
   // Normalize match
   const artwork = BOOK_ARTWORKS[bookId] || 
     Object.values(BOOK_ARTWORKS).find(b => b.title.toLowerCase() === (title || '').toLowerCase()) || 
