@@ -1,5 +1,5 @@
 {
-  "name": "nscc-library-client",
+  "name": "nscc-library-frontend",
   "private": true,
   "version": "1.0.0",
   "type": "module",

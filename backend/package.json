@@ -1,5 +1,5 @@
 {
-  "name": "nscc-library-server",
+  "name": "nscc-library-backend",
   "version": "1.0.0",
   "type": "commonjs",
   "scripts": {

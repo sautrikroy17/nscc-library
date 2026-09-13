@@ -2,8 +2,7 @@
 
 > **Newton School Coding Club (NSCC) · SRM Institute of Science and Technology**  
 > 🌐 **Production URL**: [https://librax-library.vercel.app](https://librax-library.vercel.app)  
-> 🪞 **Production Mirrors**: [https://nscc-librax.vercel.app](https://nscc-librax.vercel.app) · [https://nscc-library.vercel.app](https://nscc-library.vercel.app)  
-> 📖 **Interview & Defense Guide**: [Read EXPLAINER.md](./EXPLAINER.md)
+> 🪞 **Production Mirrors**: [https://nscc-librax.vercel.app](https://nscc-librax.vercel.app) · [https://nscc-library.vercel.app](https://nscc-library.vercel.app)
 
 [![React 18](https://img.shields.io/badge/React-18.3-blue.svg?logo=react)](https://reactjs.org/)
 [![Vite 5](https://img.shields.io/badge/Vite-5.4-646CFF.svg?logo=vite)](https://vitejs.dev/)
@@ -23,11 +22,11 @@
 
 ## 📂 Well-Arranged Repository Structure
 
-The repository is organized into two primary layers:
+The repository is organized into two clean, self-explanatory directories:
 
 ```
 nscc-library/
-├── client/                     # 💻 FRONTEND APPLICATION (React 18 + Vite 5)
+├── frontend/                   # 💻 FRONTEND APPLICATION (React 18 + Vite 5)
 │   ├── public/                 # Static assets (Lyra AI avatar, icons, graphics)
 │   ├── src/
 │   │   ├── components/         # Reusable UI (Sidebar, BackButton, BookCover, Logo)
@@ -52,7 +51,7 @@ nscc-library/
 │   ├── vite.config.js          # Build optimization & code splitting
 │   └── README.md               # 📖 Deep-dive into Frontend architecture
 │
-├── server/                     # ⚙️ BACKEND MICROSERVICE (Node.js + Express 4)
+├── backend/                    # ⚙️ BACKEND MICROSERVICE (Node.js + Express 4)
 │   ├── middleware/             # JWT authentication & role-based access guards
 │   ├── routes/
 │   │   ├── auth.js             # User login, token generation & bcrypt hashing
@@ -67,7 +66,6 @@ nscc-library/
 │   ├── render.yaml             # Render deployment configuration
 │   └── README.md               # 📖 Deep-dive into Backend architecture
 │
-├── EXPLAINER.md                # 🎓 Presentation, Architecture & Technical Q&A Guide
 ├── LICENSE                     # MIT License (Copyright 2026 Sautrik Roy)
 └── README.md                   # Main Project Documentation
 ```
@@ -78,14 +76,14 @@ nscc-library/
 
 ```
                        ┌──────────────────────────────────────────────┐
-                       │               CLIENT (FRONTEND)              │
+                       │                   FRONTEND                   │
                        │   React 18 · Vite 5 · Web Audio API · QR     │
                        └───────┬──────────────────────────────▲───────┘
                                │                              │
                      HTTP/REST │ (Axios + JSON)               │ Responses
                                ▼                              │
                        ┌──────────────────────────────────────┴───────┐
-                       │               SERVER (BACKEND)               │
+                       │                   BACKEND                    │
                        │       Node.js · Express · JWT · RBAC         │
                        └──┬─────────────────────┬───────────────────┬─┘
                           │                     │                   │
@@ -152,7 +150,7 @@ cd nscc-library
 
 ### 2. Start Backend
 ```bash
-cd server
+cd backend
 npm install
 npm run dev
 # Server runs on http://localhost:4000 (SQLite database auto-initializes)
@@ -160,7 +158,7 @@ npm run dev
 
 ### 3. Start Frontend
 ```bash
-cd ../client
+cd ../frontend
 npm install
 npm run dev
 # Client runs on http://localhost:5173

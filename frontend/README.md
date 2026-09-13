@@ -1,4 +1,4 @@
-# 💻 LibraX Frontend (Client)
+# 💻 LibraX Frontend
 
 > **Modern, High-Performance React 18 & Vite 5 Single Page Application**  
 > 🌐 **Production URL**: [https://librax-library.vercel.app](https://librax-library.vercel.app)
@@ -7,13 +7,13 @@
 
 ## 🏛️ Architecture Overview
 
-The `client/` directory contains the entire frontend user interface for **LibraX**, architected with React 18, Vite 5, Framer Motion animations, Lucide icons, and Vanilla CSS design tokens. It implements a dual-role workflow:
+The `frontend/` directory contains the entire frontend user interface for **LibraX**, architected with React 18, Vite 5, Framer Motion animations, Lucide icons, and Vanilla CSS design tokens. It implements a dual-role workflow:
 
 1. **Librarian Administration Portal**: A comprehensive 10-screen institutional management panel for Head Librarian **Dr. Rajesh Kumar** (Employee ID: `LIB001`).
 2. **Student Reader Portal**: A personalized learning hub for student **Sautrik Roy** (Reg: `RA2511003010052`) featuring browsing, borrowing history, study soundscapes, and AI book recommendations.
 
 ```
-client/
+frontend/
 ├── public/                 # Static assets (Lyra avatar, favicons, logos)
 ├── src/
 │   ├── components/         # Reusable atomic UI components
@@ -90,8 +90,8 @@ client/
 ## 🛠️ Installation & Local Development
 
 ```bash
-# Navigate to the client directory
-cd client
+# Navigate to the frontend directory
+cd frontend
 
 # Install dependencies
 npm install
@@ -113,4 +113,4 @@ npm run build
 # Preview the production build locally
 npm run preview
 ```
-Output is generated in `client/dist/` with automated vendor chunk splitting for fast initial page load times.
+Output is generated in `frontend/dist/` with automated vendor chunk splitting for fast initial page load times.

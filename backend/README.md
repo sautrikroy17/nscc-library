@@ -1,4 +1,4 @@
-# ⚙️ LibraX Backend (Server)
+# ⚙️ LibraX Backend
 
 > **High-Throughput Node.js & Express RESTful API with Embedded SQLite (WAL Mode)**  
 > 🌐 **Production URL**: [https://librax-library.vercel.app](https://librax-library.vercel.app)
@@ -7,10 +7,10 @@
 
 ## 🏛️ Architecture Overview
 
-The `server/` directory houses the backend microservice for **LibraX**. It handles secure institutional authentication, database transactions, telemetry analytics, data streaming (Excel/CSV), and Groq AI LLM routing.
+The `backend/` directory houses the backend microservice for **LibraX**. It handles secure institutional authentication, database transactions, telemetry analytics, data streaming (Excel/CSV), and Groq AI LLM routing.
 
 ```
-server/
+backend/
 ├── middleware/
 │   └── auth.js             # JWT verification & Role-Based Access Control (RBAC)
 │
@@ -24,7 +24,7 @@ server/
 │
 ├── db.js                   # SQLite database engine (better-sqlite3) with WAL mode & schemas
 ├── index.js                # Express app setup, CORS, JSON parsing, error handlers
-├── package.json            # Server dependencies & scripts
+├── package.json            # Backend dependencies & scripts
 ├── render.yaml             # Optional Render deployment blueprint
 └── .env.example            # Environment variable template
 ```
@@ -94,8 +94,8 @@ PRAGMA foreign_keys = ON;
 ## 🛠️ Local Setup & Running
 
 ```bash
-# Navigate to the server directory
-cd server
+# Navigate to the backend directory
+cd backend
 
 # Install dependencies
 npm install
