@@ -114,7 +114,7 @@ export default function App() {
   if (!user) return <LoginPage />;
 
   const isStudent = user.role === 'student';
-  const profileName = isStudent ? 'Sautrik Roy' : (user.name || 'Librarian (LIB-SRM-042)');
+  const profileName = isStudent ? 'Sautrik Roy' : (user.name || 'Dr. Rajesh Kumar');
   const profileRole = isStudent ? 'RA2511003010052 · 2nd Year CSE' : 'Librarian · Central Library';
 
   const renderPage = () => {
@@ -194,7 +194,7 @@ export default function App() {
               border: '1px solid #e2e8f0',
               borderRadius: 10,
               padding: '8px 14px',
-              width: 420,
+              width: 440,
               cursor: 'pointer',
               transition: 'all 150ms'
             }}
@@ -211,7 +211,7 @@ export default function App() {
                   setActivePage('catalog');
                 }
               }}
-              placeholder="Search books, authors, ISBN..."
+              placeholder={isStudent ? "Search books, authors, ISBN..." : "Search books, students (name/roll no.), ISBN, etc..."}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -221,7 +221,7 @@ export default function App() {
                 flex: 1
               }}
             />
-            {searchQuery && (
+            {searchQuery ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -241,11 +241,24 @@ export default function App() {
               >
                 ✕
               </button>
+            ) : (
+              <span style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: '#94a3b8',
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 4,
+                padding: '1px 5px',
+                lineHeight: 1.2
+              }}>
+                ⌘ K
+              </span>
             )}
           </div>
 
-          {/* Right Profile & Notifications */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          {/* Right Profile, Notifications & DateTime */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {/* Notification Bell */}
             <button
               onClick={() => { playClick(); setShowNotifications(!showNotifications); }}
@@ -293,7 +306,7 @@ export default function App() {
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <img
-                src={isStudent ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80" : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"}
+                src={isStudent ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80" : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80"}
                 alt="Avatar"
                 style={{
                   width: 36,
@@ -312,6 +325,21 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* Live Clock / Calendar Badge for Librarian Portal */}
+            {!isStudent && (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                textAlign: 'right',
+                borderLeft: '1px solid #e2e8f0',
+                paddingLeft: 14,
+                lineHeight: 1.2
+              }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b' }}>Sun, 13 Sep 2025</span>
+                <span style={{ fontSize: 12.5, fontWeight: 800, color: '#0f172a' }}>03:18 PM</span>
+              </div>
+            )}
           </div>
         </header>
 

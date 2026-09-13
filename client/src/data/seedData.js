@@ -2,12 +2,12 @@
 export const INITIAL_USERS = [
   {
     id: 'LIB001',
-    name: 'Librarian (LIB-SRM-042)',
-    email: 'librarian@srmist.edu.in',
-    reg_number: 'LIB-SRM-042',
-    department: 'Central Library Staff',
+    name: 'Dr. Rajesh Kumar',
+    email: 'rajesh.kumar@srmist.edu.in',
+    reg_number: 'LIB001',
+    department: 'Central Library',
     role: 'librarian',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'LIB002',

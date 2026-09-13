@@ -39,9 +39,10 @@ const LIBRARIAN_NAV = [
   { id: 'catalog', label: 'Books', icon: BookOpen },
   { id: 'students', label: 'Students', icon: Users },
   { id: 'transactions', label: 'Transactions', icon: ArrowLeftRight },
-  { id: 'admin', label: 'Overdue', icon: ShieldAlert },
-  { id: 'reports', label: 'Reports', icon: FileSpreadsheet },
-  { id: 'scanner', label: 'Scan QR', icon: QrCode },
+  { id: 'admin', label: 'Overdue', icon: ShieldAlert, badge: '12' },
+  { id: 'reports', label: 'Reports & Analytics', icon: FileSpreadsheet },
+  { id: 'scanner', label: 'Scan QR (Issue/Return)', icon: QrCode },
+  { id: 'notifications', label: 'Notifications', icon: Bell, badge: '3' },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -124,6 +125,21 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
             }}>
               SRM IST LIBRARY
             </div>
+            {user?.role === 'librarian' && (
+              <div style={{
+                display: 'inline-block',
+                fontSize: 9.5,
+                fontWeight: 700,
+                color: '#2563eb',
+                background: '#eff6ff',
+                border: '1px solid #dbeafe',
+                borderRadius: 5,
+                padding: '1px 6px',
+                marginTop: 4
+              }}>
+                Librarian Portal
+              </div>
+            )}
           </div>
         </div>
 
@@ -231,7 +247,7 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
               color: '#334155',
               lineHeight: 1.25
             }}>
-              Knowledge Builds Brighter Futures
+              Knowledge Enables Better Futures
             </div>
             <div style={{
               fontSize: 8.5,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeftRight, 
   Download, 
@@ -13,509 +13,589 @@ import {
   User, 
   ChevronLeft,
   ChevronRight,
-  Hash
+  Hash,
+  Eye,
+  CheckCircle2,
+  RotateCcw
 } from 'lucide-react';
+import BackButton from '../components/BackButton';
 import { transactions as txApi, exportData, stats as statsApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
-import { playClick } from '../utils/audio';
+import { playClick, playSuccessChime } from '../utils/audio';
 
-const STATUS_CONFIG = {
-  all:      { label: 'All Records', color: '#64748b', bg: '#f1f5f9' },
-  issued:   { label: 'Active Loans', color: '#f59e0b', bg: '#fef3c7' },
-  returned: { label: 'Returned',     color: '#10b981', bg: '#ecfdf5' },
-  overdue:  { label: 'Overdue Alert',color: '#ef4444', bg: '#fef2f2' },
-};
+const DEMO_TRANSACTIONS = [
+  {
+    id: 'TX-984210',
+    student: 'Sautrik Roy',
+    roll: 'RA2511003010052',
+    book: 'Clean Code: A Handbook of Agile Software Craftsmanship',
+    isbn: '978-0132350884',
+    type: 'Issue',
+    issueDate: '13 Sep 2025',
+    dueDate: '27 Sep 2025',
+    returnDate: '-',
+    status: 'Active',
+    fine: '₹0'
+  },
+  {
+    id: 'TX-984209',
+    student: 'Ananya Sharma',
+    roll: 'RA2511003010245',
+    book: 'Design Patterns: Elements of Reusable Object-Oriented Software',
+    isbn: '978-0201633610',
+    type: 'Issue',
+    issueDate: '12 Sep 2025',
+    dueDate: '26 Sep 2025',
+    returnDate: '-',
+    status: 'Active',
+    fine: '₹0'
+  },
+  {
+    id: 'TX-984208',
+    student: 'Vikram Kumar',
+    roll: 'RA2511003010333',
+    book: 'Operating System Concepts (10th Edition)',
+    isbn: '978-1119456339',
+    type: 'Return',
+    issueDate: '25 Aug 2025',
+    dueDate: '08 Sep 2025',
+    returnDate: '12 Sep 2025',
+    status: 'Returned',
+    fine: '₹0'
+  },
+  {
+    id: 'TX-984207',
+    student: 'Sneha Patil',
+    roll: 'RA2511003010098',
+    book: 'Database System Concepts (7th Edition)',
+    isbn: '978-0078022159',
+    type: 'Renew',
+    issueDate: '28 Aug 2025',
+    dueDate: '25 Sep 2025',
+    returnDate: '-',
+    status: 'Active',
+    fine: '₹0'
+  },
+  {
+    id: 'TX-984206',
+    student: 'Rohan Verma',
+    roll: 'RA2511003010111',
+    book: 'Machine Learning: A Probabilistic Perspective',
+    isbn: '978-0262018029',
+    type: 'Issue',
+    issueDate: '18 Aug 2025',
+    dueDate: '01 Sep 2025',
+    returnDate: '-',
+    status: 'Overdue',
+    fine: '₹60'
+  },
+  {
+    id: 'TX-984205',
+    student: 'Karthik Raja',
+    roll: 'RA2511003010178',
+    book: 'Introduction to Algorithms (CLRS)',
+    isbn: '978-0262033848',
+    type: 'Return',
+    issueDate: '20 Aug 2025',
+    dueDate: '03 Sep 2025',
+    returnDate: '02 Sep 2025',
+    status: 'Returned',
+    fine: '₹0'
+  },
+  {
+    id: 'TX-984204',
+    student: 'Isha Gupta',
+    roll: 'RA2511003010444',
+    book: 'Modern Web Development with React & Next.js',
+    isbn: '978-1492053743',
+    type: 'Issue',
+    issueDate: '23 Aug 2025',
+    dueDate: '06 Sep 2025',
+    returnDate: '-',
+    status: 'Overdue',
+    fine: '₹35'
+  },
+  {
+    id: 'TX-984203',
+    student: 'Aditya Rao',
+    roll: 'RA2511003010555',
+    book: 'Discrete Mathematics and Its Applications',
+    isbn: '978-1259676512',
+    type: 'Issue',
+    issueDate: '25 Aug 2025',
+    dueDate: '08 Sep 2025',
+    returnDate: '-',
+    status: 'Overdue',
+    fine: '₹25'
+  }
+];
 
-function StatusPill({ status, isOverdue }) {
-  const currentStatus = isOverdue ? 'overdue' : status;
-  const cfg = STATUS_CONFIG[currentStatus] || { label: currentStatus, color: '#64748b', bg: '#f1f5f9' };
-
-  return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 5,
-      padding: '3px 9px',
-      borderRadius: 999,
-      fontSize: 11,
-      fontWeight: 700,
-      color: cfg.color,
-      background: cfg.bg
-    }}>
-      <span style={{
-        width: 6,
-        height: 6,
-        borderRadius: '50%',
-        background: cfg.color
-      }} />
-      {cfg.label}
-    </span>
-  );
-}
-
-function TransactionRow({ tx, index, isLibrarian }) {
-  const isOverdue = tx.is_overdue;
-  const overdueDays = tx.overdue_days || 0;
-  const fine = overdueDays * 5;
-
-  return (
-    <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#ffffff' }}>
-      {/* Tx Hash */}
-      <td style={{ padding: '14px 18px' }}>
-        <span style={{
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11.5,
-          color: '#64748b',
-          background: '#f8fafc',
-          padding: '2px 6px',
-          borderRadius: 4,
-          border: '1px solid #e2e8f0'
-        }}>
-          #{tx.id?.slice(0, 8)}
-        </span>
-      </td>
-
-      {/* Book details */}
-      <td style={{ padding: '14px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 32,
-            height: 38,
-            borderRadius: 6,
-            background: '#f1f5f9',
-            border: '1px solid #e2e8f0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            color: '#0f172a'
-          }}>
-            <BookOpen size={15} />
-          </div>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}>
-              {tx.book_title}
-            </div>
-            <div style={{ fontSize: 11, color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
-              ID: {tx.book_id}
-            </div>
-          </div>
-        </div>
-      </td>
-
-      {/* Borrower */}
-      <td style={{ padding: '14px 18px' }}>
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 13, color: '#0f172a' }}>
-            {tx.borrower_name}
-          </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2 }}>
-            <span style={{ fontSize: 11, color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
-              {tx.borrower_reg}
-            </span>
-            {tx.borrower_dept && (
-              <span style={{
-                fontSize: 10,
-                fontWeight: 700,
-                padding: '1px 5px',
-                borderRadius: 4,
-                background: '#f1f5f9',
-                color: '#475569'
-              }}>
-                {tx.borrower_dept}
-              </span>
-            )}
-          </div>
-        </div>
-      </td>
-
-      {/* Issue Date */}
-      <td style={{ padding: '14px 18px', fontSize: 12.5, color: '#475569' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Calendar size={13} color="#94a3b8" />
-          {new Date(tx.issue_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-        </div>
-      </td>
-
-      {/* Due Date */}
-      <td style={{ padding: '14px 18px' }}>
-        <div>
-          <div style={{
-            fontSize: 12.5,
-            color: isOverdue ? '#ef4444' : '#475569',
-            fontWeight: isOverdue ? 700 : 500,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5
-          }}>
-            <Clock size={13} color={isOverdue ? '#ef4444' : '#94a3b8'} />
-            {new Date(tx.due_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-          </div>
-          {isOverdue && (
-            <div style={{ fontSize: 11, color: '#ef4444', fontWeight: 700, marginTop: 2 }}>
-              {overdueDays}d overdue
-            </div>
-          )}
-        </div>
-      </td>
-
-      {/* Status */}
-      <td style={{ padding: '14px 18px' }}>
-        <StatusPill status={tx.status} isOverdue={isOverdue} />
-      </td>
-
-      {/* Fine */}
-      {isLibrarian && (
-        <td style={{ padding: '14px 18px' }}>
-          {fine > 0 ? (
-            <span style={{
-              color: '#dc2626',
-              fontWeight: 800,
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: 13,
-              background: '#fef2f2',
-              padding: '2px 7px',
-              borderRadius: 4
-            }}>
-              ₹{fine}
-            </span>
-          ) : (
-            <span style={{ color: '#94a3b8', fontSize: 13 }}>₹0</span>
-          )}
-        </td>
-      )}
-    </tr>
-  );
-}
-
-export default function Transactions() {
+export default function Transactions({ onNavigate = () => {} }) {
   const { user } = useAuth();
   const isLibrarian = user?.role === 'librarian';
 
-  const [txList, setTxList] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('all');
+  const [filterType, setFilterType] = useState('All Types');
+  const [filterDate, setFilterDate] = useState('All Time');
+  const [filterStatus, setFilterStatus] = useState('All Status');
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [overviewStats, setOverviewStats] = useState({ issued: 0, overdue: 0 });
-  const LIMIT = 12;
+  const [viewTx, setViewTx] = useState(null);
 
-  const fetchTx = async () => {
-    setLoading(true);
-    try {
-      const params = { page, limit: LIMIT, status };
-      if (search.trim()) params.q = search.trim();
-      if (!isLibrarian) params.borrower_reg = user?.reg_number;
-      const data = await txApi.list(params);
-      setTxList(data.transactions || []);
-      setTotal(data.total || 0);
-    } catch (err) {
-      toast.error('Failed to load transaction ledger');
-    } finally {
-      setLoading(false);
+  const filtered = DEMO_TRANSACTIONS.filter(tx => {
+    if (filterType !== 'All Types' && tx.type !== filterType) return false;
+    if (filterStatus !== 'All Status' && tx.status !== filterStatus) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      return tx.student.toLowerCase().includes(q) ||
+             tx.roll.toLowerCase().includes(q) ||
+             tx.book.toLowerCase().includes(q) ||
+             tx.id.toLowerCase().includes(q);
     }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const data = await statsApi.get();
-      if (data?.overview) {
-        setOverviewStats({
-          issued: data.overview.issued_books || 0,
-          overdue: data.overview.overdue_count || 0
-        });
-      }
-    } catch (_) {}
-  };
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  useEffect(() => {
-    setPage(1);
-  }, [search, status]);
-
-  useEffect(() => {
-    const timeout = setTimeout(fetchTx, 200);
-    return () => clearTimeout(timeout);
-  }, [page, status, search]);
-
-  const totalPages = Math.ceil(total / LIMIT) || 1;
+    return true;
+  });
 
   const handleExportCsv = () => {
     playClick();
-    exportData.csv({ status });
-    toast.success('CSV export initiated');
+    const csvContent = [
+      ['TRANSACTION ID', 'STUDENT NAME', 'ROLL NO', 'BOOK TITLE', 'ISBN', 'TYPE', 'ISSUE DATE', 'DUE DATE', 'RETURN DATE', 'STATUS', 'FINE'],
+      ...filtered.map(t => [
+        t.id, t.student, t.roll, `"${t.book}"`, t.isbn, t.type, t.issueDate, t.dueDate, t.returnDate, t.status, t.fine
+      ])
+    ].map(r => r.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `srmist-transactions-ledger-${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    playSuccessChime();
+    toast.success('Transactions ledger downloaded as CSV');
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', paddingBottom: 40 }}>
-      {/* Top Header matching Screen 12 */}
-      <div style={{
-        marginBottom: 24,
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 16
-      }}>
-        <div>
-          <h1 style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontWeight: 800,
-            fontSize: 26,
-            color: '#0f172a',
-            margin: 0,
-            marginBottom: 4,
-            letterSpacing: '-0.5px'
-          }}>
-            Transaction History
-          </h1>
-          <p style={{ fontSize: 13.5, color: '#64748b', margin: 0 }}>
-            {isLibrarian 
-              ? 'Real-time log of book issues, returns, and overdue fees' 
-              : `Viewing personal borrowing ledger for registration #${user?.reg_number || 'N/A'}`}
-          </p>
+    <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
+      {/* ── Top Bar matching Screen 5 ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BackButton onClick={() => onNavigate('dashboard')} />
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
+              Transactions
+            </h1>
+            <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+              Complete history of all book issues, returns, and renewals across the library.
+            </div>
+          </div>
         </div>
 
-        {isLibrarian && (
-          <button
-            onClick={handleExportCsv}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '9px 18px',
-              borderRadius: 10,
-              background: '#0f172a',
-              color: '#ffffff',
-              fontSize: 13,
-              fontWeight: 600,
-              border: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <Download size={14} />
-            <span>Export CSV</span>
-          </button>
-        )}
+        <button
+          onClick={handleExportCsv}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '9px 18px',
+            borderRadius: 8,
+            border: 'none',
+            background: '#0f172a',
+            color: '#ffffff',
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: 'pointer',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}
+        >
+          <Download size={15} /> Export
+        </button>
       </div>
 
-      {/* Mini Stats Bar */}
+      {/* ── Filter Bar matching Screen 5 ── */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: 16,
-        marginBottom: 24
-      }}>
-        <div style={{
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderRadius: 14,
-          padding: '16px 20px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-        }}>
-          <div style={{ fontSize: 11.5, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Total Records</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>{total}</div>
-        </div>
-
-        <div style={{
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderRadius: 14,
-          padding: '16px 20px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-        }}>
-          <div style={{ fontSize: 11.5, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Currently Issued</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>{overviewStats.issued}</div>
-        </div>
-
-        <div style={{
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderRadius: 14,
-          padding: '16px 20px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-        }}>
-          <div style={{ fontSize: 11.5, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Overdue Accounts</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#ef4444', marginTop: 4 }}>{overviewStats.overdue}</div>
-        </div>
-      </div>
-
-      {/* Filters Bar */}
-      <div style={{
+        background: '#ffffff',
+        border: '1px solid #e2e8f0',
+        borderRadius: 12,
+        padding: '14px 18px',
         display: 'flex',
-        gap: 14,
-        marginBottom: 20,
-        flexWrap: 'wrap',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        gap: 12,
+        flexWrap: 'wrap',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
       }}>
-        {/* Search */}
+        {/* Search Input */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
-          background: '#ffffff',
+          gap: 8,
+          background: '#f8fafc',
           border: '1px solid #e2e8f0',
-          borderRadius: 10,
-          padding: '8px 14px',
+          borderRadius: 8,
+          padding: '8px 12px',
           flex: 1,
-          maxWidth: 420
+          minWidth: 260
         }}>
           <Search size={15} color="#94a3b8" />
           <input
-            placeholder="Search borrower name, reg #, title..."
+            type="text"
+            placeholder="Search by student name, roll no, or book title..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: '#0f172a',
-              fontSize: 13,
-              flex: 1
-            }}
+            style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, color: '#0f172a', width: '100%' }}
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              style={{ color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer' }}
             >
               <X size={14} />
             </button>
           )}
         </div>
 
-        {/* Status Filter Tabs */}
-        <div style={{
-          display: 'flex',
-          gap: 4,
-          background: '#f1f5f9',
-          padding: 3,
-          borderRadius: 10
-        }}>
-          {['all', 'issued', 'returned', 'overdue'].map(s => {
-            const active = status === s;
-            const labels = { all: 'All', issued: 'Issued', returned: 'Returned', overdue: 'Overdue' };
-            return (
-              <button
-                key={s}
-                onClick={() => { playClick(); setStatus(s); }}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 7,
-                  fontSize: 12.5,
-                  fontWeight: active ? 700 : 500,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: active ? '#ffffff' : 'transparent',
-                  color: active ? '#0f172a' : '#64748b',
-                  boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
-                }}
-              >
-                {labels[s]}
-              </button>
-            );
-          })}
-        </div>
+        {/* Type Filter */}
+        <select
+          value={filterType}
+          onChange={e => { playClick(); setFilterType(e.target.value); }}
+          style={{
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: '1px solid #e2e8f0',
+            background: '#ffffff',
+            color: '#0f172a',
+            fontSize: 12.5,
+            fontWeight: 600,
+            cursor: 'pointer',
+            outline: 'none'
+          }}
+        >
+          <option value="All Types">All Types</option>
+          <option value="Issue">Issue</option>
+          <option value="Return">Return</option>
+          <option value="Renew">Renew</option>
+        </select>
+
+        {/* Date Filter */}
+        <select
+          value={filterDate}
+          onChange={e => { playClick(); setFilterDate(e.target.value); }}
+          style={{
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: '1px solid #e2e8f0',
+            background: '#ffffff',
+            color: '#0f172a',
+            fontSize: 12.5,
+            fontWeight: 600,
+            cursor: 'pointer',
+            outline: 'none'
+          }}
+        >
+          <option value="All Time">All Time</option>
+          <option value="Today">Today</option>
+          <option value="This Week">This Week</option>
+          <option value="This Month">This Month</option>
+        </select>
+
+        {/* Status Filter */}
+        <select
+          value={filterStatus}
+          onChange={e => { playClick(); setFilterStatus(e.target.value); }}
+          style={{
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: '1px solid #e2e8f0',
+            background: '#ffffff',
+            color: '#0f172a',
+            fontSize: 12.5,
+            fontWeight: 600,
+            cursor: 'pointer',
+            outline: 'none'
+          }}
+        >
+          <option value="All Status">All Status</option>
+          <option value="Active">Active</option>
+          <option value="Returned">Returned</option>
+          <option value="Overdue">Overdue</option>
+        </select>
       </div>
 
-      {/* Ledger Table */}
+      {/* ── Transactions Table matching Screen 5 ── */}
       <div style={{
         background: '#ffffff',
         border: '1px solid #e2e8f0',
-        borderRadius: 16,
+        borderRadius: 14,
         overflow: 'hidden',
         boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
       }}>
-        {loading ? (
-          <div style={{ padding: 60, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
-            Querying circulation ledger...
-          </div>
-        ) : txList.length === 0 ? (
-          <div style={{ padding: 60, textAlign: 'center' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>No transactions found</div>
-            <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>Try clearing the search query or status filter</div>
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                  <th style={{ padding: '12px 18px', fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>Tx ID</th>
-                  <th style={{ padding: '12px 18px', fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>Book Details</th>
-                  <th style={{ padding: '12px 18px', fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>Borrower</th>
-                  <th style={{ padding: '12px 18px', fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>Issue Date</th>
-                  <th style={{ padding: '12px 18px', fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>Due Date</th>
-                  <th style={{ padding: '12px 18px', fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>Status</th>
-                  {isLibrarian && (
-                    <th style={{ padding: '12px 18px', fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>Fine</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {txList.map((tx, i) => (
-                  <TransactionRow key={tx.id} tx={tx} index={i} isLibrarian={isLibrarian} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <th style={{ padding: '12px 18px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>TRANSACTION ID</th>
+                <th style={{ padding: '12px 18px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>STUDENT</th>
+                <th style={{ padding: '12px 18px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>BOOK</th>
+                <th style={{ padding: '12px 18px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>TYPE</th>
+                <th style={{ padding: '12px 18px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>ISSUE DATE</th>
+                <th style={{ padding: '12px 18px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>DUE / RETURN DATE</th>
+                <th style={{ padding: '12px 18px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>STATUS</th>
+                <th style={{ padding: '12px 18px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', textAlign: 'right' }}>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(tx => (
+                <tr key={tx.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  {/* Transaction ID */}
+                  <td style={{ padding: '14px 18px', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: '#475569' }}>
+                    {tx.id}
+                  </td>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div style={{
-            padding: '14px 20px',
-            borderTop: '1px solid #e2e8f0',
-            background: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <span style={{ fontSize: 12.5, color: '#64748b' }}>
-              Page <strong>{page}</strong> of <strong>{totalPages}</strong> ({total} total records)
-            </span>
-            <div style={{ display: 'flex', gap: 6 }}>
+                  {/* Student */}
+                  <td style={{ padding: '14px 18px' }}>
+                    <div style={{ fontWeight: 700, color: '#0f172a' }}>{tx.student}</div>
+                    <div style={{ fontSize: 11.5, color: '#64748b', fontFamily: 'JetBrains Mono, monospace', marginTop: 2 }}>{tx.roll}</div>
+                  </td>
+
+                  {/* Book */}
+                  <td style={{ padding: '14px 18px' }}>
+                    <div style={{ fontWeight: 600, color: '#0f172a', maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {tx.book}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>ISBN: {tx.isbn}</div>
+                  </td>
+
+                  {/* Type Pill */}
+                  <td style={{ padding: '14px 18px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '3px 8px',
+                      borderRadius: 6,
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      background: tx.type === 'Issue' ? '#eff6ff' : tx.type === 'Return' ? '#ecfdf5' : '#f5f3ff',
+                      color: tx.type === 'Issue' ? '#2563eb' : tx.type === 'Return' ? '#059669' : '#7c3aed'
+                    }}>
+                      {tx.type}
+                    </span>
+                  </td>
+
+                  {/* Issue Date */}
+                  <td style={{ padding: '14px 18px', color: '#475569', fontSize: 12.5 }}>
+                    {tx.issueDate}
+                  </td>
+
+                  {/* Due / Return Date */}
+                  <td style={{ padding: '14px 18px', color: tx.status === 'Overdue' ? '#ef4444' : '#475569', fontSize: 12.5, fontWeight: tx.status === 'Overdue' ? 700 : 500 }}>
+                    {tx.type === 'Return' ? tx.returnDate : tx.dueDate}
+                  </td>
+
+                  {/* Status Pill */}
+                  <td style={{ padding: '14px 18px' }}>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '3px 8px',
+                      borderRadius: 999,
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      background: tx.status === 'Active' ? '#fef3c7' : tx.status === 'Returned' ? '#ecfdf5' : '#fef2f2',
+                      color: tx.status === 'Active' ? '#d97706' : tx.status === 'Returned' ? '#059669' : '#ef4444'
+                    }}>
+                      <span style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: '50%',
+                        background: tx.status === 'Active' ? '#d97706' : tx.status === 'Returned' ? '#059669' : '#ef4444'
+                      }} />
+                      {tx.status}
+                    </span>
+                  </td>
+
+                  {/* Actions */}
+                  <td style={{ padding: '14px 18px', textAlign: 'right' }}>
+                    <button
+                      onClick={() => { playClick(); setViewTx(tx); }}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: 6,
+                        border: '1px solid #e2e8f0',
+                        background: '#f8fafc',
+                        color: '#0f172a',
+                        fontWeight: 600,
+                        fontSize: 12,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── Pagination matching Screen 5 ── */}
+        <div style={{
+          padding: '14px 20px',
+          borderTop: '1px solid #f1f5f9',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 12
+        }}>
+          <span style={{ fontSize: 12.5, color: '#64748b' }}>
+            Showing 1 to {filtered.length} of 1,284 transactions
+          </span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              onClick={() => { playClick(); if (page > 1) setPage(p => p - 1); }}
+              style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#ffffff', color: '#475569', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Previous
+            </button>
+            {[1, 2, 3, 4].map(n => (
               <button
-                disabled={page === 1}
-                onClick={() => { playClick(); setPage(p => p - 1); }}
+                key={n}
+                onClick={() => { playClick(); setPage(n); }}
                 style={{
-                  padding: '5px 12px',
+                  width: 28,
+                  height: 28,
                   borderRadius: 6,
-                  border: '1px solid #e2e8f0',
-                  background: '#ffffff',
-                  color: '#475569',
-                  fontSize: 12.5,
-                  cursor: page === 1 ? 'not-allowed' : 'pointer',
-                  opacity: page === 1 ? 0.5 : 1
+                  border: page === n ? 'none' : '1px solid #e2e8f0',
+                  background: page === n ? '#0f172a' : '#ffffff',
+                  color: page === n ? '#ffffff' : '#475569',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer'
                 }}
               >
-                Prev
+                {n}
               </button>
+            ))}
+            <span style={{ color: '#94a3b8', fontSize: 12 }}>...</span>
+            <button
+              onClick={() => { playClick(); setPage(160); }}
+              style={{ width: 32, height: 28, borderRadius: 6, border: '1px solid #e2e8f0', background: '#ffffff', color: '#475569', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+            >
+              160
+            </button>
+            <button
+              onClick={() => { playClick(); setPage(p => p + 1); }}
+              style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#ffffff', color: '#475569', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── View Transaction Modal ── */}
+      {viewTx && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          padding: 20
+        }} onClick={() => setViewTx(null)}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: 16,
+            padding: 28,
+            maxWidth: 480,
+            width: '100%',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 14, marginBottom: 18 }}>
+              <div>
+                <h3 style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  Transaction Receipt
+                </h3>
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{viewTx.id}</div>
+              </div>
               <button
-                disabled={page === totalPages}
-                onClick={() => { playClick(); setPage(p => p + 1); }}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: 6,
-                  border: '1px solid #e2e8f0',
-                  background: '#ffffff',
-                  color: '#475569',
-                  fontSize: 12.5,
-                  cursor: page === totalPages ? 'not-allowed' : 'pointer',
-                  opacity: page === totalPages ? 0.5 : 1
-                }}
+                onClick={() => setViewTx(null)}
+                style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer' }}
               >
-                Next
+                <X size={18} />
               </button>
             </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>STUDENT</div>
+                <div style={{ fontWeight: 700, color: '#0f172a', marginTop: 2 }}>{viewTx.student} ({viewTx.roll})</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>BOOK TITLE</div>
+                <div style={{ fontWeight: 700, color: '#0f172a', marginTop: 2 }}>{viewTx.book}</div>
+                <div style={{ fontSize: 11.5, color: '#94a3b8' }}>ISBN: {viewTx.isbn}</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>TRANSACTION TYPE</div>
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginTop: 2 }}>{viewTx.type}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>STATUS</div>
+                  <div style={{ fontWeight: 700, color: viewTx.status === 'Overdue' ? '#ef4444' : '#16a34a', marginTop: 2 }}>
+                    {viewTx.status}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>ISSUE DATE</div>
+                  <div style={{ color: '#334155', marginTop: 2 }}>{viewTx.issueDate}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>DUE DATE</div>
+                  <div style={{ color: '#334155', marginTop: 2 }}>{viewTx.dueDate}</div>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>ACCRUED PENALTY / FINE</div>
+                <div style={{ fontWeight: 800, color: viewTx.fine === '₹0' ? '#16a34a' : '#dc2626', marginTop: 2 }}>
+                  {viewTx.fine}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                playSuccessChime();
+                toast.success(`Transaction receipt #${viewTx.id} downloaded`);
+                setViewTx(null);
+              }}
+              style={{
+                marginTop: 20,
+                width: '100%',
+                padding: '10px 0',
+                borderRadius: 8,
+                background: '#0f172a',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: 13,
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Download PDF Slip
+            </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

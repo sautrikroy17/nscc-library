@@ -133,358 +133,476 @@ export default function Dashboard({ onNavigate = () => {} }) {
      LIBRARIAN DASHBOARD (Panel 9)
      ═══════════════════════════════════════════════════════════ */
   if (isLibrarian) {
+    const trendData = [
+      { date: 'Aug 14', issued: 52, returned: 44 },
+      { date: 'Aug 17', issued: 40, returned: 35 },
+      { date: 'Aug 20', issued: 70, returned: 42 },
+      { date: 'Aug 23', issued: 68, returned: 58 },
+      { date: 'Aug 26', issued: 64, returned: 76 },
+      { date: 'Aug 29', issued: 68, returned: 72 },
+      { date: 'Sep 01', issued: 50, returned: 66 },
+      { date: 'Sep 04', issued: 82, returned: 46 },
+      { date: 'Sep 07', issued: 78, returned: 94 },
+      { date: 'Sep 10', issued: 98, returned: 62 },
+      { date: 'Sep 13', issued: 75, returned: 50 },
+    ];
+
     return (
-      <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
-        {/* ── 4 Top Stat Cards (Panel 9) ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
-          {/* Total Books */}
+      <div style={{ maxWidth: 1380, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 22 }}>
+        {/* ── Top Row: Greeting, Subtitle, and R. David Lankes Quote ── */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <div>
+            <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              Good afternoon, Dr. Rajesh Kumar <span role="img" aria-label="wave">👋</span>
+            </h1>
+            <div style={{ fontSize: 13.5, color: '#64748b', marginTop: 3 }}>
+              Manage books, assist students, and keep knowledge flowing.
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'right', maxWidth: 460 }}>
+            <div style={{ fontSize: 12.5, color: '#334155', fontStyle: 'italic', lineHeight: 1.4 }}>
+              "Libraries are not just about books, but about people, ideas and possibilities."
+            </div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
+              — R. David Lankes
+            </div>
+          </div>
+        </div>
+
+        {/* ── 4 Top Stat Cards + Right Hero Card ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr) 280px', gap: 16, alignItems: 'stretch' }}>
+          {/* 1. Total Books */}
           <div 
             className="card" 
             onClick={() => { playClick(); onNavigate('catalog'); }}
-            style={{ padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', transition: 'transform 120ms' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+            style={{ padding: '18px 20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
           >
-            <div style={{
-              width: 46,
-              height: 46,
-              borderRadius: 12,
-              background: '#fef2f2',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ef4444'
-            }}>
-              <BookOpen size={22} strokeWidth={2.2} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
+                <BookOpen size={20} />
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', background: '#dcfce7', padding: '2px 8px', borderRadius: 999 }}>
+                ↑ +2.4%
+              </span>
             </div>
-            <div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>
-                12,482
-              </div>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', marginTop: 3 }}>
-                Total Books
-              </div>
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>12,482</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', marginTop: 4 }}>Total Books</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>+312 this month</div>
             </div>
           </div>
 
-          {/* Registered Students */}
+          {/* 2. Registered Students */}
           <div 
             className="card" 
             onClick={() => { playClick(); onNavigate('students'); }}
-            style={{ padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', transition: 'transform 120ms' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+            style={{ padding: '18px 20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
           >
-            <div style={{
-              width: 46,
-              height: 46,
-              borderRadius: 12,
-              background: '#eff6ff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#2563eb'
-            }}>
-              <Users size={22} strokeWidth={2.2} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
+                <Users size={20} />
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', background: '#dcfce7', padding: '2px 8px', borderRadius: 999 }}>
+                ↑ +1.2%
+              </span>
             </div>
-            <div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>
-                3,421
-              </div>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', marginTop: 3 }}>
-                Registered Students
-              </div>
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>3,421</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', marginTop: 4 }}>Registered Students</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>+40 this month</div>
             </div>
           </div>
 
-          {/* Issued Books */}
+          {/* 3. Books Issued */}
           <div 
             className="card" 
             onClick={() => { playClick(); onNavigate('transactions'); }}
-            style={{ padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', transition: 'transform 120ms' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+            style={{ padding: '18px 20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
           >
-            <div style={{
-              width: 46,
-              height: 46,
-              borderRadius: 12,
-              background: '#ecfdf5',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#10b981'
-            }}>
-              <TrendingUp size={22} strokeWidth={2.2} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                <TrendingUp size={20} />
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', background: '#dcfce7', padding: '2px 8px', borderRadius: 999 }}>
+                ↑ +8.1%
+              </span>
             </div>
-            <div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>
-                1,284
-              </div>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', marginTop: 3 }}>
-                Issued Books
-              </div>
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>1,284</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', marginTop: 4 }}>Books Issued</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>+96 this month</div>
             </div>
           </div>
 
-          {/* Overdue Books */}
+          {/* 4. Overdue Books */}
           <div 
             className="card" 
             onClick={() => { playClick(); onNavigate('admin'); }}
-            style={{ padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', transition: 'transform 120ms' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+            style={{ padding: '18px 20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
           >
-            <div style={{
-              width: 46,
-              height: 46,
-              borderRadius: 12,
-              background: '#fffbeb',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#f59e0b'
-            }}>
-              <AlertTriangle size={22} strokeWidth={2.2} />
-            </div>
-            <div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>
-                47
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                <AlertTriangle size={20} />
               </div>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', marginTop: 3 }}>
-                Overdue Books
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#ea580c', background: '#fff7ed', padding: '2px 8px', borderRadius: 999 }}>
+                ↑ +12.5%
+              </span>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>47</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', marginTop: 4 }}>Overdue Books</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>+9 since last week</div>
+            </div>
+          </div>
+
+          {/* 5. Right Hero Image Card */}
+          <div style={{
+            position: 'relative',
+            borderRadius: 14,
+            overflow: 'hidden',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+            padding: '18px',
+            minHeight: 140,
+            background: 'url(/library_reading_table.jpg) center/cover no-repeat'
+          }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(15,23,42,0.3) 0%, rgba(15,23,42,0.85) 100%)' }} />
+            <div style={{ position: 'relative', zIndex: 1, color: '#ffffff' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35, fontStyle: 'italic' }}>
+                "A well-managed library builds a brighter tomorrow."
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <BookOpen size={12} />
+                <span>LibraX</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── Main 2 Columns (Panel 9): Trend Chart + Quick Actions ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(320px, 1fr)', gap: 24 }}>
-          {/* Left: Book Issue/Return Trend Bar Chart */}
-          <div className="card" style={{ padding: '24px 28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        {/* ── Middle Row (3 Columns): Trend Bar Chart + Quick Actions + Today's Schedule ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr) 300px', gap: 20 }}>
+          {/* Column 1: Book Issue/Return Trend Bar Chart */}
+          <div className="card" style={{ padding: '22px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>
                   Book Issue/Return Trend
                 </h2>
-                <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 2 }}>
+                <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
                   Daily circulation metrics across campus stacks
                 </div>
               </div>
 
-              {/* Timeframe selector & Legend */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div style={{ display: 'flex', background: '#f1f5f9', padding: 2, borderRadius: 8 }}>
-                  {[
-                    { id: 'week', label: 'Week' },
-                    { id: 'month', label: 'Month' },
-                    { id: 'semester', label: 'Semester' }
-                  ].map(btn => (
-                    <button
-                      key={btn.id}
-                      onClick={() => { playClick(); setTrendPeriod(btn.id); }}
-                      style={{
-                        padding: '4px 10px',
-                        borderRadius: 6,
-                        border: 'none',
-                        background: trendPeriod === btn.id ? '#ffffff' : 'transparent',
-                        color: trendPeriod === btn.id ? '#0f172a' : '#64748b',
-                        fontWeight: trendPeriod === btn.id ? 700 : 500,
-                        fontSize: 11.5,
-                        cursor: 'pointer',
-                        boxShadow: trendPeriod === btn.id ? '0 1px 2px rgba(0,0,0,0.08)' : 'none'
-                      }}
-                    >
-                      {btn.label}
-                    </button>
-                  ))}
-                </div>
+              <select
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  border: '1px solid #e2e8f0',
+                  background: '#f8fafc',
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  color: '#0f172a',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="30">Last 30 Days ▾</option>
+                <option value="7">Last 7 Days</option>
+                <option value="90">This Semester</option>
+              </select>
+            </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b', fontWeight: 600 }}>
-                    <span style={{ width: 9, height: 9, borderRadius: 2, background: '#2563eb' }} />
-                    Issued
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b', fontWeight: 600 }}>
-                    <span style={{ width: 9, height: 9, borderRadius: 2, background: '#10b981' }} />
-                    Returned
-                  </div>
-                </div>
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: 14, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: '#475569', fontWeight: 600 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: '#2563eb' }} />
+                <span>Issued</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: '#475569', fontWeight: 600 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: '#10b981' }} />
+                <span>Returned</span>
               </div>
             </div>
 
-            {/* Interactive Bar Chart with tooltips */}
+            {/* Bars */}
             <div style={{
-              height: 240,
+              height: 200,
               display: 'flex',
               alignItems: 'flex-end',
-              justifyContent: 'space-around',
-              paddingBottom: 24,
+              justifyContent: 'space-between',
+              paddingBottom: 20,
               borderBottom: '1px solid #f1f5f9',
-              gap: 16,
-              position: 'relative'
+              gap: 8
             }}>
-              {currentTrend.map((item, idx) => (
-                <div 
-                  key={item.date} 
-                  onMouseEnter={() => setHoveredBar(item)}
-                  onMouseLeave={() => setHoveredBar(null)}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: 1, position: 'relative', cursor: 'pointer' }}
-                >
-                  {/* Tooltip on hover */}
-                  {hoveredBar?.date === item.date && (
-                    <div style={{
-                      position: 'absolute',
-                      top: -42,
-                      background: '#0f172a',
-                      color: '#ffffff',
-                      padding: '4px 8px',
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      whiteSpace: 'nowrap',
-                      zIndex: 10,
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                    }}>
-                      Issued: {item.issued} · Returned: {item.returned}
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 180 }}>
-                    {/* Issued Bar */}
-                    <div 
-                      style={{
-                        width: 18,
-                        height: `${(item.issued / maxTrendVal) * 100}%`,
-                        background: '#2563eb',
-                        borderRadius: '4px 4px 0 0',
-                        transition: 'height 300ms ease, opacity 120ms',
-                        opacity: hoveredBar && hoveredBar.date !== item.date ? 0.6 : 1
-                      }}
-                    />
-                    {/* Returned Bar */}
-                    <div 
-                      style={{
-                        width: 18,
-                        height: `${(item.returned / maxTrendVal) * 100}%`,
-                        background: '#10b981',
-                        borderRadius: '4px 4px 0 0',
-                        transition: 'height 300ms ease, opacity 120ms',
-                        opacity: hoveredBar && hoveredBar.date !== item.date ? 0.6 : 1
-                      }}
-                    />
+              {trendData.map(d => (
+                <div key={d.date} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 150 }}>
+                    <div style={{ width: 8, height: `${d.issued * 1.4}px`, background: '#2563eb', borderRadius: '2px 2px 0 0' }} title={`Issued: ${d.issued}`} />
+                    <div style={{ width: 8, height: `${d.returned * 1.4}px`, background: '#10b981', borderRadius: '2px 2px 0 0' }} title={`Returned: ${d.returned}`} />
                   </div>
-                  <span style={{ fontSize: 11.5, color: '#64748b', fontWeight: 600 }}>{item.date}</span>
+                  <span style={{ fontSize: 9.5, color: '#94a3b8', whiteSpace: 'nowrap' }}>{d.date}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Right: Quick Actions */}
-          <div className="card" style={{ padding: '24px' }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: '0 0 16px 0' }}>
+          {/* Column 2: Quick Actions (3 rows x 2 cols) */}
+          <div className="card" style={{ padding: '22px 24px' }}>
+            <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0' }}>
               Quick Actions
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
-              <button
-                onClick={() => { playClick(); onNavigate('catalog'); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  padding: '14px 16px',
-                  borderRadius: 10,
-                  border: '1px solid #e2e8f0',
-                  background: '#f8fafc',
-                  color: '#0f172a',
-                  fontWeight: 600,
-                  fontSize: 13.5,
-                  cursor: 'pointer',
-                  transition: 'all 120ms'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
-              >
-                <div style={{ width: 34, height: 34, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
-                  <Plus size={18} strokeWidth={2.5} />
-                </div>
-                <span>Catalog New Book</span>
-              </button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {[
+                { label: 'Add New Book', icon: Plus, page: 'admin', tab: 'add_book' },
+                { label: 'Register Student', icon: Users, page: 'students' },
+                { label: 'Scan QR (Issue/Return)', icon: QrCode, page: 'scanner' },
+                { label: 'Process Return', icon: RotateCcw, page: 'transactions' },
+                { label: 'Manage Inventory', icon: BookOpen, page: 'catalog' },
+                { label: 'Generate Reports', icon: FileSpreadsheet, page: 'reports' },
+              ].map(action => {
+                const Icon = action.icon;
+                return (
+                  <button
+                    key={action.label}
+                    onClick={() => { playClick(); onNavigate(action.page); }}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      padding: '16px 12px',
+                      borderRadius: 10,
+                      border: '1px solid #e2e8f0',
+                      background: '#f8fafc',
+                      color: '#0f172a',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 120ms'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'none'; }}
+                  >
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: '#ffffff', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
+                      <Icon size={16} />
+                    </div>
+                    <span>{action.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-              <button
-                onClick={() => { playClick(); onNavigate('students'); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  padding: '14px 16px',
-                  borderRadius: 10,
-                  border: '1px solid #e2e8f0',
-                  background: '#f8fafc',
-                  color: '#0f172a',
-                  fontWeight: 600,
-                  fontSize: 13.5,
-                  cursor: 'pointer',
-                  transition: 'all 120ms'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
-              >
-                <div style={{ width: 34, height: 34, borderRadius: 8, background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
-                  <UserPlus size={18} strokeWidth={2.2} />
-                </div>
-                <span>Register Student</span>
-              </button>
+          {/* Column 3: Today's Schedule */}
+          <div className="card" style={{ padding: '22px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Today's Schedule
+              </h2>
+              <span onClick={() => toast.info('Schedule calendar open')} style={{ fontSize: 11.5, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}>
+                View All →
+              </span>
+            </div>
 
-              <button
-                onClick={() => { playClick(); onNavigate('scanner'); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  padding: '14px 16px',
-                  borderRadius: 10,
-                  border: '1px solid #e2e8f0',
-                  background: '#f8fafc',
-                  color: '#0f172a',
-                  fontWeight: 600,
-                  fontSize: 13.5,
-                  cursor: 'pointer',
-                  transition: 'all 120ms'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
-              >
-                <div style={{ width: 34, height: 34, borderRadius: 8, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ea580c' }}>
-                  <QrCode size={18} strokeWidth={2.2} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {[
+                { title: 'Book Inventory Update', time: '10:00 AM – 11:00 AM', color: '#10b981' },
+                { title: 'Student Help Desk', time: '11:00 AM – 1:00 PM', color: '#2563eb' },
+                { title: 'Department Book Collection', time: '2:00 PM – 4:00 PM', color: '#f59e0b' },
+                { title: 'System Maintenance', time: '5:00 PM – 6:00 PM', color: '#ef4444' }
+              ].map((sch, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: sch.color, marginTop: 5, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a' }}>{sch.title}</div>
+                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{sch.time}</div>
+                  </div>
                 </div>
-                <span>Scan QR Pass / Barcode</span>
-              </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
-              <button
-                onClick={() => { playClick(); onNavigate('reports'); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  padding: '14px 16px',
-                  borderRadius: 10,
-                  border: '1px solid #e2e8f0',
-                  background: '#f8fafc',
-                  color: '#0f172a',
-                  fontWeight: 600,
-                  fontSize: 13.5,
-                  cursor: 'pointer',
-                  transition: 'all 120ms'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
-              >
-                <div style={{ width: 34, height: 34, borderRadius: 8, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7c3aed' }}>
-                  <FileSpreadsheet size={18} strokeWidth={2.2} />
+        {/* ── Bottom Row (3 Columns): Recent Transactions + Overdue Books + Quick Stats ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1.3fr) 280px', gap: 20 }}>
+          {/* Column 1: Recent Transactions */}
+          <div className="card" style={{ padding: '20px 22px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Recent Transactions
+              </h2>
+              <span onClick={() => onNavigate('transactions')} style={{ fontSize: 11.5, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}>
+                View All →
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { name: 'Sautrik Roy', reg: 'RA2511003010052', book: 'Clean Code', type: 'Issued', time: '3:12 PM', color: '#2563eb', bg: '#eff6ff' },
+                { name: 'Arjun Mehta', reg: 'RA2511003010123', book: 'Operating System Concepts', type: 'Returned', time: '2:48 PM', color: '#10b981', bg: '#ecfdf5' },
+                { name: 'Diya Sharma', reg: 'RA2511003010456', book: 'Design Patterns', type: 'Issued', time: '1:20 PM', color: '#2563eb', bg: '#eff6ff' },
+                { name: 'Karthik N', reg: 'RA2511003010789', book: 'Database System Concepts', type: 'Issued', time: '12:05 PM', color: '#2563eb', bg: '#eff6ff' },
+                { name: 'Sneha Iyer', reg: 'RA2511003010901', book: 'Introduction to Algorithms', type: 'Returned', time: '11:32 AM', color: '#10b981', bg: '#ecfdf5' }
+              ].map((tx, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: idx < 4 ? '1px solid #f1f5f9' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#334155' }}>
+                      {tx.name[0]}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a' }}>{tx.name}</div>
+                      <div style={{ fontSize: 10.5, color: '#64748b' }}>{tx.book}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: tx.color, background: tx.bg, padding: '2px 6px', borderRadius: 4 }}>
+                      {tx.type}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{tx.time}</span>
+                  </div>
                 </div>
-                <span>Reports & Analytics</span>
-              </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Column 2: Overdue Books */}
+          <div className="card" style={{ padding: '20px 22px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  Overdue Books
+                </h2>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#ffffff', background: '#ef4444', padding: '1px 6px', borderRadius: 999 }}>
+                  47
+                </span>
+              </div>
+              <span onClick={() => onNavigate('admin')} style={{ fontSize: 11.5, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}>
+                View All →
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { student: 'Rohan Verma', reg: 'RA2511003010111', book: 'Machine Learning', due: '01 Sep 2025', late: '12' },
+                { student: 'Ananya S', reg: 'RA2511003010222', book: 'Computer Networks', due: '03 Sep 2025', late: '10' },
+                { student: 'Vikram K', reg: 'RA2511003010333', book: 'Artificial Intelligence', due: '05 Sep 2025', late: '8' },
+                { student: 'Isha Gupta', reg: 'RA2511003010444', book: 'Modern Web Dev', due: '06 Sep 2025', late: '7' },
+                { student: 'Aditya Rao', reg: 'RA2511003010555', book: 'Discrete Mathematics', due: '08 Sep 2025', late: '5' }
+              ].map((od, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: i < 4 ? '1px solid #f1f5f9' : 'none' }}>
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a' }}>{od.student}</div>
+                    <div style={{ fontSize: 11, color: '#64748b' }}>{od.book} · Due {od.due}</div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: '#ef4444' }}>{od.late}d</span>
+                    <button
+                      onClick={() => {
+                        playSuccessChime();
+                        toast.success(`Overdue notice sent to ${od.student} (${od.reg})`);
+                      }}
+                      style={{
+                        padding: '3px 8px',
+                        borderRadius: 6,
+                        border: '1px solid #cbd5e1',
+                        background: '#ffffff',
+                        color: '#0f172a',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Notify
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Column 3: Quick Stats */}
+          <div className="card" style={{ padding: '20px 22px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Quick Stats
+              </h2>
+              <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>This Month ▾</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#2563eb' }}>
+                  <BookOpen size={16} />
+                  <span style={{ fontSize: 12, color: '#475569', fontWeight: 600 }}>Books Cataloged</span>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>312</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#10b981' }}>
+                  <Sparkles size={16} />
+                  <span style={{ fontSize: 12, color: '#475569', fontWeight: 600 }}>Student Queries</span>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>126</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#3b82f6' }}>
+                  <IndianRupee size={16} />
+                  <span style={{ fontSize: 12, color: '#475569', fontWeight: 600 }}>Fines Collected</span>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>₹2,450</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#7c3aed' }}>
+                  <Users size={16} />
+                  <span style={{ fontSize: 12, color: '#475569', fontWeight: 600 }}>New Students</span>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>40</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Bottom-most Row: Library Insights + Announcements ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 340px', gap: 16 }}>
+          {/* Insight 1 */}
+          <div className="card" style={{ padding: '16px 18px', background: '#fffbeb', border: '1px solid #fef3c7' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#d97706', textTransform: 'uppercase' }}>Most Issued Category</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>Computer Science</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>428 issues this month</div>
+          </div>
+
+          {/* Insight 2 */}
+          <div className="card" style={{ padding: '16px 18px', background: '#ecfdf5', border: '1px solid #d1fae5' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', textTransform: 'uppercase' }}>Highest Activity Day</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>Tuesday</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>312 transactions</div>
+          </div>
+
+          {/* Insight 3 */}
+          <div className="card" style={{ padding: '16px 18px', background: '#eff6ff', border: '1px solid #dbeafe' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase' }}>Active Hours</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>11 AM – 3 PM</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Peak library usage</div>
+          </div>
+
+          {/* Announcements */}
+          <div className="card" style={{ padding: '16px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>Announcements</div>
+              <span onClick={() => onNavigate('notifications')} style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}>View All →</span>
+            </div>
+            <div style={{ fontSize: 11.5, color: '#334155' }}>
+              • New Arrivals: 245 new books added this month
             </div>
           </div>
         </div>

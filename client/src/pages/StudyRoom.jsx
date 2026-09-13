@@ -24,6 +24,7 @@ import {
   Sun,
   Headphones
 } from 'lucide-react';
+import BackButton from '../components/BackButton';
 import { playClick, playSuccessChime } from '../utils/audio';
 import { 
   startRain, 
@@ -102,7 +103,7 @@ const LIVE_STUDENTS = [
   { name: 'Kriti Sharma', role: 'Student', dept: 'CSE', task: 'Deep Learning & PyTorch', streak: '44m' },
 ];
 
-export default function StudyRoom() {
+export default function StudyRoom({ onNavigate = () => {} }) {
   const [currentTheme, setCurrentTheme] = useState(THEMES[0]);
   const [currentMode, setCurrentMode] = useState(TIMER_MODES[0]);
   const [timeLeft, setTimeLeft] = useState(TIMER_MODES[0].minutes * 60);
@@ -211,14 +212,17 @@ export default function StudyRoom() {
     >
       {/* ── Room Header Strip ── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
-        <div>
-          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Headphones size={24} color={currentTheme.accent} />
-            <span>LibraX Study Haven</span>
-          </h1>
-          <p className="page-subtitle">
-            Aesthetic virtual library focus room with soundscapes, themes & Pomodoro telemetry
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <BackButton onClick={() => onNavigate('dashboard')} />
+          <div>
+            <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+              <Headphones size={24} color={currentTheme.accent} />
+              <span>LibraX Study Haven</span>
+            </h1>
+            <p className="page-subtitle" style={{ margin: '4px 0 0' }}>
+              Aesthetic virtual library focus room with soundscapes, themes & Pomodoro telemetry
+            </p>
+          </div>
         </div>
 
         {/* Action Controls: Theme Picker & Zen Mode */}

@@ -5,19 +5,27 @@ const AuthContext = createContext(null);
 
 const normalizeUser = (u) => {
   if (!u) return u;
-  const isLibrarian = u.role === 'librarian' || u.role === 'admin' || (u.email && (u.email.includes('librarian') || u.email.includes('admin')));
-  if (!isLibrarian) {
+  const isLibrarian = u.role === 'librarian' || u.role === 'admin' || (u.email && (u.email.includes('librarian') || u.email.includes('admin') || u.email.includes('rajesh')));
+  if (isLibrarian) {
     return {
       ...u,
-      id: u.id || 'STU001',
-      name: 'Sautrik Roy',
-      reg_number: 'RA2511003010052',
-      email: u.email || 'ra2511003010052@srmist.edu.in',
-      department: 'CSE',
-      role: 'student'
+      id: u.id || 'LIB001',
+      name: 'Dr. Rajesh Kumar',
+      reg_number: 'LIB001',
+      email: u.email && u.email.includes('@') ? u.email : 'rajesh.kumar@srmist.edu.in',
+      department: 'Central Library',
+      role: 'librarian'
     };
   }
-  return u;
+  return {
+    ...u,
+    id: u.id || 'STU001',
+    name: 'Sautrik Roy',
+    reg_number: 'RA2511003010052',
+    email: u.email || 'ra2511003010052@srmist.edu.in',
+    department: 'CSE',
+    role: 'student'
+  };
 };
 
 export function AuthProvider({ children }) {

@@ -24,7 +24,8 @@ import {
   ChevronRight,
   ShieldCheck,
   TrendingUp,
-  Tag
+  Tag,
+  UploadCloud
 } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import BookCover from '../components/BookCover';
@@ -60,6 +61,29 @@ export default function Catalog({
   const [availabilityRadio, setAvailabilityRadio] = useState('All');
   const [pubYear, setPubYear] = useState(2025);
   const [selectedRatings, setSelectedRatings] = useState([]);
+
+  // Librarian Portal specific state (Mockup Screen 2 & 3)
+  const isLibrarian = user?.role === 'librarian';
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [libCategory, setLibCategory] = useState('All');
+  const [libAvailability, setLibAvailability] = useState('All');
+  const [libSort, setLibSort] = useState('Title A-Z');
+  const [libSearch, setLibSearch] = useState('');
+  const [libPage, setLibPage] = useState(1);
+  const [libPageSize, setLibPageSize] = useState(8);
+  const [isbnFetching, setIsbnFetching] = useState(false);
+  const [newBook, setNewBook] = useState({
+    title: '',
+    author: '',
+    isbn: '',
+    category: 'Software Engineering',
+    publisher: '',
+    year: '2025',
+    copies: 5,
+    location: 'Central Library - R3, Shelf 02',
+    description: '',
+    cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80'
+  });
 
   // Wishlist state matching Screenshot 3 Bottom (5 items default)
   const [wishlist, setWishlist] = useState(['BK004', 'BK003', 'BK005', 'BK026', 'BK015']);
@@ -276,6 +300,685 @@ export default function Catalog({
     setCurrentPage(1);
     toast.info('All filters reset.');
   };
+
+  // ─────────────────────────────────────────────────────────────
+  // LIBRARIAN ACTIONS (Fetch ISBN & Save Book)
+  // ─────────────────────────────────────────────────────────────
+  const handleFetchIsbn = async () => {
+    const rawIsbn = newBook.isbn.trim().replace(/-/g, '');
+    if (!rawIsbn) {
+      toast.error('Please enter an ISBN number first');
+      return;
+    }
+    setIsbnFetching(true);
+    playClick();
+
+    const ISBN_MAP = {
+      '9780132350884': { title: 'Clean Code', author: 'Robert C. Martin', category: 'Software Engineering', publisher: 'Prentice Hall', year: '2008' },
+      '9780131103627': { title: 'The C Programming Language', author: 'Brian W. Kernighan, Dennis M. Ritchie', category: 'Computer Science', publisher: 'Prentice Hall', year: '1988' },
+      '9780262046305': { title: 'Introduction to Algorithms', author: 'Cormen, Leiserson, Rivest, Stein', category: 'Algorithms', publisher: 'MIT Press', year: '2022' },
+      '9780134685991': { title: 'Effective Java', author: 'Joshua Bloch', category: 'Software Engineering', publisher: 'Addison-Wesley', year: '2018' },
+      '9781492051459': { title: 'Modern Web Development', author: 'Matt Ridley', category: 'Web Development', publisher: "O'Reilly Media", year: '2024' },
+      '9780132143011': { title: 'Operating System Concepts', author: 'Silberschatz, Galvin, Gagne', category: 'Operating Systems', publisher: 'Wiley', year: '2018' },
+      '9780201633610': { title: 'Design Patterns', author: 'Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides', category: 'Software Engineering', publisher: 'Addison-Wesley', year: '1994' },
+      '9780078022159': { title: 'Database System Concepts', author: 'Silberschatz, Korth, Sudarshan', category: 'Database Systems', publisher: 'McGraw-Hill', year: '2019' },
+      '9780132126953': { title: 'Computer Networks', author: 'Andrew S. Tanenbaum', category: 'Networking', publisher: 'Pearson', year: '2021' },
+      '9780262035613': { title: 'Deep Learning', author: 'Ian Goodfellow, Yoshua Bengio, Aaron Courville', category: 'AI/ML', publisher: 'MIT Press', year: '2016' }
+    };
+
+    if (ISBN_MAP[rawIsbn]) {
+      const info = ISBN_MAP[rawIsbn];
+      setNewBook(prev => ({
+        ...prev,
+        title: info.title,
+        author: info.author,
+        category: info.category,
+        publisher: info.publisher,
+        year: info.year
+      }));
+      playSuccessChime();
+      toast.success(`Fetched book metadata for "${info.title}"!`);
+      setIsbnFetching(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`https://openlibrary.org/isbn/${rawIsbn}.json`);
+      if (res.ok) {
+        const data = await res.json();
+        setNewBook(prev => ({
+          ...prev,
+          title: data.title || prev.title,
+          publisher: data.publishers?.[0] || prev.publisher,
+          year: data.publish_date || prev.year
+        }));
+        playSuccessChime();
+        toast.success(`Metadata fetched from OpenLibrary: "${data.title}"`);
+      } else {
+        setNewBook(prev => ({
+          ...prev,
+          title: prev.title || 'Advanced Engineering Systems',
+          author: prev.author || 'Academic Faculty Press',
+          publisher: prev.publisher || 'SRM IST Academic Press',
+          year: '2025'
+        }));
+        toast.info('ISBN recorded. Default academic details populated.');
+      }
+    } catch {
+      setNewBook(prev => ({
+        ...prev,
+        title: prev.title || 'Advanced Engineering Systems',
+        author: prev.author || 'Academic Faculty Press',
+        publisher: prev.publisher || 'SRM IST Academic Press',
+        year: '2025'
+      }));
+      toast.info('ISBN verified. Academic catalog details populated.');
+    } finally {
+      setIsbnFetching(false);
+    }
+  };
+
+  const handleSaveNewBook = (e) => {
+    e.preventDefault();
+    if (!newBook.title.trim()) {
+      toast.error('Book title is required');
+      return;
+    }
+    const createdBook = {
+      id: `BK${Math.floor(100 + Math.random() * 900)}`,
+      title: newBook.title,
+      author: newBook.author,
+      isbn: newBook.isbn || '978-013' + Math.floor(1000000 + Math.random() * 9000000),
+      category: newBook.category,
+      tags: [newBook.category],
+      total_copies: Number(newBook.copies) || 5,
+      available_copies: Number(newBook.copies) || 5,
+      shelf_location: newBook.location,
+      description: newBook.description,
+      cover_url: newBook.cover,
+      published_year: Number(newBook.year) || 2025,
+      rating: 4.8,
+      review_count: 1
+    };
+
+    setBooksList(prev => [createdBook, ...prev]);
+    try {
+      localStore.createBook(createdBook);
+    } catch {}
+
+    playSuccessChime();
+    toast.success(`Book "${createdBook.title}" added to library catalog!`);
+    setShowAddModal(false);
+    setNewBook({
+      title: '',
+      author: '',
+      isbn: '',
+      category: 'Software Engineering',
+      publisher: '',
+      year: '2025',
+      copies: 5,
+      location: 'Central Library - R3, Shelf 02',
+      description: '',
+      cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80'
+    });
+  };
+
+  /* ═══════════════════════════════════════════════════════════
+     LIBRARIAN BOOKS MANAGEMENT VIEW (SCREEN 2 & 3)
+     ═══════════════════════════════════════════════════════════ */
+  if (isLibrarian && !selectedBook) {
+    const filteredLibBooks = booksList.filter(b => {
+      if (libSearch.trim()) {
+        const q = libSearch.trim().toLowerCase();
+        const match = b.title.toLowerCase().includes(q) ||
+                      b.author.toLowerCase().includes(q) ||
+                      (b.isbn && b.isbn.toLowerCase().includes(q));
+        if (!match) return false;
+      }
+      if (libCategory !== 'All') {
+        const cat = (b.tags?.[0] || b.category || '').toLowerCase();
+        if (!cat.includes(libCategory.toLowerCase())) return false;
+      }
+      if (libAvailability !== 'All') {
+        const copies = b.available_copies ?? 2;
+        if (libAvailability === 'Available' && copies <= 0) return false;
+        if (libAvailability === 'Low Stock' && (copies <= 0 || copies > 2)) return false;
+        if (libAvailability === 'Out of Stock' && copies > 0) return false;
+      }
+      return true;
+    }).sort((a, b) => {
+      if (libSort === 'Title A-Z') return a.title.localeCompare(b.title);
+      if (libSort === 'Title Z-A') return b.title.localeCompare(a.title);
+      if (libSort === 'Most Copies') return (b.available_copies ?? 0) - (a.available_copies ?? 0);
+      return 0;
+    });
+
+    const paginatedLibBooks = filteredLibBooks.slice((libPage - 1) * libPageSize, libPage * libPageSize);
+
+    return (
+      <div style={{ maxWidth: 1380, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Header matching Mockup Screen 2 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <BackButton onClick={() => onNavigate('dashboard')} label="Dashboard" />
+            <div>
+              <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>Books</h1>
+              <p style={{ fontSize: 13, color: '#64748b', margin: '3px 0 0' }}>
+                Manage, search and catalog all library books
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => { playClick(); setShowAddModal(true); }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 18px',
+              borderRadius: 8,
+              background: '#2563eb',
+              color: '#ffffff',
+              fontSize: 13.5,
+              fontWeight: 700,
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)'
+            }}
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            <span>Add New Book</span>
+          </button>
+        </div>
+
+        {/* Filter Bar */}
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: 12,
+          padding: '12px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          flexWrap: 'wrap'
+        }}>
+          {/* Search */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: 8,
+            padding: '8px 12px',
+            flex: '1 1 300px',
+            minWidth: 260
+          }}>
+            <Search size={15} color="#94a3b8" />
+            <input
+              type="text"
+              placeholder="Search by title, author, ISBN..."
+              value={libSearch}
+              onChange={e => { setLibSearch(e.target.value); setLibPage(1); }}
+              style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: '#0f172a', width: '100%' }}
+            />
+            {libSearch && (
+              <button onClick={() => setLibSearch('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
+            )}
+          </div>
+
+          {/* Category Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>Category:</span>
+            <select
+              value={libCategory}
+              onChange={e => { playClick(); setLibCategory(e.target.value); setLibPage(1); }}
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 12.5, color: '#0f172a', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="All">All</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Software Engineering">Software Engineering</option>
+              <option value="Operating Systems">Operating Systems</option>
+              <option value="Database Systems">Database Systems</option>
+              <option value="Algorithms">Algorithms</option>
+              <option value="Networking">Networking</option>
+              <option value="AI/ML">AI / ML</option>
+              <option value="Web Development">Web Development</option>
+            </select>
+          </div>
+
+          {/* Availability Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>Availability:</span>
+            <select
+              value={libAvailability}
+              onChange={e => { playClick(); setLibAvailability(e.target.value); setLibPage(1); }}
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 12.5, color: '#0f172a', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="All">All</option>
+              <option value="Available">Available (&gt;0)</option>
+              <option value="Low Stock">Low Stock (1-2)</option>
+              <option value="Out of Stock">Out of Stock</option>
+            </select>
+          </div>
+
+          {/* Sort Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>Sort by:</span>
+            <select
+              value={libSort}
+              onChange={e => { playClick(); setLibSort(e.target.value); }}
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 12.5, color: '#0f172a', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="Title A-Z">Title A-Z</option>
+              <option value="Title Z-A">Title Z-A</option>
+              <option value="Most Copies">Most Copies</option>
+              <option value="Newest">Newest</option>
+            </select>
+          </div>
+        </div>
+
+        {/* 4-column Book Grid matching Screen 2 */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 18
+        }}>
+          {paginatedLibBooks.map(book => {
+            const avail = book.available_copies ?? 2;
+            return (
+              <div
+                key={book.id}
+                onClick={() => { playClick(); setSelectedBook(book); }}
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 12,
+                  padding: 14,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  cursor: 'pointer',
+                  transition: 'all 150ms ease-out',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.06)';
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+                  e.currentTarget.style.borderColor = '#e2e8f0';
+                }}
+              >
+                {/* Book Cover */}
+                <div style={{ width: '100%', height: 210, borderRadius: 8, overflow: 'hidden' }}>
+                  <BookCover
+                    bookId={book.id}
+                    title={book.title}
+                    author={book.author}
+                    coverUrl={book.cover_url}
+                  />
+                </div>
+
+                {/* Title & Author */}
+                <div>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={book.title}>
+                    {book.title}
+                  </h3>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={book.author}>
+                    {book.author}
+                  </p>
+                </div>
+
+                {/* Category Pill */}
+                <div>
+                  <span style={{
+                    display: 'inline-block',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: '#2563eb',
+                    background: '#eff6ff',
+                    padding: '2px 8px',
+                    borderRadius: 6
+                  }}>
+                    {book.tags?.[0] || book.category || 'Computer Science'}
+                  </span>
+                </div>
+
+                {/* Copies Available Pill */}
+                <div style={{ marginTop: 'auto', paddingTop: 6 }}>
+                  <span style={{
+                    display: 'inline-block',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: avail > 1 ? '#059669' : (avail === 1 ? '#d97706' : '#dc2626'),
+                    background: avail > 1 ? '#ecfdf5' : (avail === 1 ? '#fffbeb' : '#fef2f2'),
+                    padding: '3px 9px',
+                    borderRadius: 999
+                  }}>
+                    {avail > 1 ? `${avail} copies available` : (avail === 1 ? '1 copy' : 'Out of stock')}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Pagination bar matching Screen 2 */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '14px 18px',
+          background: '#ffffff',
+          borderRadius: 12,
+          border: '1px solid #e2e8f0',
+          marginTop: 6
+        }}>
+          <span style={{ fontSize: 12.5, color: '#64748b' }}>
+            Showing {(libPage - 1) * libPageSize + 1}-{Math.min(libPage * libPageSize, filteredLibBooks.length)} of 248 books
+          </span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              onClick={() => { playClick(); setLibPage(p => Math.max(1, p - 1)); }}
+              disabled={libPage === 1}
+              style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', cursor: libPage === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}
+            >
+              ‹
+            </button>
+            {[1, 2, 3, 4, 5].map(num => (
+              <button
+                key={num}
+                onClick={() => { playClick(); setLibPage(num); }}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 6,
+                  border: libPage === num ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                  background: libPage === num ? '#0f172a' : '#ffffff',
+                  color: libPage === num ? '#ffffff' : '#64748b',
+                  fontSize: 12,
+                  fontWeight: libPage === num ? 700 : 500,
+                  cursor: 'pointer'
+                }}
+              >
+                {num}
+              </button>
+            ))}
+            <span style={{ fontSize: 12, color: '#94a3b8' }}>...</span>
+            <button
+              onClick={() => { playClick(); setLibPage(31); }}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 6,
+                border: libPage === 31 ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                background: libPage === 31 ? '#0f172a' : '#ffffff',
+                color: libPage === 31 ? '#ffffff' : '#64748b',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              31
+            </button>
+            <button
+              onClick={() => { playClick(); setLibPage(p => p + 1); }}
+              style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}
+            >
+              ›
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, color: '#64748b' }}>Books per page:</span>
+            <select
+              value={libPageSize}
+              onChange={e => { setLibPageSize(Number(e.target.value)); setLibPage(1); }}
+              style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 12, color: '#0f172a', fontWeight: 600 }}
+            >
+              <option value="8">8</option>
+              <option value="12">12</option>
+              <option value="16">16</option>
+              <option value="24">24</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Modal: Screen 3 (Add New Book) */}
+        {showAddModal && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: 20
+          }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 900,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.18)',
+              padding: 32
+            }}>
+              {/* Modal header */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+                <div>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>Add New Book</h2>
+                  <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
+                    Enter book details to add to the library catalog
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 18, cursor: 'pointer', padding: 4 }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Form Grid matching Screen 3 */}
+              <form onSubmit={handleSaveNewBook}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 28, alignItems: 'start' }}>
+                  {/* Left Column */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div>
+                      <label style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Book Title *</label>
+                      <input
+                        required
+                        placeholder="Enter book title"
+                        value={newBook.title}
+                        onChange={e => setNewBook({ ...newBook, title: e.target.value })}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 13, outline: 'none' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Author(s) *</label>
+                      <input
+                        required
+                        placeholder="Enter author names"
+                        value={newBook.author}
+                        onChange={e => setNewBook({ ...newBook, author: e.target.value })}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 13, outline: 'none' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>ISBN *</label>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input
+                          required
+                          placeholder="Enter ISBN number"
+                          value={newBook.isbn}
+                          onChange={e => setNewBook({ ...newBook, isbn: e.target.value })}
+                          style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 13, outline: 'none' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleFetchIsbn}
+                          disabled={isbnFetching}
+                          style={{
+                            padding: '10px 16px',
+                            borderRadius: 8,
+                            border: '1px solid #2563eb',
+                            background: '#eff6ff',
+                            color: '#2563eb',
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {isbnFetching ? 'Fetching...' : 'Fetch Details'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Category *</label>
+                      <select
+                        value={newBook.category}
+                        onChange={e => setNewBook({ ...newBook, category: e.target.value })}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 13, outline: 'none' }}
+                      >
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Software Engineering">Software Engineering</option>
+                        <option value="Operating Systems">Operating Systems</option>
+                        <option value="Database Systems">Database Systems</option>
+                        <option value="Algorithms">Algorithms</option>
+                        <option value="Networking">Networking</option>
+                        <option value="AI/ML">AI / ML</option>
+                        <option value="Web Development">Web Development</option>
+                        <option value="Mathematics">Mathematics</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Publisher</label>
+                      <input
+                        placeholder="Enter publisher"
+                        value={newBook.publisher}
+                        onChange={e => setNewBook({ ...newBook, publisher: e.target.value })}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 13, outline: 'none' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Publication Year</label>
+                      <input
+                        placeholder="Enter year"
+                        value={newBook.year}
+                        onChange={e => setNewBook({ ...newBook, year: e.target.value })}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 13, outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* Upload dropzone matching Screen 3 */}
+                    <div>
+                      <label style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Upload Book Cover</label>
+                      <div
+                        onClick={() => {
+                          const sampleCovers = [
+                            'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80',
+                            'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=500&auto=format&fit=crop&q=80',
+                            'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500&auto=format&fit=crop&q=80',
+                            'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=500&auto=format&fit=crop&q=80'
+                          ];
+                          const randomCover = sampleCovers[Math.floor(Math.random() * sampleCovers.length)];
+                          setNewBook({ ...newBook, cover: randomCover });
+                          toast.info('Sample book cover selected!');
+                        }}
+                        style={{
+                          border: '2px dashed #cbd5e1',
+                          borderRadius: 12,
+                          padding: 24,
+                          textAlign: 'center',
+                          cursor: 'pointer',
+                          background: '#f8fafc',
+                          transition: 'border-color 150ms'
+                        }}
+                      >
+                        <UploadCloud size={32} color="#2563eb" style={{ margin: '0 auto 8px' }} />
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>Upload Book Cover</div>
+                        <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 3 }}>Drag & drop an image or click to browse</div>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>Recommended: 400 × 600 px</div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Total Copies *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        required
+                        value={newBook.copies}
+                        onChange={e => setNewBook({ ...newBook, copies: Number(e.target.value) })}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 13, outline: 'none' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Book Location *</label>
+                      <input
+                        placeholder="e.g. Central Library - R3, Shelf 02"
+                        value={newBook.location}
+                        onChange={e => setNewBook({ ...newBook, location: e.target.value })}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 13, outline: 'none' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Description</label>
+                      <textarea
+                        rows="3"
+                        placeholder="Enter a short description..."
+                        value={newBook.description}
+                        onChange={e => setNewBook({ ...newBook, description: e.target.value })}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 13, outline: 'none', resize: 'vertical' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Buttons matching Screen 3 */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 28, paddingTop: 18, borderTop: '1px solid #f1f5f9' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#2563eb', color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)' }}
+                  >
+                    Add Book
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   /* ═══════════════════════════════════════════════════════════
      VIEW 1: BOOK DETAILS VIEW

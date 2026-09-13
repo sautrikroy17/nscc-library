@@ -12,12 +12,25 @@ import {
   Plus, 
   Check, 
   ArrowRight,
-  Bot
+  Bot,
+  Heart,
+  Smile,
+  Zap,
+  Coffee,
+  Compass
 } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import BookCover from '../components/BookCover';
 import { playClick, playSuccessChime } from '../utils/audio';
 import { toast } from '../context/ToastContext';
+
+const MOODS = [
+  { id: 'focus', emoji: '⚡', label: 'Deep Focus & Study', query: 'I need to get into deep focus mode for exams. Suggest rigorous, structured textbooks.' },
+  { id: 'curious', emoji: '✨', label: 'Curious & Exploring', query: 'I am in a curious mood! Recommend something fascinating that expands my mind.' },
+  { id: 'stressed', emoji: '🧘', label: 'Stressed & Overwhelmed', query: 'I feel a bit overwhelmed with assignments. Can you recommend clear, easy-to-digest books?' },
+  { id: 'placement', emoji: '🚀', label: 'Career & Placement Hustle', query: 'I want to crack tech placements! Give me the best system design and DSA books.' },
+  { id: 'geek', emoji: '🧠', label: 'Hardcore Tech Geek', query: 'I want hardcore deep tech: low-level kernels, compilers, and distributed architectures.' }
+];
 
 export default function AIAssistant({ onNavigate = () => {} }) {
   const [messages, setMessages] = useState([
@@ -29,14 +42,14 @@ export default function AIAssistant({ onNavigate = () => {} }) {
     {
       id: 'm2',
       sender: 'ai',
-      text: 'Here are some great books on System Design for beginners:',
+      text: "Hey there! I'm Lyra, your campus library companion. I'd love to help! System design can feel intimidating at first, but with the right visual guides and architectural mental models, it quickly becomes super fun. Here are my favorite beginner-friendly recommendations from the SRM stacks:",
       books: [
         {
           id: 'BK014',
           num: 1,
           title: 'System Design Interview',
           author: 'Alex Xu',
-          coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80'
+          coverUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=200&auto=format&fit=crop&q=80'
         },
         {
           id: 'BK012',
@@ -53,13 +66,14 @@ export default function AIAssistant({ onNavigate = () => {} }) {
           coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&auto=format&fit=crop&q=80'
         }
       ],
-      followUp: 'Would you like more recommendations based on distributed systems, scalability, or interviews?'
+      followUp: "How are you feeling today? Pick a mood above or let me know if you'd like me to reserve a study desk or borrow one of these for you! ✨"
     }
   ]);
 
   const [inputVal, setInputVal] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [addedIds, setAddedIds] = useState([]);
+  const [activeMood, setActiveMood] = useState(null);
   const chatBottomRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -85,53 +99,77 @@ export default function AIAssistant({ onNavigate = () => {} }) {
     setInputVal('');
 
     setTimeout(() => {
-      generateAiResponse(query);
+      generateLyraResponse(query);
     }, 600);
   };
 
-  const generateAiResponse = (query) => {
+  const handleMoodSelect = (mood) => {
+    setActiveMood(mood.id);
+    handleSend(mood.query);
+  };
+
+  const generateLyraResponse = (query) => {
     playSuccessChime();
     const qLower = query.toLowerCase();
 
-    if (qLower.includes('os') || qLower.includes('operating system')) {
+    if (qLower.includes('stressed') || qLower.includes('overwhelmed') || qLower.includes('clarity')) {
       setMessages(prev => [
         ...prev,
         {
           id: `ai_${Date.now()}`,
           sender: 'ai',
-          text: 'Here are top recommendations for Operating Systems and Kernels:',
+          text: "Take a deep breath! You're doing amazing, and university exams can feel heavy sometimes. When you're stressed, you don't need dense 1,000-page textbooks—you need clear, gentle authors who explain things intuitively with diagrams. Here are gentle, calming, crystal-clear reads:",
           books: [
-            { id: 'BK006', num: 1, title: 'Operating System Concepts', author: 'Silberschatz, Galvin, Gagne', coverUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK011', num: 2, title: 'Modern Operating Systems', author: 'Andrew S. Tanenbaum', coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80' }
+            { id: 'BK003', num: 1, title: 'The Pragmatic Programmer', author: 'David Thomas & Andrew Hunt', coverUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK026', num: 2, title: 'Modern Web Development', author: 'Matt Ridley', coverUrl: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK002', num: 3, title: 'Clean Code', author: 'Robert C. Martin', coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80' }
           ],
-          followUp: 'Would you also like lecture companion notes from SRM CSE faculty?'
+          followUp: "Remember: small steps lead to big knowledge. Would you like me to summarize the 3 most important takeaway rules from any of these?"
         }
       ]);
-    } else if (qLower.includes('clean code') || qLower.includes('summarize')) {
+    } else if (qLower.includes('placement') || qLower.includes('career') || qLower.includes('interview')) {
       setMessages(prev => [
         ...prev,
         {
           id: `ai_${Date.now()}`,
           sender: 'ai',
-          text: 'Summary of Clean Code by Robert C. Martin:\n\n• Meaningful Names: Reveal intent and avoid disinformation.\n• Functions: Should do one thing and do it well (under 20 lines).\n• Comments: Do not make up for bad code; refactor instead.\n• TDD: The three laws of Test Driven Development ensure maintainability.',
+          text: "Let's get that dream offer! 🚀 Top tech companies look for two things: crystal clear algorithmic thinking and robust architectural instincts. Here is my ultimate high-yield placement toolkit currently in our stacks:",
           books: [
-            { id: 'BK002', num: 1, title: 'Clean Code', author: 'Robert C. Martin', coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80' }
+            { id: 'BK010', num: 1, title: 'Cracking the Coding Interview', author: 'Gayle Laakmann McDowell', coverUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK001', num: 2, title: 'Introduction to Algorithms (CLRS)', author: 'Cormen, Leiserson et al.', coverUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK014', num: 3, title: 'System Design Interview', author: 'Alex Xu', coverUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=200&auto=format&fit=crop&q=80' }
           ],
-          followUp: 'Would you like to borrow Clean Code right now? 4 copies available in Central Library - Shelf B2.'
+          followUp: "Want me to quiz you on a classic interview question like LRU Cache design or binary tree inversions?"
         }
       ]);
-    } else if (qLower.includes('dsa') || qLower.includes('algorithm')) {
+    } else if (qLower.includes('focus') || qLower.includes('study') || qLower.includes('exam')) {
       setMessages(prev => [
         ...prev,
         {
           id: `ai_${Date.now()}`,
           sender: 'ai',
-          text: 'Here are foundational textbooks for Data Structures & Algorithms:',
+          text: "Locked in! ⚡ Deep focus requires rigorous, distraction-free syllabus textbooks. Here are the core SRM engineering curriculum references with complete problem sets:",
           books: [
-            { id: 'BK001', num: 1, title: 'Introduction to Algorithms (CLRS)', author: 'Cormen, Leiserson, Rivest, Stein', coverUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK013', num: 2, title: 'Cracking the Coding Interview', author: 'Gayle Laakmann McDowell', coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&auto=format&fit=crop&q=80' }
+            { id: 'BK006', num: 1, title: 'Operating System Concepts (Dinosaur Book)', author: 'Silberschatz, Galvin, Gagne', coverUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK007', num: 2, title: 'Database System Concepts', author: 'Silberschatz, Korth, Sudarshan', coverUrl: 'https://images.unsplash.com/photo-1507842229452-710892015502?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK005', num: 3, title: 'Computer Networks (Tanenbaum)', author: 'Andrew S. Tanenbaum', coverUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=200&auto=format&fit=crop&q=80' }
           ],
-          followUp: 'Should I filter by semester 3 curriculum syllabus?'
+          followUp: "Both physical copies and reserved shelf locations are available right now on 2nd Floor - Stacks A & B."
+        }
+      ]);
+    } else if (qLower.includes('curious') || qLower.includes('explor')) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ai_${Date.now()}`,
+          sender: 'ai',
+          text: "I love your curiosity! ✨ Reading outside your immediate syllabus is what turns good engineers into visionary leaders. Here are three mind-bending books spanning artificial intelligence, human cognition, and science:",
+          books: [
+            { id: 'BK015', num: 1, title: 'Artificial Intelligence: A Modern Approach', author: 'Stuart Russell & Peter Norvig', coverUrl: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK028', num: 2, title: 'Sapiens: A Brief History of Humankind', author: 'Yuval Noah Harari', coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK029', num: 3, title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&auto=format&fit=crop&q=80' }
+          ],
+          followUp: "Shall I add any of these to your personal Wishlist for weekend leisure reading?"
         }
       ]);
     } else {
@@ -140,12 +178,12 @@ export default function AIAssistant({ onNavigate = () => {} }) {
         {
           id: `ai_${Date.now()}`,
           sender: 'ai',
-          text: `Here are curated titles from the SRM Central Library catalog matching "${query}":`,
+          text: `Got it! I scoured the SRM Central Library database for "${query}". Here is what I discovered for you:`,
           books: [
-            { id: 'BK004', num: 1, title: 'Design Patterns', author: 'Gamma, Helm, Johnson, Vlissides', coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK009', num: 2, title: 'The Pragmatic Programmer', author: 'Hunt & Thomas', coverUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=200&auto=format&fit=crop&q=80' }
+            { id: 'BK004', num: 1, title: 'Design Patterns', author: 'Gamma, Helm, Johnson, Vlissides', coverUrl: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=200&auto=format&fit=crop&q=80' },
+            { id: 'BK008', num: 2, title: 'Clean Architecture', author: 'Robert C. Martin', coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&auto=format&fit=crop&q=80' }
           ],
-          followUp: 'Would you like me to reserve any of these for pickup today?'
+          followUp: "Would you like me to help you issue this book or check shelf availability?"
         }
       ]);
     }
@@ -154,7 +192,7 @@ export default function AIAssistant({ onNavigate = () => {} }) {
   const handleAddBook = (book) => {
     playSuccessChime();
     setAddedIds(prev => [...prev, book.id]);
-    toast.success(`"${book.title}" added to your Wishlist!`);
+    toast.success(`Lyra added "${book.title}" to your Wishlist! ✨`);
   };
 
   const toggleVoice = () => {
@@ -182,16 +220,35 @@ export default function AIAssistant({ onNavigate = () => {} }) {
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* ── Top Bar with BackButton & Header matching Screenshot 5 Top-Left ── */}
+      {/* ── Top Bar with BackButton & Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <BackButton onClick={() => onNavigate('dashboard')} />
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
-              AI Assistant
-            </h1>
-            <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
-              Your personal library companion. Ask, explore, get recommendations, and more.
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <img
+              src="/lyra_avatar.jpg"
+              alt="Lyra AI"
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '2px solid #8b5cf6',
+                boxShadow: '0 2px 10px rgba(139, 92, 246, 0.25)'
+              }}
+            />
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
+                  Lyra ✨
+                </h1>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#059669', background: '#ecfdf5', padding: '2px 8px', borderRadius: 999 }}>
+                  Online · Campus AI Librarian
+                </span>
+              </div>
+              <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+                Your personal library companion. Tell me how you're feeling or what you want to study!
+              </div>
             </div>
           </div>
         </div>
@@ -210,73 +267,69 @@ export default function AIAssistant({ onNavigate = () => {} }) {
           fontWeight: 700
         }}>
           <Sparkles size={14} />
-          <span>Powered by AI</span>
+          <span>Powered by Lyra AI</span>
         </div>
       </div>
 
-      {/* ── Welcome Center & 4 Prompt Cards matching Screenshot 5 ── */}
+      {/* ── Mood Matching Bar ── */}
       <div style={{
         background: '#ffffff',
         border: '1px solid #e2e8f0',
         borderRadius: 14,
-        padding: '24px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-        textAlign: 'center'
+        padding: '16px 20px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
       }}>
-        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
-          Hi Sautrik! 👋
-        </h2>
-        <div style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>
-          How can I help you today?
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Smile size={16} color="#8b5cf6" />
+          <span>Match books according to your mood today:</span>
         </div>
 
-        {/* 4 Prompt Cards Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-          {[
-            { id: 'find', title: 'Find Books', desc: 'Get recommendations', icon: BookOpen, query: 'Recommend top rated books in Computer Science' },
-            { id: 'summarize', title: 'Summarize a Book', desc: 'Key insights in seconds', icon: FileText, query: 'Summarize Clean Code by Robert C. Martin' },
-            { id: 'explain', title: 'Explain a Concept', desc: 'Simplify complex topics', icon: Lightbulb, query: 'Explain ACID properties in database systems' },
-            { id: 'suggest', title: 'Suggest for Me', desc: 'Based on your interests', icon: Target, query: 'Suggest books on software architecture' }
-          ].map(card => {
-            const Icon = card.icon;
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {MOODS.map(m => {
+            const active = activeMood === m.id;
             return (
-              <div
-                key={card.id}
-                onClick={() => handleSend(card.query)}
+              <button
+                key={m.id}
+                onClick={() => handleMoodSelect(m)}
                 style={{
-                  padding: '16px',
-                  borderRadius: 10,
-                  border: '1px solid #e2e8f0',
-                  background: '#f8fafc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '7px 14px',
+                  borderRadius: 20,
+                  border: active ? '1.5px solid #7c3aed' : '1px solid #e2e8f0',
+                  background: active ? '#f5f3ff' : '#f8fafc',
+                  color: active ? '#7c3aed' : '#334155',
+                  fontSize: 12.5,
+                  fontWeight: 600,
                   cursor: 'pointer',
-                  textAlign: 'left',
                   transition: 'all 120ms'
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.transform = 'none'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#ffffff'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = active ? '#7c3aed' : '#e2e8f0'; e.currentTarget.style.background = active ? '#f5f3ff' : '#f8fafc'; }}
               >
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: '#ffffff', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', marginBottom: 12 }}>
-                  <Icon size={16} />
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{card.title}</div>
-                <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 3 }}>{card.desc}</div>
-              </div>
+                <span>{m.emoji}</span>
+                <span>{m.label}</span>
+              </button>
             );
           })}
         </div>
       </div>
 
-      {/* ── Chat Feed matching Screenshot 5 ── */}
+      {/* ── Chat Feed ── */}
       <div style={{
         background: '#ffffff',
         border: '1px solid #e2e8f0',
         borderRadius: 14,
         padding: '24px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-        minHeight: 380,
+        minHeight: 400,
         display: 'flex',
         flexDirection: 'column',
-        gap: 20
+        gap: 24
       }}>
         {messages.map(msg => {
           if (msg.sender === 'user') {
@@ -284,48 +337,53 @@ export default function AIAssistant({ onNavigate = () => {} }) {
               <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                 <div style={{
                   maxWidth: '70%',
-                  padding: '10px 16px',
-                  borderRadius: '14px 14px 2px 14px',
+                  padding: '12px 18px',
+                  borderRadius: '16px 16px 2px 16px',
                   background: '#eff6ff',
                   border: '1px solid #dbeafe',
                   color: '#1e3a8a',
                   fontSize: 13.5,
-                  lineHeight: 1.5
+                  lineHeight: 1.55
                 }}>
                   {msg.text}
                 </div>
                 <img
                   src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60&auto=format&fit=crop&q=80"
                   alt="User"
-                  style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }}
+                  style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }}
                 />
               </div>
             );
           }
 
           return (
-            <div key={msg.id} style={{ display: 'flex', alignItems: 'start', gap: 12 }}>
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: '#f5f3ff',
-                border: '1px solid #ddd6fe',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#7c3aed',
-                flexShrink: 0
-              }}>
-                <Bot size={18} />
-              </div>
+            <div key={msg.id} style={{ display: 'flex', alignItems: 'start', gap: 14 }}>
+              {/* Lyra Cute Avatar */}
+              <img
+                src="/lyra_avatar.jpg"
+                alt="Lyra"
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '2px solid #8b5cf6',
+                  boxShadow: '0 2px 8px rgba(139, 92, 246, 0.25)',
+                  flexShrink: 0
+                }}
+              />
 
               <div style={{ flex: 1, maxWidth: '85%' }}>
-                <div style={{ fontSize: 13.5, color: '#0f172a', lineHeight: 1.5, marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>Lyra</span>
+                  <span style={{ fontSize: 11, color: '#8b5cf6', fontWeight: 600 }}>Library AI</span>
+                </div>
+
+                <div style={{ fontSize: 13.5, color: '#1e293b', lineHeight: 1.6, marginBottom: 12 }}>
                   {msg.text}
                 </div>
 
-                {/* Recommended Books List matching Screenshot 5 */}
+                {/* Recommended Books List */}
                 {msg.books && msg.books.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
                     {msg.books.map(b => {
@@ -337,21 +395,21 @@ export default function AIAssistant({ onNavigate = () => {} }) {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            padding: '10px 14px',
+                            padding: '12px 16px',
                             background: '#f8fafc',
                             border: '1px solid #e2e8f0',
                             borderRadius: 10,
                             gap: 12
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: '#64748b', width: 14 }}>{b.num}</span>
-                            <div style={{ width: 34, height: 46, borderRadius: 4, overflow: 'hidden', flexShrink: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#8b5cf6', width: 14 }}>{b.num}</span>
+                            <div style={{ width: 36, height: 48, borderRadius: 4, overflow: 'hidden', flexShrink: 0 }}>
                               <BookCover bookId={b.id} title={b.title} author={b.author} coverUrl={b.coverUrl} />
                             </div>
                             <div>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{b.title}</div>
-                              <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 1 }}>{b.author}</div>
+                              <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>{b.title}</div>
+                              <div style={{ fontSize: 12, color: '#64748b', marginTop: 1 }}>{b.author}</div>
                             </div>
                           </div>
 
@@ -359,7 +417,7 @@ export default function AIAssistant({ onNavigate = () => {} }) {
                             <button
                               onClick={() => onNavigate('catalog')}
                               style={{
-                                padding: '5px 12px',
+                                padding: '6px 14px',
                                 borderRadius: 6,
                                 border: '1px solid #e2e8f0',
                                 background: '#ffffff',
@@ -375,7 +433,7 @@ export default function AIAssistant({ onNavigate = () => {} }) {
                             <button
                               onClick={() => handleAddBook(b)}
                               style={{
-                                padding: '5px 12px',
+                                padding: '6px 14px',
                                 borderRadius: 6,
                                 border: '1px solid #e2e8f0',
                                 background: isAdded ? '#ecfdf5' : '#ffffff',
@@ -388,7 +446,7 @@ export default function AIAssistant({ onNavigate = () => {} }) {
                                 gap: 4
                               }}
                             >
-                              {isAdded ? <Check size={12} /> : <Plus size={12} />}
+                              {isAdded ? <Check size={13} /> : <Plus size={13} />}
                               <span>{isAdded ? 'Added' : '+ Add'}</span>
                             </button>
                           </div>
@@ -399,7 +457,7 @@ export default function AIAssistant({ onNavigate = () => {} }) {
                 )}
 
                 {msg.followUp && (
-                  <div style={{ fontSize: 12.5, color: '#64748b', fontStyle: 'italic' }}>
+                  <div style={{ fontSize: 12.5, color: '#64748b', fontStyle: 'italic', background: '#fcfaff', padding: '8px 12px', borderRadius: 8, borderLeft: '3px solid #8b5cf6' }}>
                     {msg.followUp}
                   </div>
                 )}
@@ -410,7 +468,7 @@ export default function AIAssistant({ onNavigate = () => {} }) {
         <div ref={chatBottomRef} />
       </div>
 
-      {/* ── Chat Input Container with Mic & Shortcuts matching Screenshot 5 ── */}
+      {/* ── Chat Input Container ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{
           display: 'flex',
@@ -427,7 +485,7 @@ export default function AIAssistant({ onNavigate = () => {} }) {
             value={inputVal}
             onChange={e => setInputVal(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSend()}
-            placeholder="Ask anything about books, concepts, or the library..."
+            placeholder="Ask Lyra anything: 'What should I read if I feel stressed?', 'Best DSA books'..."
             style={{
               flex: 1,
               border: 'none',
@@ -474,10 +532,10 @@ export default function AIAssistant({ onNavigate = () => {} }) {
         {/* Quick Suggestion Chips below input */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[
-            'Recommend OS books',
-            'Summarize Clean Code',
-            'Best books for DSA',
-            'Latest arrivals in AI'
+            'Recommend books for high-paying tech jobs',
+            'Summarize Clean Code in 3 minutes',
+            'I need a book to relax and clear my head',
+            'Best book for database internals'
           ].map(chip => (
             <button
               key={chip}
