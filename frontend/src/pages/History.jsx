@@ -13,12 +13,30 @@ import {
 } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import BookCover from '../components/BookCover';
+import { useLibrary } from '../context/LibraryContext';
 import { playClick } from '../utils/audio';
 import { toast } from '../context/ToastContext';
 
 export default function History({ onNavigate = () => {} }) {
+  const { history: contextHistory } = useLibrary();
   const [activeFilter, setActiveFilter] = useState('all');
   const [selectedYear, setSelectedYear] = useState('2025');
+
+  const liveItems = (contextHistory || []).map(h => ({
+    id: h.id,
+    bookId: h.bookId || 'BK001',
+    title: h.title,
+    author: h.author || 'Author',
+    cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80',
+    action: 'Returned to stacks',
+    date: h.returnDate || 'Recent',
+    time: 'Circulation Desk',
+    type: 'returned',
+    badge: 'Returned',
+    badgeColor: '#059669',
+    badgeBg: '#ecfdf5',
+    icon: CheckCircle2
+  }));
 
   const historySeptember = [
     {
@@ -91,7 +109,8 @@ export default function History({ onNavigate = () => {} }) {
     return item.type === activeFilter;
   };
 
-  const filteredSep = historySeptember.filter(filterItem);
+  const allSep = [...liveItems, ...historySeptember];
+  const filteredSep = allSep.filter(filterItem);
   const filteredAug = historyAugust.filter(filterItem);
 
   return (
