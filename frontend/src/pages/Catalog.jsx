@@ -25,11 +25,13 @@ import {
   ShieldCheck,
   TrendingUp,
   Tag,
-  UploadCloud
+  UploadCloud,
+  QrCode
 } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import BookCover from '../components/BookCover';
 import BookActionMenu from '../components/BookActionMenu';
+import BookQRModal from '../components/BookQRModal';
 import { localStore } from '../data/localStore';
 import { INITIAL_BOOKS } from '../data/seedData';
 import { useAuth } from '../context/AuthContext';
@@ -56,6 +58,7 @@ export default function Catalog({
   const booksList = (contextBooks && contextBooks.length > 0) ? contextBooks : INITIAL_BOOKS;
   const [loading, setLoading] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
+  const [showQRModal, setShowQRModal] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   
   // Category Pill Filter matching Screenshot 2
@@ -982,6 +985,29 @@ export default function Catalog({
                   <Heart size={15} fill={isWishlisted ? '#e11d48' : 'none'} color={isWishlisted ? '#e11d48' : '#64748b'} />
                   <span>{isWishlisted ? 'Saved in Wishlist' : 'Add to Wishlist'}</span>
                 </button>
+
+                <button
+                  onClick={() => { playClick(); setShowQRModal(true); }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 0',
+                    borderRadius: 8,
+                    border: '1px solid #e2e8f0',
+                    background: '#f8fafc',
+                    color: '#2563eb',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    transition: 'all 120ms'
+                  }}
+                >
+                  <QrCode size={15} />
+                  <span>Generate / Print QR Code</span>
+                </button>
               </div>
             </div>
 
@@ -996,50 +1022,51 @@ export default function Catalog({
                 </span>
               </div>
 
-              <h1 style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0', letterSpacing: '-0.4px' }}>
+              <h2 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 4px', lineHeight: 1.25 }}>
                 {selectedBook.title}
-              </h1>
-              <div style={{ fontSize: 15, color: '#475569', marginBottom: 16 }}>
+              </h2>
+              <div style={{ fontSize: 14, color: '#64748b', marginBottom: 14 }}>
                 by <span style={{ fontWeight: 700, color: '#0f172a' }}>{selectedBook.author}</span>
               </div>
 
-              {/* Rating & Availability Badges */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 18, borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#f59e0b' }}>
-                  <Star size={16} fill="#f59e0b" />
+              {/* Rating & Reviews */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#fef3c7', padding: '3px 8px', borderRadius: 6 }}>
+                  <Star size={14} fill="#f59e0b" color="#f59e0b" />
                   <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{selectedBook.rating || '4.8'}</span>
                   <span style={{ fontSize: 12.5, color: '#64748b' }}>({selectedBook.review_count || '12.4K'} reviews)</span>
                 </div>
 
                 <div style={{
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: 600,
-                  color: isAvail ? '#059669' : '#d97706',
-                  background: isAvail ? '#ecfdf5' : '#fffbeb'
+                  color: isAvail ? '#059669' : '#dc2626'
                 }}>
                   {isAvail ? `• Available (${selectedBook.available_copies ?? 4} copies in stack)` : '• Checked out by students'}
                 </div>
               </div>
 
-              {/* Description & Syllabus */}
-              <div style={{ marginTop: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Overview</h3>
-                <p style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.65, margin: '0 0 16px 0' }}>
+              {/* Synopsis */}
+              <div style={{ marginBottom: 20 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>
+                  Overview & Abstract
+                </h3>
+                <p style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.6, margin: 0 }}>
                   {selectedBook.description || 'Essential academic textbook recommended by SRM IST department faculty. Covers fundamental concepts, real-world case studies, and practical applications.'}
-                </p>
-
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Curriculum Relevance</h3>
-                <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6, margin: 0 }}>
-                  Recommended syllabus textbook for SRM Institute of Science and Technology engineering degree programs. Includes problem sets, laboratory exercises, and exam preparation material.
                 </p>
               </div>
 
-              {/* Specifications Table */}
-              <div style={{ marginTop: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13 }}>
+              {/* Technical Specifications Grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 10,
+                fontSize: 12.5,
+                borderTop: '1px solid #f1f5f9',
+                paddingTop: 16
+              }}>
                 <div style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
-                  <span style={{ color: '#64748b' }}>ISBN-13: </span>
+                  <span style={{ color: '#64748b' }}>ISBN: </span>
                   <span style={{ fontWeight: 600, color: '#0f172a' }}>{selectedBook.isbn || '978-0132350884'}</span>
                 </div>
                 <div style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
@@ -1059,6 +1086,17 @@ export default function Catalog({
             </div>
           </div>
         </div>
+
+        {/* Unique Book QR Code Modal */}
+        <BookQRModal
+          book={selectedBook}
+          isOpen={showQRModal}
+          onClose={() => setShowQRModal(false)}
+          onTestInScanner={(b) => {
+            setSelectedBook(null);
+            onNavigate('scanner');
+          }}
+        />
       </div>
     );
   }

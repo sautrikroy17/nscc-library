@@ -124,7 +124,20 @@ export function LibraryProvider({ children }) {
     ];
   });
 
-  // ── 6. Preferences State ──
+  // ── 6. Theme & Preferences State ──
+  const [theme, setThemeState] = useState(() => {
+    try {
+      const stored = localStorage.getItem('librax_theme');
+      if (stored === 'dark' || stored === 'light') return stored;
+      const raw = localStorage.getItem(STORAGE_KEYS.PREFS);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.theme === 'dark' || parsed.theme === 'light') return parsed.theme;
+      }
+    } catch {}
+    return 'light';
+  });
+
   const [preferences, setPreferences] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.PREFS);
@@ -137,6 +150,43 @@ export function LibraryProvider({ children }) {
       theme: 'light'
     };
   });
+
+  // Apply theme dynamically to <html> and <body>
+  useEffect(() => {
+    try {
+      localStorage.setItem('librax_theme', theme);
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+        document.body.classList.add('dark-theme');
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.body.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark-theme');
+        document.body.classList.remove('dark-theme');
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.body.setAttribute('data-theme', 'light');
+      }
+    } catch {}
+  }, [theme]);
+
+  // Toggle Theme helper
+  const toggleTheme = useCallback(() => {
+    playClick();
+    setThemeState(prev => {
+      const nextTheme = prev === 'dark' ? 'light' : 'dark';
+      setPreferences(p => ({ ...p, theme: nextTheme }));
+      toast.info(`Switched to ${nextTheme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode'}`);
+      return nextTheme;
+    });
+  }, []);
+
+  // Set Theme explicitly
+  const setTheme = useCallback((newTheme) => {
+    playClick();
+    setThemeState(newTheme);
+    setPreferences(p => ({ ...p, theme: newTheme }));
+    toast.info(`Theme set to ${newTheme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode'}`);
+  }, []);
 
   // ── 7. Recent Scans Log ──
   const [recentScans, setRecentScans] = useState([
@@ -199,6 +249,12 @@ export function LibraryProvider({ children }) {
     const existing = borrowedBooks.find(b => b.bookId === book.id || b.title === book.title);
     if (existing) {
       toast.info(`You already have "${book.title}" checked out!`);
+      return false;
+    }
+
+    // 2. Check if copies are available in stacks
+    if (book.available_copies !== undefined && Number(book.available_copies) <= 0) {
+      toast.error(`"${book.title}" is currently out of stock (0 available). All copies are checked out.`);
       return false;
     }
 
@@ -292,8 +348,13 @@ export function LibraryProvider({ children }) {
     try {
       const matchBook = books.find(b => b.id === bookId || b.title === title);
       if (matchBook) {
+        const nextCopies = Math.min(matchBook.total_copies || 10, (matchBook.available_copies ?? 0) + 1);
         localStore.updateBook(matchBook.id, {
-          available_copies: (matchBook.available_copies ?? 0) + 1
+          available_copies: nextCopies
+        });
+        localStore.returnBook({
+          book_id: matchBook.id,
+          borrower_reg: bookOrItem.borrowerReg || 'RA2511003010052'
         });
       }
     } catch {}
@@ -419,6 +480,9 @@ export function LibraryProvider({ children }) {
       history,
       preferences,
       recentScans,
+      theme,
+      toggleTheme,
+      setTheme,
       borrowBook,
       returnBook,
       renewBook,

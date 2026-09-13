@@ -20,10 +20,12 @@ import {
   ChevronRight,
   MoreVertical,
   Heart,
-  Target
+  Target,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLibrary } from '../context/LibraryContext';
+import { localStore } from '../data/localStore';
 import { toast } from '../context/ToastContext';
 import { playClick, playSuccessChime, playReturnChime } from '../utils/audio';
 import BackButton from '../components/BackButton';
@@ -130,7 +132,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
 
     return (
       <div style={{ maxWidth: 1380, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 22 }}>
-        {/* ── Top Row: Greeting, Subtitle, and R. David Lankes Quote ── */}
+        {/* ── Top Row: Greeting, Subtitle, and Export CSV Button ── */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.4px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -141,17 +143,39 @@ export default function Dashboard({ onNavigate = () => {} }) {
             </div>
           </div>
 
-          <div style={{ textAlign: 'right', maxWidth: 460 }}>
-            <div style={{ fontSize: 12.5, color: '#334155', fontStyle: 'italic', lineHeight: 1.4 }}>
-              "Libraries are not just about books, but about people, ideas and possibilities."
-            </div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
-              — R. David Lankes
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => {
+                playClick();
+                localStore.exportCSV();
+                playSuccessChime();
+                toast.success('Circulation issue/return ledger exported as CSV!');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 18px',
+                borderRadius: 10,
+                border: 'none',
+                background: '#0f172a',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                transition: 'all 120ms'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#1e293b'}
+              onMouseLeave={e => e.currentTarget.style.background = '#0f172a'}
+            >
+              <Download size={16} />
+              <span>Export Issue/Return CSV</span>
+            </button>
           </div>
         </div>
 
-        {/* ── 4 Top Stat Cards + Right Hero Card ── */}
+        {/* ── 4 Top Stat Cards (Brownie Subtask Requirements) + Right Hero Card ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr) 280px', gap: 16, alignItems: 'stretch' }}>
           {/* 1. Total Books */}
           <div 
@@ -174,24 +198,24 @@ export default function Dashboard({ onNavigate = () => {} }) {
             </div>
           </div>
 
-          {/* 2. Registered Students */}
+          {/* 2. Available Books (Brownie Subtask exact requirement) */}
           <div 
             className="card" 
-            onClick={() => { playClick(); onNavigate('students'); }}
+            onClick={() => { playClick(); onNavigate('catalog'); }}
             style={{ padding: '18px 20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ width: 38, height: 38, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
-                <Users size={20} />
+                <CheckCircle2 size={20} />
               </div>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', background: '#dcfce7', padding: '2px 8px', borderRadius: 999 }}>
-                ↑ +1.2%
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '2px 8px', borderRadius: 999 }}>
+                91.8% Stock
               </span>
             </div>
             <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>3,421</div>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', marginTop: 4 }}>Registered Students</div>
-              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>+40 this month</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>11,198</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b', marginTop: 4 }}>Available Books</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>Ready to issue on shelves</div>
             </div>
           </div>
 

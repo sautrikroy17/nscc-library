@@ -22,7 +22,7 @@ import { playClick, playSuccessChime } from '../utils/audio';
 
 export default function Settings({ onNavigate = () => {}, initialTab = 'profile' }) {
   const { user } = useAuth();
-  const { preferences, updatePreferences } = useLibrary();
+  const { preferences, updatePreferences, theme, setTheme } = useLibrary();
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const isStudent = user?.role === 'student';
@@ -41,8 +41,14 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
     borrowPeriod: '14 days (Standard)',
     categories: ['Computer Science', 'Software Engineering', 'AI & ML'],
     language: 'English',
-    theme: 'light'
+    theme: theme || 'light'
   });
+
+  useEffect(() => {
+    if (theme) {
+      setLibraryPrefs(prev => ({ ...prev, theme }));
+    }
+  }, [theme]);
 
   const [readingGoal, setReadingGoal] = useState(15);
   const [defaultView, setDefaultView] = useState('grid');
@@ -81,18 +87,15 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
 
   const handleThemeChange = (newTheme) => {
     playClick();
+    const effective = newTheme === 'system'
+      ? (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : newTheme;
     const updated = { ...libraryPrefs, theme: newTheme };
     setLibraryPrefs(updated);
-    updatePreferences(updated);
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark-theme');
-      document.body.classList.add('dark-theme');
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark-theme');
-      document.body.classList.remove('dark-theme');
-      document.documentElement.setAttribute('data-theme', 'light');
+    if (setTheme) {
+      setTheme(effective);
     }
+    updatePreferences(updated);
   };
 
   const handlePrefsSave = () => {

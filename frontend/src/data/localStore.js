@@ -553,19 +553,18 @@ export const localStore = {
   // ── Browser-Native CSV & Excel Export ──
   exportCSV() {
     const txns = getItems(STORAGE_KEYS.TRANSACTIONS, INITIAL_TRANSACTIONS);
-    const headers = ['Transaction ID', 'Book ID', 'Book Title', 'Student Name', 'Reg Number', 'Department', 'Issue Date', 'Due Date', 'Return Date', 'Status', 'Fine (INR)'];
+    const headers = ['Book Title', 'Author', 'Book ID', 'Issued To (User ID/Name)', 'Issue Timestamp', 'Return Timestamp', 'Current Status', 'Department', 'Fine (INR)', 'Transaction ID'];
     const rows = txns.map(t => [
-      t.id,
-      t.book_id,
       `"${(t.book_title || '').replace(/"/g, '""')}"`,
-      `"${(t.borrower_name || '').replace(/"/g, '""')}"`,
-      t.borrower_reg,
-      t.borrower_dept,
+      `"${(t.author || 'Academic Author').replace(/"/g, '""')}"`,
+      t.book_id,
+      `"${(t.borrower_name || '').replace(/"/g, '""')} (${t.borrower_reg || ''})"`,
       t.issue_date?.split('T')[0] || '',
-      t.due_date?.split('T')[0] || '',
-      t.return_date?.split('T')[0] || 'N/A',
+      t.return_date?.split('T')[0] || 'Not Returned (Active Loan)',
       t.status,
-      t.fine_amount || 0
+      t.borrower_dept || '',
+      t.fine_amount || 0,
+      t.id
     ]);
 
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');

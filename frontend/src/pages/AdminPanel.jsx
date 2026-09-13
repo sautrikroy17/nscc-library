@@ -28,14 +28,17 @@ import {
   User as UserIcon,
   BarChart3,
   TrendingUp,
-  PieChart
+  PieChart,
+  QrCode
 } from 'lucide-react';
 import { books as booksApi, transactions as txApi, stats as statsApi, exportData } from '../api';
+import { localStore } from '../data/localStore';
 import { useAuth } from '../context/AuthContext';
 import { useLibrary } from '../context/LibraryContext';
 import { toast } from '../context/ToastContext';
 import { playClick, playSuccessChime } from '../utils/audio';
 import BackButton from '../components/BackButton';
+import BookQRModal from '../components/BookQRModal';
 
 // ─────────────────────────────────────────────────────────────
 // Panel 10: Add New Book Form
@@ -54,6 +57,8 @@ function AddBookForm({ onBookAdded, onCancel }) {
     cover_image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80'
   });
   const [loading, setLoading] = useState(false);
+  const [createdBook, setCreatedBook] = useState(null);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   const CATEGORIES = [
     'Computer Science',
@@ -81,9 +86,10 @@ function AddBookForm({ onBookAdded, onCancel }) {
     }
     setLoading(true);
     try {
-      addBook(form);
+      const added = addBook(form);
+      setCreatedBook(added || form);
+      setShowQRModal(true);
       playSuccessChime();
-      onBookAdded?.();
     } catch (err) {
       toast.error(err.message || 'Failed to add book');
     } finally {
@@ -275,6 +281,16 @@ function AddBookForm({ onBookAdded, onCancel }) {
           </div>
         </div>
       </form>
+
+      {/* Unique Book QR Code Modal */}
+      <BookQRModal
+        book={createdBook}
+        isOpen={showQRModal}
+        onClose={() => {
+          setShowQRModal(false);
+          onBookAdded?.();
+        }}
+      />
     </div>
   );
 }
@@ -912,6 +928,32 @@ function ReportsAnalytics() {
           </select>
 
           <button
+            onClick={() => {
+              playClick();
+              localStore.exportCSV();
+              playSuccessChime();
+              toast.success('Circulation issue/return ledger downloaded as CSV!');
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '8px 16px',
+              borderRadius: 8,
+              border: '1px solid #e2e8f0',
+              background: '#ffffff',
+              color: '#0f172a',
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+            }}
+          >
+            <FileSpreadsheet size={14} color="#10b981" />
+            <span>Circulation Ledger (CSV)</span>
+          </button>
+
+          <button
             onClick={handleExportReport}
             style={{
               display: 'flex',
@@ -928,7 +970,7 @@ function ReportsAnalytics() {
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
             }}
           >
-            <Download size={14} /> Export Report
+            <Download size={14} /> Analytics Summary
           </button>
         </div>
       </div>
@@ -1564,14 +1606,14 @@ function OverdueManagement({ onNavigate = () => {} }) {
                   <td style={{ padding: '14px 18px' }}>
                     <span style={{
                       display: 'inline-block',
-                      padding: '2px 8px',
+                      padding: '3px 10px',
                       borderRadius: 999,
                       background: '#fef2f2',
                       color: '#ef4444',
                       fontWeight: 700,
                       fontSize: 12
                     }}>
-                      {item.daysLate}
+                      {item.daysLate} days overdue
                     </span>
                   </td>
                   <td style={{ padding: '14px 18px', textAlign: 'right' }}>

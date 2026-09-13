@@ -16,9 +16,12 @@ import {
   FileSpreadsheet,
   Headphones,
   Sparkles,
-  FileText
+  FileText,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLibrary } from '../context/LibraryContext';
 import { toast } from '../context/ToastContext';
 import { playClick } from '../utils/audio';
 
@@ -48,7 +51,9 @@ const LIBRARIAN_NAV = [
 
 export default function Sidebar({ activePage, setActivePage, overdueCount = 0 }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useLibrary();
   const navList = user?.role === 'librarian' ? LIBRARIAN_NAV : STUDENT_NAV;
+  const isDark = theme === 'dark';
 
   const handleNav = (id) => {
     playClick();
@@ -63,21 +68,22 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
 
   return (
     <>
-      {/* ── Desktop Editorial White Sidebar (Screenshots 1, 2, 3, 4) ── */}
+      {/* ── Desktop Editorial Sidebar ── */}
       <aside style={{
         width: 240,
         minWidth: 240,
         height: '100vh',
         position: 'sticky',
         top: 0,
-        background: '#ffffff',
-        borderRight: '1px solid #edebe6',
+        background: isDark ? '#0d1527' : '#ffffff',
+        borderRight: isDark ? '1px solid #1e293b' : '1px solid #edebe6',
         display: 'flex',
         flexDirection: 'column',
         padding: '24px 16px',
         zIndex: 50,
-        boxShadow: '1px 0 3px rgba(0, 0, 0, 0.02)'
-      }} className="desktop-only">
+        boxShadow: isDark ? '1px 0 10px rgba(0, 0, 0, 0.3)' : '1px 0 3px rgba(0, 0, 0, 0.02)',
+        transition: 'background 200ms ease, border-color 200ms ease'
+      }} className="desktop-only app-sidebar">
         
         {/* Brand Logo Header matching Screenshot 1 */}
         <div 
@@ -95,35 +101,34 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
             width: 34,
             height: 34,
             borderRadius: 8,
-            background: '#ffffff',
-            border: '1.5px solid #0f172a',
+            background: isDark ? '#162035' : '#ffffff',
+            border: isDark ? '1.5px solid #27354f' : '1.5px solid #0f172a',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#0f172a'
+            color: isDark ? '#f8fafc' : '#0f172a'
           }}>
             <BookOpen size={18} strokeWidth={2.2} />
           </div>
           <div>
             <div style={{
               fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontSize: 16,
               fontWeight: 800,
-              fontSize: 19,
-              color: '#0f172a',
-              letterSpacing: '-0.4px',
-              lineHeight: 1.1
+              color: isDark ? '#f8fafc' : '#0f172a',
+              letterSpacing: '-0.3px',
+              lineHeight: 1.15
             }}>
               LibraX
             </div>
             <div style={{
-              fontSize: 8.5,
-              fontWeight: 700,
-              color: '#94a3b8',
-              letterSpacing: '0.8px',
-              textTransform: 'uppercase',
-              marginTop: 2
+              fontSize: 10,
+              fontWeight: 600,
+              color: isDark ? '#94a3b8' : '#94a3b8',
+              letterSpacing: '0.4px',
+              textTransform: 'uppercase'
             }}>
-              SRM IST LIBRARY
+              SRM CENTRAL LIBRARY
             </div>
             {user?.role === 'librarian' && (
               <div style={{
@@ -221,8 +226,8 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
           marginBottom: 10,
           padding: '10px',
           borderRadius: 12,
-          background: '#f8fafc',
-          border: '1px solid #f1f5f9',
+          background: isDark ? '#111928' : '#f8fafc',
+          border: isDark ? '1px solid #1e293b' : '1px solid #f1f5f9',
           display: 'flex',
           flexDirection: 'column',
           gap: 7
@@ -235,7 +240,7 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
               height: 70,
               borderRadius: 8,
               objectFit: 'cover',
-              border: '1px solid #e2e8f0'
+              border: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0'
             }}
           />
           <div>
@@ -244,7 +249,7 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
               fontSize: 12,
               fontStyle: 'italic',
               fontWeight: 600,
-              color: '#334155',
+              color: isDark ? '#cbd5e1' : '#334155',
               lineHeight: 1.25
             }}>
               Knowledge Enables Better Futures
@@ -252,7 +257,7 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
             <div style={{
               fontSize: 8.5,
               fontWeight: 700,
-              color: '#94a3b8',
+              color: isDark ? '#94a3b8' : '#94a3b8',
               letterSpacing: '0.5px',
               textTransform: 'uppercase',
               marginTop: 2
@@ -262,8 +267,51 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
           </div>
         </div>
 
+        {/* Theme Toggle Button */}
+        <div style={{ padding: '6px 0', borderTop: isDark ? '1px solid #1e293b' : '1px solid #f1f5f9' }}>
+          <button
+            onClick={toggleTheme}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: 8,
+              fontSize: 12.5,
+              fontWeight: 600,
+              border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+              cursor: 'pointer',
+              color: isDark ? '#fbbf24' : '#475569',
+              background: isDark ? '#162035' : '#f8fafc',
+              transition: 'all 120ms ease-out',
+              textAlign: 'left'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = isDark ? '#f59e0b' : '#cbd5e1';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = isDark ? '#334155' : '#e2e8f0';
+            }}
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            <span style={{ flex: 1 }}>{isDark ? 'Dark Mode' : 'Light Mode'}</span>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '1px 6px',
+              borderRadius: 4,
+              background: isDark ? '#1e293b' : '#ffffff',
+              border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+              color: isDark ? '#fbbf24' : '#0f172a'
+            }}>
+              {isDark ? 'DARK' : 'LIGHT'}
+            </span>
+          </button>
+        </div>
+
         {/* Bottom Log Out Section */}
-        <div style={{ paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ paddingTop: 4 }}>
           <button
             onClick={handleLogout}
             style={{
@@ -277,17 +325,17 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
               fontWeight: 500,
               border: 'none',
               cursor: 'pointer',
-              color: '#64748b',
+              color: isDark ? '#94a3b8' : '#64748b',
               background: 'transparent',
               transition: 'all 120ms ease-out',
               textAlign: 'left'
             }}
             onMouseEnter={e => {
               e.currentTarget.style.color = '#dc2626';
-              e.currentTarget.style.background = '#fef2f2';
+              e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.color = '#64748b';
+              e.currentTarget.style.color = isDark ? '#94a3b8' : '#64748b';
               e.currentTarget.style.background = 'transparent';
             }}
           >
@@ -305,14 +353,14 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
         right: 0,
         height: 'calc(62px + env(safe-area-inset-bottom, 0px))',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        background: 'rgba(255, 255, 255, 0.96)',
+        background: isDark ? 'rgba(13, 21, 39, 0.96)' : 'rgba(255, 255, 255, 0.96)',
         backdropFilter: 'blur(20px)',
-        borderTop: '1px solid #edebe6',
+        borderTop: isDark ? '1px solid #1e293b' : '1px solid #edebe6',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
         zIndex: 100,
-        boxShadow: '0 -2px 10px rgba(0,0,0,0.04)'
+        boxShadow: isDark ? '0 -2px 10px rgba(0,0,0,0.4)' : '0 -2px 10px rgba(0,0,0,0.04)'
       }}>
         {navList.slice(0, 5).map(item => {
           const Icon = item.icon;

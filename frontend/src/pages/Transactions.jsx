@@ -158,9 +158,17 @@ export default function Transactions({ onNavigate = () => {} }) {
   const handleExportCsv = () => {
     playClick();
     const csvContent = [
-      ['TRANSACTION ID', 'STUDENT NAME', 'ROLL NO', 'BOOK TITLE', 'ISBN', 'TYPE', 'ISSUE DATE', 'DUE DATE', 'RETURN DATE', 'STATUS', 'FINE'],
+      ['Book Title', 'Author', 'Book ID', 'Issued To (User ID/Name)', 'Issue Timestamp', 'Return Timestamp', 'Current Status', 'Fine', 'Transaction ID'],
       ...filtered.map(t => [
-        t.id, t.student, t.roll, `"${t.book}"`, t.isbn, t.type, t.issueDate, t.dueDate, t.returnDate, t.status, t.fine
+        `"${(t.book || '').replace(/"/g, '""')}"`,
+        `"${(t.author || 'Academic Faculty Author').replace(/"/g, '""')}"`,
+        t.bookId || t.isbn || 'BK-SRM-01',
+        `"${t.student} (${t.roll})"`,
+        t.issueDate,
+        t.returnDate !== '-' ? t.returnDate : 'Not Returned (Active Loan)',
+        t.status,
+        t.fine,
+        t.id
       ])
     ].map(r => r.join(',')).join('\n');
 

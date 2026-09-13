@@ -8,9 +8,12 @@ import {
   Bell,
   BookOpen,
   X,
-  QrCode
+  QrCode,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
+import { useLibrary } from './context/LibraryContext';
 import { stats as statsApi } from './api';
 import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
@@ -79,6 +82,7 @@ function LoadingScreen() {
 
 export default function App() {
   const { user, loading } = useAuth();
+  const { theme, toggleTheme } = useLibrary();
   const [activePage, setActivePage] = useState('dashboard');
   const [overdueCount, setOverdueCount] = useState(0);
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
@@ -93,17 +97,21 @@ export default function App() {
       .catch(() => {});
   }, [user]);
 
-  // Handle keyboard shortcut CMD+K or CTRL+K
+  // Handle keyboard shortcuts (CMD+K for catalog search, CMD+D for theme toggle)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setActivePage('catalog');
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        toggleTheme();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [toggleTheme]);
 
   const handleSoundToggle = () => {
     const newState = toggleSound();
@@ -159,8 +167,18 @@ export default function App() {
     }
   };
 
+  const isDark = theme === 'dark';
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+    <div 
+      className={`app-shell ${isDark ? 'dark-theme' : ''}`}
+      style={{ 
+        display: 'flex', 
+        minHeight: '100vh', 
+        background: isDark ? '#090d16' : '#f8fafc',
+        color: isDark ? '#f8fafc' : '#0f172a'
+      }}
+    >
       {/* ── Left Sidebar matching Mockup ── */}
       <Sidebar
         activePage={activePage}
@@ -169,20 +187,27 @@ export default function App() {
       />
 
       {/* ── Main Content Area ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: '#f8fafc' }}>
+      <div style={{ 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        minWidth: 0, 
+        background: isDark ? '#090d16' : '#f8fafc' 
+      }}>
         {/* ── Top Bar matching Mockup ── */}
         <header style={{
           height: 64,
           padding: '0 32px',
-          background: '#ffffff',
-          borderBottom: '1px solid #e2e8f0',
+          background: isDark ? '#0d1527' : '#ffffff',
+          borderBottom: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           position: 'sticky',
           top: 0,
-          zIndex: 40
-        }} className="desktop-only">
+          zIndex: 40,
+          transition: 'background 200ms ease, border-color 200ms ease'
+        }} className="desktop-only top-header">
           {/* Center Search Input (Mockup Panels 3–15) */}
           <div
             onClick={() => { playClick(); setActivePage('catalog'); }}
@@ -190,18 +215,18 @@ export default function App() {
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              background: isDark ? '#162035' : '#f8fafc',
+              border: isDark ? '1px solid #27354f' : '1px solid #e2e8f0',
               borderRadius: 10,
               padding: '8px 14px',
               width: 440,
               cursor: 'pointer',
               transition: 'all 150ms'
             }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = '#cbd5e1'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}
+            onMouseEnter={e => e.currentTarget.style.borderColor = isDark ? '#3b82f6' : '#cbd5e1'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = isDark ? '#27354f' : '#e2e8f0'}
           >
-            <Search size={16} color="#94a3b8" />
+            <Search size={16} color={isDark ? '#94a3b8' : '#94a3b8'} />
             <input
               type="text"
               value={searchQuery}
@@ -216,7 +241,7 @@ export default function App() {
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
-                color: '#0f172a',
+                color: isDark ? '#f8fafc' : '#0f172a',
                 fontSize: 13,
                 flex: 1
               }}
@@ -231,7 +256,7 @@ export default function App() {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#94a3b8',
+                  color: isDark ? '#cbd5e1' : '#94a3b8',
                   fontSize: 14,
                   cursor: 'pointer',
                   padding: '0 4px',
@@ -245,9 +270,9 @@ export default function App() {
               <span style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: '#94a3b8',
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
+                color: isDark ? '#94a3b8' : '#94a3b8',
+                background: isDark ? '#1e293b' : '#ffffff',
+                border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
                 borderRadius: 4,
                 padding: '1px 5px',
                 lineHeight: 1.2
@@ -257,8 +282,39 @@ export default function App() {
             )}
           </div>
 
-          {/* Right Profile, Notifications & DateTime */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Right Profile, Notifications, Theme Switcher & DateTime */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {/* Light / Dark Mode Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode (⌘D)`}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: isDark ? '#1e293b' : '#f8fafc',
+                border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+                color: isDark ? '#fbbf24' : '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'all 150ms ease-out',
+                boxShadow: isDark ? '0 0 12px rgba(251, 191, 36, 0.25)' : 'none'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'scale(1.06)';
+                e.currentTarget.style.borderColor = isDark ? '#f59e0b' : '#94a3b8';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.borderColor = isDark ? '#334155' : '#e2e8f0';
+              }}
+            >
+              {isDark ? <Sun size={17} /> : <Moon size={16} />}
+            </button>
+
             {/* Notification Bell */}
             <button
               onClick={() => { playClick(); setShowNotifications(!showNotifications); }}
@@ -266,9 +322,9 @@ export default function App() {
                 width: 36,
                 height: 36,
                 borderRadius: '50%',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                color: '#64748b',
+                background: isDark ? '#162035' : '#f8fafc',
+                border: isDark ? '1px solid #27354f' : '1px solid #e2e8f0',
+                color: isDark ? '#cbd5e1' : '#64748b',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -285,7 +341,7 @@ export default function App() {
                 height: 7,
                 borderRadius: '50%',
                 background: '#ef4444',
-                border: '1.5px solid #ffffff'
+                border: `1.5px solid ${isDark ? '#0d1527' : '#ffffff'}`
               }} />
             </button>
 
@@ -302,7 +358,7 @@ export default function App() {
                 borderRadius: 8,
                 transition: 'background 120ms'
               }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+              onMouseEnter={e => e.currentTarget.style.background = isDark ? '#162035' : '#f8fafc'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <img
@@ -313,14 +369,14 @@ export default function App() {
                   height: 36,
                   borderRadius: '50%',
                   objectFit: 'cover',
-                  border: '1.5px solid #e2e8f0'
+                  border: isDark ? '1.5px solid #334155' : '1.5px solid #e2e8f0'
                 }}
               />
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a', lineHeight: 1.2 }}>
                   {profileName}
                 </div>
-                <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.1 }}>
+                <div style={{ fontSize: 11, color: isDark ? '#94a3b8' : '#64748b', lineHeight: 1.1 }}>
                   {profileRole}
                 </div>
               </div>
@@ -332,12 +388,12 @@ export default function App() {
                 display: 'flex',
                 flexDirection: 'column',
                 textAlign: 'right',
-                borderLeft: '1px solid #e2e8f0',
+                borderLeft: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0',
                 paddingLeft: 14,
                 lineHeight: 1.2
               }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b' }}>Sun, 13 Sep 2025</span>
-                <span style={{ fontSize: 12.5, fontWeight: 800, color: '#0f172a' }}>03:18 PM</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: isDark ? '#94a3b8' : '#64748b' }}>Sun, 13 Sep 2025</span>
+                <span style={{ fontSize: 12.5, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>03:18 PM</span>
               </div>
             )}
           </div>

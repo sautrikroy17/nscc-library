@@ -181,18 +181,22 @@ export default function Scanner({ onNavigate = () => {} }) {
   const handleConfirmIssue = () => {
     if (!selectedBook || !selectedStudent) return;
     playClick();
-    setIsCompleted(true);
-    borrowBook(selectedBook, 14, {
+    const success = borrowBook(selectedBook, 14, {
       name: selectedStudent.name,
       reg: selectedStudent.reg
     });
+    if (success) {
+      setIsCompleted(true);
+    }
   };
 
   const handleConfirmReturn = () => {
     if (!selectedBook) return;
     playClick();
-    setIsCompleted(true);
-    returnBook(selectedBook);
+    const success = returnBook(selectedBook);
+    if (success) {
+      setIsCompleted(true);
+    }
   };
 
   return (
@@ -843,6 +847,35 @@ export default function Scanner({ onNavigate = () => {} }) {
                     <span>Process Return & Restock</span>
                   </>
                 )}
+              </button>
+            )}
+
+            {isCompleted && (
+              <button
+                onClick={() => {
+                  playClick();
+                  setSelectedBook(null);
+                  setIsCompleted(false);
+                }}
+                style={{
+                  width: '100%',
+                  marginTop: 8,
+                  padding: '9px 0',
+                  borderRadius: 8,
+                  background: 'var(--bg-surface, #f1f5f9)',
+                  color: 'var(--text-3, #475569)',
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  border: '1px solid var(--border, #e2e8f0)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6
+                }}
+              >
+                <RotateCcw size={14} />
+                <span>Scan Next Book / Clear</span>
               </button>
             )}
 

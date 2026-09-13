@@ -8,11 +8,13 @@ import {
   Download, 
   AlertTriangle,
   RotateCcw,
-  Check
+  Check,
+  QrCode
 } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
 import { toast } from '../context/ToastContext';
 import { playClick } from '../utils/audio';
+import BookQRModal from './BookQRModal';
 
 export default function BookActionMenu({ 
   book, 
@@ -22,6 +24,7 @@ export default function BookActionMenu({
   buttonStyle = {}
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
   const menuRef = useRef(null);
   const { borrowBook, returnBook, wishlist, toggleWishlist, borrowedBooks } = useLibrary();
 
@@ -178,7 +181,17 @@ export default function BookActionMenu({
             <span>Copy Catalog Link</span>
           </button>
 
-          {/* 5. Download Citation */}
+          {/* 5. Generate / Print QR Code */}
+          <button
+            type="button"
+            onClick={handleAction(() => setShowQRModal(true))}
+            style={itemStyle}
+          >
+            <QrCode size={14} color="#2563eb" />
+            <span>View / Print QR Code</span>
+          </button>
+
+          {/* 6. Download Citation */}
           <button
             type="button"
             onClick={handleAction(downloadCitation)}
@@ -188,7 +201,7 @@ export default function BookActionMenu({
             <span>Download Citation</span>
           </button>
 
-          {/* 6. Report Shelf Damage */}
+          {/* 7. Report Shelf Damage */}
           <button
             type="button"
             onClick={handleAction(() => toast.info(`Damage report logged for ${book.title}. Librarian team notified.`))}
@@ -199,6 +212,13 @@ export default function BookActionMenu({
           </button>
         </div>
       )}
+
+      {/* Unique Book QR Code Modal */}
+      <BookQRModal
+        book={book}
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+      />
     </div>
   );
 }

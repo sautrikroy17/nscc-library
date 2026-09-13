@@ -110,6 +110,110 @@ html.dark-theme body, body.dark-theme {
   color: #f8fafc !important;
 }
 
+/* ── Dark Theme Comprehensive Overrides ── */
+.dark-theme,
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+.dark-theme .card,
+[data-theme="dark"] .card {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+.dark-theme .app-shell,
+[data-theme="dark"] .app-shell {
+  background: #090d16 !important;
+}
+
+.dark-theme header,
+[data-theme="dark"] header,
+.dark-theme .top-header,
+[data-theme="dark"] .top-header {
+  background: #0d1527 !important;
+  border-color: #1e293b !important;
+}
+
+.dark-theme aside,
+[data-theme="dark"] aside,
+.dark-theme .app-sidebar,
+[data-theme="dark"] .app-sidebar {
+  background: #0d1527 !important;
+  border-color: #1e293b !important;
+}
+
+.dark-theme h1,
+.dark-theme h2,
+.dark-theme h3,
+.dark-theme h4,
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4 {
+  color: #f8fafc !important;
+}
+
+.dark-theme input,
+.dark-theme select,
+.dark-theme textarea,
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: #162035 !important;
+  border-color: #27354f !important;
+  color: #f8fafc !important;
+}
+
+.dark-theme input::placeholder,
+.dark-theme textarea::placeholder,
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #64748b !important;
+}
+
+.dark-theme table,
+[data-theme="dark"] table {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark-theme thead tr,
+[data-theme="dark"] thead tr,
+.dark-theme th,
+[data-theme="dark"] th {
+  background: #162035 !important;
+  border-color: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+.dark-theme td,
+[data-theme="dark"] td {
+  border-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+.dark-theme tbody tr:hover,
+[data-theme="dark"] tbody tr:hover {
+  background: #162035 !important;
+}
+
+.dark-theme .modal-content,
+[data-theme="dark"] .modal-content {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+}
+
+.dark-theme label,
+[data-theme="dark"] label {
+  color: #cbd5e1 !important;
+}
+
 /* ── Body Base ─────────────────────────────────────────────── */
 body {
   min-height: 100vh;
