@@ -46,14 +46,8 @@ const ROLE_DEMOS = {
   librarian: {
     email: 'librarian@srmist.edu.in',
     password: 'librarian123',
-    name: 'Dr. Rajesh Kumar',
+    name: 'Librarian ID: LIB-SRM-042',
     reg: 'LIB-SRM-042'
-  },
-  admin: {
-    email: 'admin@nscc.srmist.edu.in',
-    password: 'nscc2024',
-    name: 'Admin Librarian',
-    reg: 'ADM-SYS-001'
   }
 };
 
@@ -1370,14 +1364,14 @@ export default function LoginPage() {
                 {/* Role Switcher Tabs */}
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
                   gap: 4,
                   background: '#f1f5f9',
                   padding: 4,
                   borderRadius: 10,
                   marginBottom: 20
                 }}>
-                  {(['student', 'librarian', 'admin']).map((role) => (
+                  {(['student', 'librarian']).map((role) => (
                     <button
                       key={role}
                       type="button"
@@ -1589,47 +1583,6 @@ export default function LoginPage() {
                   </form>
                 )}
 
-                {/* SRM Single Sign-On */}
-                <div style={{ marginTop: 14 }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    margin: '12px 0',
-                    fontSize: 11.5,
-                    color: '#9ca3af'
-                  }}>
-                    <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
-                    <span>or continue with</span>
-                    <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playSuccessChime();
-                      toast.success('SRM IST SSO Verified: Sautrik Roy (RA2511003010052)');
-                      login('ra2511003010052@srmist.edu.in', 'student123');
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '9px',
-                      borderRadius: 9999,
-                      border: '1.5px solid #e5e7eb',
-                      background: '#ffffff',
-                      color: '#374151',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8
-                    }}
-                  >
-                    <GraduationCap size={16} color="#111827" />
-                    Sign in with SRM SSO
-                  </button>
-                </div>
 
                 {/* Toggle sign in / register */}
                 <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12.5, color: '#6b7280' }}>
@@ -1705,7 +1658,7 @@ export default function LoginPage() {
                     — Margaret Fuller
                   </div>
 
-                  {/* Student Pass Badge Preview */}
+                  {/* Student or Librarian Pass Badge Preview */}
                   <div style={{
                     background: 'rgba(255, 255, 255, 0.12)',
                     backdropFilter: 'blur(10px)',
@@ -1727,14 +1680,14 @@ export default function LoginPage() {
                         justifyContent: 'center',
                         color: '#ffffff'
                       }}>
-                        <QrCode size={16} />
+                        {selectedRole === 'student' ? <QrCode size={16} /> : <ShieldCheck size={16} />}
                       </div>
                       <div>
                         <div style={{ fontSize: 12.5, fontWeight: 700, color: '#ffffff' }}>
-                          Sautrik Roy
+                          {selectedRole === 'student' ? 'Sautrik Roy' : 'Librarian ID: LIB-SRM-042'}
                         </div>
                         <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                          RA2511003010052 · 2nd Year CSE
+                          {selectedRole === 'student' ? 'RA2511003010052 · 2nd Year CSE' : 'Staff ID · Central Library'}
                         </div>
                       </div>
                     </div>

@@ -93,10 +93,10 @@ export const localStore = {
       const isAdmin = clean.includes('admin');
       matched = {
         id: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'STU001',
-        name: isAdmin ? 'Admin Librarian' : (isLibrarian ? 'Dr. Rajesh Kumar' : 'Sautrik Roy'),
+        name: isAdmin ? 'Admin Librarian' : (isLibrarian ? 'Librarian (LIB-SRM-042)' : 'Sautrik Roy'),
         email: clean.includes('@') ? clean : (isLibrarian ? 'librarian@srmist.edu.in' : 'ra2511003010052@srmist.edu.in'),
-        reg_number: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB001') : 'RA2511003010052',
-        department: isLibrarian ? 'Library Administration' : 'CSE',
+        reg_number: isLibrarian ? (isAdmin ? 'LIB002' : 'LIB-SRM-042') : 'RA2511003010052',
+        department: isLibrarian ? 'Central Library Staff' : 'CSE',
         role: isLibrarian ? 'librarian' : 'student',
         avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
       };
