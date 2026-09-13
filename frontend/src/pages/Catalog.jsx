@@ -1386,7 +1386,7 @@ export default function Catalog({
               </ul>
 
               <button
-                onClick={() => toast.info('Central Library Borrowing Policy: 5 books allowed per student card for 14 days.')}
+                onClick={() => toast.info('Central Library Borrowing Policy: 7 books allowed per student card for 14 days.')}
                 style={{
                   marginTop: 16,
                   width: '100%',

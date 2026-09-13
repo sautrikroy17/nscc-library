@@ -167,11 +167,14 @@ export default function App() {
       case 'scanner':       return <Scanner onNavigate={setActivePage} />;
       case 'transactions':  return <Transactions onNavigate={setActivePage} />;
       case 'students':      return <AdminPanel defaultTab="students" onNavigate={setActivePage} />;
+      case 'add_book':
+      case 'add-book':      return <AdminPanel defaultTab="add_book" onNavigate={setActivePage} />;
+      case 'overdue':       return <AdminPanel defaultTab="overdue" onNavigate={setActivePage} />;
       case 'admin':         return <AdminPanel defaultTab="overdue" onNavigate={setActivePage} />;
       case 'reports':       return <AdminPanel defaultTab="reports" onNavigate={setActivePage} />;
       case 'study':         return <StudyRoom onNavigate={setActivePage} />;
       case 'ai':            return <AIAssistant onNavigate={setActivePage} />;
-      case 'settings':      return isStudent ? <Settings onNavigate={setActivePage} /> : <AdminPanel defaultTab="settings" onNavigate={setActivePage} />;
+      case 'settings':      return <Settings onNavigate={setActivePage} />;
       default:              return <Dashboard onNavigate={setActivePage} />;
     }
   };

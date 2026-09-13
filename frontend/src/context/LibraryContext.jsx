@@ -64,13 +64,13 @@ const DEFAULT_BORROWED = [
 ];
 
 const DEFAULT_STUDENTS = [
-  { id: 'st1', num: 1, name: 'Sautrik Roy', reg: 'RA2511003010052', dept: 'CSE', year: '2', borrowed: 3, status: 'Active', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80' },
-  { id: 'st2', num: 2, name: 'Ananya Sharma', reg: 'RA2511003010222', dept: 'CSE', year: '3', borrowed: 1, status: 'Active', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80' },
-  { id: 'st3', num: 3, name: 'Vikram Kumar', reg: 'RA2511003010333', dept: 'ECE', year: '2', borrowed: 0, status: 'Active', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80' },
-  { id: 'st4', num: 4, name: 'Sneha Iyer', reg: 'RA2511003010901', dept: 'IT', year: '3', borrowed: 2, status: 'Active', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80' },
-  { id: 'st5', num: 5, name: 'Karthik Nair', reg: 'RA2511003010789', dept: 'ME', year: '2', borrowed: 1, status: 'Active', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80' },
-  { id: 'st6', num: 6, name: 'Isha Gupta', reg: 'RA2511003010444', dept: 'CSE', year: '3', borrowed: 4, status: 'Active', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80' },
-  { id: 'st7', num: 7, name: 'Aditya Rao', reg: 'RA2511003010555', dept: 'EEE', year: '2', borrowed: 0, status: 'Active', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&auto=format&fit=crop&q=80' }
+  { id: 'st1', num: 1, name: 'Sautrik Roy', reg: 'RA2511003010052', dept: 'CSE', year: '2', borrowed: 3, maxLimit: 7, status: 'Active', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80' },
+  { id: 'st2', num: 2, name: 'Ananya Sharma', reg: 'RA2511003010222', dept: 'CSE', year: '3', borrowed: 1, maxLimit: 7, status: 'Active', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80' },
+  { id: 'st3', num: 3, name: 'Vikram Kumar', reg: 'RA2511003010333', dept: 'ECE', year: '2', borrowed: 0, maxLimit: 7, status: 'Active', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80' },
+  { id: 'st4', num: 4, name: 'Sneha Iyer', reg: 'RA2511003010901', dept: 'IT', year: '3', borrowed: 2, maxLimit: 7, status: 'Active', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80' },
+  { id: 'st5', num: 5, name: 'Karthik Nair', reg: 'RA2511003010789', dept: 'ME', year: '2', borrowed: 1, maxLimit: 7, status: 'Active', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80' },
+  { id: 'st6', num: 6, name: 'Isha Gupta', reg: 'RA2511003010444', dept: 'CSE', year: '3', borrowed: 4, maxLimit: 7, status: 'Active', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80' },
+  { id: 'st7', num: 7, name: 'Aditya Rao', reg: 'RA2511003010555', dept: 'EEE', year: '2', borrowed: 0, maxLimit: 7, status: 'Active', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&auto=format&fit=crop&q=80' }
 ];
 
 export function LibraryProvider({ children }) {
@@ -255,6 +255,12 @@ export function LibraryProvider({ children }) {
     // 2. Check if copies are available in stacks
     if (book.available_copies !== undefined && Number(book.available_copies) <= 0) {
       toast.error(`"${book.title}" is currently out of stock (0 available). All copies are checked out.`);
+      return false;
+    }
+
+    // 3. Check borrowing quota (Maximum 7 books allowed at a time)
+    if (borrowedBooks.length >= 7) {
+      toast.error('Borrowing limit reached: Students can borrow a maximum of 7 books at a time. Please return an existing volume first.');
       return false;
     }
 

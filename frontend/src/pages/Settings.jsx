@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   User, 
   Sliders, 
@@ -392,7 +392,7 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
                 </div>
                 <div>
                   <div style={{ color: '#64748b' }}>BORROW LIMIT</div>
-                  <div style={{ fontWeight: 700, color: '#ffffff' }}>5 Volumes</div>
+                  <div style={{ fontWeight: 700, color: '#ffffff' }}>7 Volumes</div>
                 </div>
                 <div>
                   <div style={{ color: '#64748b' }}>FINES</div>

@@ -176,8 +176,8 @@ export default function Dashboard({ onNavigate = () => {} }) {
           </div>
         </div>
 
-        {/* ── 4 Top Stat Cards (Brownie Subtask Requirements) + Right Hero Card ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr) 280px', gap: 16, alignItems: 'stretch' }}>
+        {/* ── 5 Top Stat Cards (Aligned & Interactive) ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, alignItems: 'stretch' }}>
           {/* 1. Total Books */}
           <div 
             className="card" 
@@ -244,7 +244,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
           {/* 4. Overdue Books */}
           <div 
             className="card" 
-            onClick={() => { playClick(); onNavigate('admin'); }}
+            onClick={() => { playClick(); onNavigate('overdue'); }}
             style={{ padding: '18px 20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -262,28 +262,40 @@ export default function Dashboard({ onNavigate = () => {} }) {
             </div>
           </div>
 
-          {/* 5. Right Hero Image Card */}
-          <div style={{
-            position: 'relative',
-            borderRadius: 14,
-            overflow: 'hidden',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-end',
-            padding: '18px',
-            minHeight: 140,
-            background: 'url(/library_reading_table.jpg) center/cover no-repeat'
-          }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(15,23,42,0.3) 0%, rgba(15,23,42,0.85) 100%)' }} />
-            <div style={{ position: 'relative', zIndex: 1, color: '#ffffff' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35, fontStyle: 'italic' }}>
-                "A well-managed library builds a brighter tomorrow."
+          {/* 5. Start Scanner (Direct QR Circulation Trigger) */}
+          <div 
+            className="card" 
+            onClick={() => { playClick(); onNavigate('scanner'); }}
+            style={{ 
+              padding: '18px 20px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              cursor: 'pointer', 
+              transition: 'transform 120ms, box-shadow 120ms',
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+              border: 'none',
+              color: '#ffffff',
+              boxShadow: '0 2px 8px rgba(15,23,42,0.12)'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(15,23,42,0.22)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(15,23,42,0.12)'; }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(56, 189, 248, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
+                <QrCode size={22} strokeWidth={2.2} />
               </div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <BookOpen size={12} />
-                <span>LibraX</span>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', lineHeight: 1.1 }}>
+                  Start Scanner
+                </div>
+                <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 3 }}>
+                  Scan QR to Issue / Return
+                </div>
               </div>
+            </div>
+            <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+              <ArrowRight size={13} />
             </div>
           </div>
         </div>
@@ -362,10 +374,10 @@ export default function Dashboard({ onNavigate = () => {} }) {
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {[
-                { label: 'Add New Book', icon: Plus, page: 'admin', tab: 'add_book' },
+                { label: 'Add New Book', icon: Plus, page: 'add_book' },
                 { label: 'Register Student', icon: Users, page: 'students' },
                 { label: 'Scan QR (Issue/Return)', icon: QrCode, page: 'scanner' },
-                { label: 'Process Return', icon: RotateCcw, page: 'transactions' },
+                { label: 'Process Return', icon: RotateCcw, page: 'scanner' },
                 { label: 'Manage Inventory', icon: BookOpen, page: 'catalog' },
                 { label: 'Generate Reports', icon: FileSpreadsheet, page: 'reports' },
               ].map(action => {
@@ -488,7 +500,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                   47
                 </span>
               </div>
-              <span onClick={() => onNavigate('admin')} style={{ fontSize: 11.5, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}>
+              <span onClick={() => onNavigate('overdue')} style={{ fontSize: 11.5, fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}>
                 View All →
               </span>
             </div>
@@ -688,11 +700,11 @@ export default function Dashboard({ onNavigate = () => {} }) {
           </div>
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 4 }}>
-              <span>of 5 allowed</span>
-              <span style={{ color: '#2563eb', fontWeight: 700 }}>{Math.round((borrowedBooks.length / 5) * 100)}%</span>
+              <span>of 7 allowed</span>
+              <span style={{ color: '#2563eb', fontWeight: 700 }}>{Math.round((borrowedBooks.length / 7) * 100)}%</span>
             </div>
             <div style={{ width: '100%', height: 4, background: '#e2e8f0', borderRadius: 2, overflow: 'hidden' }}>
-              <div style={{ width: `${(borrowedBooks.length / 5) * 100}%`, height: '100%', background: '#2563eb', borderRadius: 2 }} />
+              <div style={{ width: `${Math.min(100, (borrowedBooks.length / 7) * 100)}%`, height: '100%', background: '#2563eb', borderRadius: 2 }} />
             </div>
           </div>
         </div>

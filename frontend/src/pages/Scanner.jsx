@@ -54,7 +54,7 @@ export default function Scanner({ onNavigate = () => {} }) {
   
   // Selected Student & Book
   const [selectedStudent, setSelectedStudent] = useState(() => students?.[0] || {
-    id: 'st1', name: 'Sautrik Roy', reg: 'RA2511003010052', dept: 'CSE', year: '2', borrowed: 3, maxLimit: 5
+    id: 'st1', name: 'Sautrik Roy', reg: 'RA2511003010052', dept: 'CSE', year: '2', borrowed: 3, maxLimit: 7
   });
   const [selectedBook, setSelectedBook] = useState(() => {
     return books?.find(b => b.id === 'BK002') || books?.[0] || INITIAL_BOOKS[0];
@@ -113,7 +113,7 @@ export default function Scanner({ onNavigate = () => {} }) {
 
     // Check if it's a student ID/reg
     const studentList = students && students.length > 0 ? students : [
-      { id: 'st1', name: 'Sautrik Roy', reg: 'RA2511003010052', dept: 'CSE', year: '2', borrowed: 3, maxLimit: 5 }
+      { id: 'st1', name: 'Sautrik Roy', reg: 'RA2511003010052', dept: 'CSE', year: '2', borrowed: 3, maxLimit: 7 }
     ];
     const matchedStudent = studentList.find(s => 
       s.reg?.toUpperCase() === clean || s.id?.toUpperCase() === clean || s.name?.toUpperCase().includes(clean)
@@ -434,7 +434,7 @@ export default function Scanner({ onNavigate = () => {} }) {
                               {selectedStudent?.reg || 'RA2511003010052'}
                             </div>
                             <div style={{ fontSize: 9, color: '#cbd5e1', marginTop: 1 }}>
-                              {selectedStudent?.dept || 'CSE'} · Year {selectedStudent?.year || '2'} · SRM KTR
+                              {selectedStudent?.dept || 'CSE'} · Year {selectedStudent?.year || '2'} · Quota: 7 Books
                             </div>
                           </div>
                         </div>
@@ -897,7 +897,7 @@ export default function Scanner({ onNavigate = () => {} }) {
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 11, color: '#64748b' }}>Current Loans</div>
                 <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
-                  {selectedStudent?.borrowed} / {selectedStudent?.maxLimit}
+                  {selectedStudent?.borrowed} / {selectedStudent?.maxLimit || 7}
                 </div>
               </div>
             </div>
