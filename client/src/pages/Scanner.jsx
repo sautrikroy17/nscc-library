@@ -3,24 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Html5Qrcode } from 'html5-qrcode';
 import { 
   Camera, 
-  CameraOff, 
   QrCode, 
   BookOpen, 
-  ArrowUpRight, 
-  RotateCcw, 
-  CheckCircle2, 
   Keyboard, 
-  AlertTriangle, 
+  CheckCircle2, 
   ArrowRight,
-  Sparkles,
-  Zap,
-  Check,
-  Download,
-  Copy,
-  CreditCard,
+  Clock,
   User,
   ShieldCheck,
-  ExternalLink
+  Zap,
+  Check,
+  Copy,
+  Download,
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 import { transactions as txApi, books as booksApi } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -70,8 +66,8 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
     <div className="modal-overlay" onClick={onClose} style={{
       position: 'fixed',
       top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0, 0, 0, 0.75)',
-      backdropFilter: 'blur(10px)',
+      background: 'rgba(15, 23, 42, 0.6)',
+      backdropFilter: 'blur(8px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -84,26 +80,26 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
         exit={{ opacity: 0, scale: 0.95 }}
         onClick={e => e.stopPropagation()}
         style={{
-          background: '#0d1527',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
           borderRadius: 16,
           width: '100%',
           maxWidth: 480,
           overflow: 'hidden',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)'
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)'
         }}
       >
         {/* Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: '1px solid #e2e8f0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between'
         }}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 16, color: '#ffffff' }}>{book.title}</div>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{book.author} · {book.id}</div>
+            <div style={{ fontWeight: 800, fontSize: 16, color: '#0f172a' }}>{book.title}</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{book.author} · ID: {book.id}</div>
           </div>
           <button onClick={onClose} style={{ color: '#94a3b8', fontSize: 18, cursor: 'pointer', background: 'transparent', border: 'none' }}>✕</button>
         </div>
@@ -114,13 +110,13 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
             onClick={() => { playClick(); setMode('issue'); }}
             style={{
               flex: 1,
-              padding: '8px 0',
+              padding: '9px 0',
               borderRadius: 8,
-              fontSize: 12.5,
+              fontSize: 13,
               fontWeight: 700,
               border: 'none',
-              background: mode === 'issue' ? '#10b981' : 'rgba(255, 255, 255, 0.04)',
-              color: mode === 'issue' ? '#080c14' : '#94a3b8',
+              background: mode === 'issue' ? '#111827' : '#f1f5f9',
+              color: mode === 'issue' ? '#ffffff' : '#64748b',
               cursor: 'pointer'
             }}
           >
@@ -130,13 +126,13 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
             onClick={() => { playClick(); setMode('return'); }}
             style={{
               flex: 1,
-              padding: '8px 0',
+              padding: '9px 0',
               borderRadius: 8,
-              fontSize: 12.5,
+              fontSize: 13,
               fontWeight: 700,
               border: 'none',
-              background: mode === 'return' ? '#06b6d4' : 'rgba(255, 255, 255, 0.04)',
-              color: mode === 'return' ? '#080c14' : '#94a3b8',
+              background: mode === 'return' ? '#111827' : '#f1f5f9',
+              color: mode === 'return' ? '#ffffff' : '#64748b',
               cursor: 'pointer'
             }}
           >
@@ -148,7 +144,7 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
         {mode === 'issue' ? (
           <form onSubmit={handleIssue} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
-              <label style={{ fontSize: 11.5, color: '#94a3b8', display: 'block', marginBottom: 5 }}>Borrower Name</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 5 }}>Borrower Name</label>
               <input
                 type="text"
                 value={form.borrower_name}
@@ -157,54 +153,57 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
                 required
                 style={{
                   width: '100%',
-                  background: 'rgba(8, 12, 20, 0.7)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
                   borderRadius: 8,
-                  padding: '9px 12px',
-                  color: '#ffffff',
-                  fontSize: 13
+                  padding: '10px 12px',
+                  color: '#0f172a',
+                  fontSize: 13,
+                  outline: 'none'
                 }}
               />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
-                <label style={{ fontSize: 11.5, color: '#94a3b8', display: 'block', marginBottom: 5 }}>Reg Number</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 5 }}>Reg Number</label>
                 <input
                   type="text"
                   value={form.borrower_reg}
                   onChange={e => setForm({ ...form, borrower_reg: e.target.value })}
-                  placeholder="RA2311..."
+                  placeholder="RA2511003010052"
                   required
                   style={{
                     width: '100%',
-                    background: 'rgba(8, 12, 20, 0.7)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
                     borderRadius: 8,
-                    padding: '9px 12px',
-                    color: '#ffffff',
+                    padding: '10px 12px',
+                    color: '#0f172a',
                     fontSize: 13,
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
+                    outline: 'none'
                   }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: 11.5, color: '#94a3b8', display: 'block', marginBottom: 5 }}>Department</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 5 }}>Department</label>
                 <select
                   value={form.borrower_dept}
                   onChange={e => setForm({ ...form, borrower_dept: e.target.value })}
                   style={{
                     width: '100%',
-                    background: 'rgba(8, 12, 20, 0.7)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
                     borderRadius: 8,
-                    padding: '9px 12px',
-                    color: '#ffffff',
-                    fontSize: 13
+                    padding: '10px 12px',
+                    color: '#0f172a',
+                    fontSize: 13,
+                    outline: 'none'
                   }}
                 >
                   {['CSE', 'ECE', 'IT', 'EEE', 'ME', 'AI & DS', 'Other'].map(d => (
-                    <option key={d} value={d} style={{ background: '#0e1628' }}>{d}</option>
+                    <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
               </div>
@@ -217,10 +216,10 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
                 marginTop: 6,
                 padding: '12px 0',
                 borderRadius: 8,
-                background: '#10b981',
+                background: '#111827',
                 border: 'none',
-                color: '#080c14',
-                fontWeight: 800,
+                color: '#ffffff',
+                fontWeight: 700,
                 fontSize: 13.5,
                 cursor: 'pointer'
               }}
@@ -231,12 +230,12 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
         ) : (
           <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {activeLoans.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '20px 0' }}>
+              <div style={{ textAlign: 'center', color: '#64748b', fontSize: 13, padding: '20px 0' }}>
                 Zero active loans recorded for this volume. All copies in stock!
               </div>
             ) : (
               <div>
-                <label style={{ fontSize: 11.5, color: '#94a3b8', display: 'block', marginBottom: 6 }}>Select Active Loan Record</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>Select Active Loan Record</label>
                 {activeLoans.map(loan => (
                   <div
                     key={loan.id}
@@ -244,14 +243,14 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
                     style={{
                       padding: 12,
                       borderRadius: 8,
-                      background: selectedLoan === loan.id ? 'rgba(6, 182, 212, 0.15)' : 'rgba(8, 12, 20, 0.6)',
-                      border: `1px solid ${selectedLoan === loan.id ? '#06b6d4' : 'rgba(255, 255, 255, 0.06)'}`,
+                      background: selectedLoan === loan.id ? '#f0fdf4' : '#f8fafc',
+                      border: `1px solid ${selectedLoan === loan.id ? '#16a34a' : '#e2e8f0'}`,
                       marginBottom: 8,
                       cursor: 'pointer'
                     }}
                   >
-                    <div style={{ fontWeight: 600, color: '#ffffff', fontSize: 13 }}>{loan.borrower_name} ({loan.borrower_reg})</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>Due: {loan.due_date?.split('T')[0]}</div>
+                    <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>{loan.borrower_name} ({loan.borrower_reg})</div>
+                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Due: {loan.due_date?.split('T')[0]}</div>
                   </div>
                 ))}
 
@@ -263,10 +262,10 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
                     marginTop: 10,
                     padding: '12px 0',
                     borderRadius: 8,
-                    background: '#06b6d4',
+                    background: '#111827',
                     border: 'none',
-                    color: '#080c14',
-                    fontWeight: 800,
+                    color: '#ffffff',
+                    fontWeight: 700,
                     fontSize: 13.5,
                     cursor: 'pointer'
                   }}
@@ -282,7 +281,7 @@ function IssueModal({ book, activeLoans, onClose, onIssueSuccess, onReturnSucces
   );
 }
 
-// ── Student Digital Pass QR Card ──
+// ── Student Digital Pass View ──
 function StudentPassView() {
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
@@ -313,7 +312,6 @@ function StudentPassView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      {/* Turnstile Access Granted Alert Banner */}
       <AnimatePresence>
         {turnstilePassed && (
           <motion.div
@@ -323,34 +321,23 @@ function StudentPassView() {
             style={{
               width: '100%',
               maxWidth: 520,
-              background: 'rgba(16, 185, 129, 0.2)',
+              background: '#ecfdf5',
               border: '1px solid #10b981',
-              borderRadius: 14,
+              borderRadius: 12,
               padding: '14px 20px',
               display: 'flex',
               alignItems: 'center',
               gap: 14,
               marginBottom: 24,
-              boxShadow: '0 0 30px rgba(16, 185, 129, 0.3)'
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)'
             }}
           >
-            <div style={{
-              width: 38,
-              height: 38,
-              borderRadius: 10,
-              background: '#10b981',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#080c14'
-            }}>
-              <CheckCircle2 size={22} strokeWidth={2.5} />
-            </div>
+            <CheckCircle2 size={22} color="#059669" />
             <div>
-              <div style={{ fontWeight: 800, color: '#ffffff', fontSize: 14 }}>
+              <div style={{ fontWeight: 800, color: '#065f46', fontSize: 14 }}>
                 TURNSTILE PASS VERIFIED
               </div>
-              <div style={{ fontSize: 12, color: '#a7f3d0' }}>
+              <div style={{ fontSize: 12, color: '#047857' }}>
                 SRM IST Central Library Gate B · RFID / QR Reader Check-in Successful
               </div>
             </div>
@@ -362,292 +349,168 @@ function StudentPassView() {
       <div style={{
         width: '100%',
         maxWidth: 520,
-        background: 'linear-gradient(145deg, #0d1627 0%, #152238 60%, #0d1627 100%)',
-        border: '1px solid rgba(16, 185, 129, 0.35)',
-        borderRadius: 22,
+        background: '#ffffff',
+        border: '1px solid #e2e8f0',
+        borderRadius: 20,
         padding: '28px 26px',
-        boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(16, 185, 129, 0.15)',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)',
         position: 'relative',
         overflow: 'hidden'
       }}>
-        {/* Holographic corner accent */}
-        <div style={{
-          position: 'absolute',
-          top: -40,
-          right: -40,
-          width: 140,
-          height: 140,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
-
-        {/* Card Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 36,
               height: 36,
               borderRadius: 9,
-              background: 'rgba(16, 185, 129, 0.15)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
+              background: '#f1f5f9',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#10b981'
+              color: '#0f172a'
             }}>
               <BookOpen size={18} />
             </div>
             <div>
-              <div style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontSize: 15,
-                fontWeight: 800,
-                color: '#ffffff',
-                letterSpacing: '-0.3px'
-              }}>
+              <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15, fontWeight: 800, color: '#0f172a' }}>
                 SRM IST CENTRAL LIBRARY
               </div>
-              <div style={{ fontSize: 10, color: '#10b981', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
                 LibraX Digital Scholar Pass
               </div>
             </div>
           </div>
 
           <div style={{
-            background: 'rgba(16, 185, 129, 0.12)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            color: '#10b981',
+            background: '#ecfdf5',
+            color: '#059669',
+            border: '1px solid #a7f3d0',
             borderRadius: 999,
             padding: '4px 10px',
-            fontSize: 10.5,
-            fontWeight: 800,
-            letterSpacing: '0.5px',
-            textTransform: 'uppercase'
+            fontSize: 11,
+            fontWeight: 700
           }}>
             Active Member
           </div>
         </div>
 
-        {/* Center Section: Student Profile & High-Res QR Code */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: '1fr auto',
           gap: 20,
           alignItems: 'center',
-          background: 'rgba(8, 12, 20, 0.65)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: 16,
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          borderRadius: 14,
           padding: '20px 18px',
           marginBottom: 20
         }}>
-          {/* Left Details */}
           <div>
-            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-              Student Scholar
-            </div>
-            <div style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: 18,
-              fontWeight: 800,
-              color: '#ffffff',
-              marginTop: 2,
-              marginBottom: 8
-            }}>
+            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Student Scholar</div>
+            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: '#0f172a', marginTop: 2, marginBottom: 8 }}>
               {studentName}
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
-              <div>
-                <span style={{ color: '#64748b' }}>Reg No: </span>
-                <span style={{ color: '#10b981', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>
-                  {studentReg}
-                </span>
-              </div>
-              <div>
-                <span style={{ color: '#64748b' }}>Dept: </span>
-                <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{studentDept}</span>
-              </div>
-              <div>
-                <span style={{ color: '#64748b' }}>Quota: </span>
-                <span style={{ color: '#38bdf8', fontWeight: 600 }}>3 of 4 Books Borrowed</span>
-              </div>
-              <div>
-                <span style={{ color: '#64748b' }}>Valid Till: </span>
-                <span style={{ color: '#94a3b8' }}>June 2027</span>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12 }}>
+              <div><span style={{ color: '#64748b' }}>Reg No: </span><span style={{ fontWeight: 700, color: '#0f172a' }}>{studentReg}</span></div>
+              <div><span style={{ color: '#64748b' }}>Dept: </span><span style={{ fontWeight: 600, color: '#334155' }}>{studentDept}</span></div>
+              <div><span style={{ color: '#64748b' }}>Quota: </span><span style={{ fontWeight: 600, color: '#2563eb' }}>3 of 4 Books Borrowed</span></div>
+              <div><span style={{ color: '#64748b' }}>Valid Till: </span><span style={{ color: '#64748b' }}>June 2027</span></div>
             </div>
           </div>
 
-          {/* Right Sharp QR Matrix */}
+          {/* QR Box */}
           <div style={{
             background: '#ffffff',
-            borderRadius: 14,
-            padding: 10,
+            borderRadius: 12,
+            padding: 8,
+            border: '1px solid #e2e8f0',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)'
+            alignItems: 'center'
           }}>
-            <svg viewBox="0 0 110 110" width="130" height="130">
-              {/* Corner Position Detection Patterns */}
-              <rect x="5" y="5" width="28" height="28" rx="4" fill="#080c14" />
+            <svg viewBox="0 0 110 110" width="120" height="120">
+              <rect x="5" y="5" width="28" height="28" rx="4" fill="#0f172a" />
               <rect x="10" y="10" width="18" height="18" rx="2" fill="#ffffff" />
-              <rect x="14" y="14" width="10" height="10" rx="1" fill="#080c14" />
-
-              <rect x="77" y="5" width="28" height="28" rx="4" fill="#080c14" />
+              <rect x="14" y="14" width="10" height="10" rx="1" fill="#0f172a" />
+              <rect x="77" y="5" width="28" height="28" rx="4" fill="#0f172a" />
               <rect x="82" y="10" width="18" height="18" rx="2" fill="#ffffff" />
-              <rect x="86" y="14" width="10" height="10" rx="1" fill="#080c14" />
-
-              <rect x="5" y="77" width="28" height="28" rx="4" fill="#080c14" />
+              <rect x="86" y="14" width="10" height="10" rx="1" fill="#0f172a" />
+              <rect x="5" y="77" width="28" height="28" rx="4" fill="#0f172a" />
               <rect x="10" y="82" width="18" height="18" rx="2" fill="#ffffff" />
-              <rect x="14" y="86" width="10" height="10" rx="1" fill="#080c14" />
-
-              {/* Data Grid Simulation with Emerald NSCC Core */}
-              <rect x="42" y="10" width="8" height="8" fill="#080c14" />
-              <rect x="55" y="10" width="8" height="8" fill="#080c14" />
-              <rect x="42" y="24" width="8" height="8" fill="#080c14" />
-              <rect x="60" y="24" width="8" height="8" fill="#080c14" />
-              <rect x="10" y="42" width="8" height="8" fill="#080c14" />
-              <rect x="24" y="42" width="8" height="8" fill="#080c14" />
-              <rect x="77" y="42" width="8" height="8" fill="#080c14" />
-              <rect x="92" y="42" width="8" height="8" fill="#080c14" />
-
-              {/* Center Holographic Core */}
-              <rect x="42" y="42" width="26" height="26" rx="4" fill="#10b981" />
-              <text x="55" y="58" fontSize="9" fontWeight="900" textAnchor="middle" fill="#080c14" fontFamily="sans-serif">LX</text>
-
-              <rect x="10" y="60" width="8" height="8" fill="#080c14" />
-              <rect x="24" y="60" width="8" height="8" fill="#080c14" />
-              <rect x="77" y="60" width="8" height="8" fill="#080c14" />
-              <rect x="92" y="60" width="8" height="8" fill="#080c14" />
-              <rect x="42" y="77" width="8" height="8" fill="#080c14" />
-              <rect x="55" y="77" width="8" height="8" fill="#080c14" />
-              <rect x="72" y="77" width="8" height="8" fill="#080c14" />
-              <rect x="42" y="92" width="8" height="8" fill="#080c14" />
-              <rect x="60" y="92" width="8" height="8" fill="#080c14" />
-              <rect x="80" y="92" width="8" height="8" fill="#080c14" />
+              <rect x="14" y="86" width="10" height="10" rx="1" fill="#0f172a" />
+              <rect x="42" y="10" width="8" height="8" fill="#0f172a" />
+              <rect x="55" y="10" width="8" height="8" fill="#0f172a" />
+              <rect x="42" y="24" width="8" height="8" fill="#0f172a" />
+              <rect x="60" y="24" width="8" height="8" fill="#0f172a" />
+              <rect x="10" y="42" width="8" height="8" fill="#0f172a" />
+              <rect x="24" y="42" width="8" height="8" fill="#0f172a" />
+              <rect x="77" y="42" width="8" height="8" fill="#0f172a" />
+              <rect x="42" y="42" width="26" height="26" rx="4" fill="#0f172a" />
+              <text x="55" y="58" fontSize="9" fontWeight="900" textAnchor="middle" fill="#ffffff" fontFamily="sans-serif">LX</text>
+              <rect x="10" y="60" width="8" height="8" fill="#0f172a" />
+              <rect x="77" y="60" width="8" height="8" fill="#0f172a" />
+              <rect x="42" y="77" width="8" height="8" fill="#0f172a" />
+              <rect x="55" y="77" width="8" height="8" fill="#0f172a" />
+              <rect x="42" y="92" width="8" height="8" fill="#0f172a" />
+              <rect x="60" y="92" width="8" height="8" fill="#0f172a" />
             </svg>
-            <span style={{ fontSize: 8.5, fontWeight: 700, color: '#080c14', marginTop: 4, letterSpacing: '0.4px' }}>
-              SCAN AT KIOSK
-            </span>
+            <span style={{ fontSize: 8.5, fontWeight: 700, color: '#64748b', marginTop: 3 }}>SCAN AT KIOSK</span>
           </div>
         </div>
 
-        {/* Barcode Graphic Footer */}
-        <div style={{
-          background: 'rgba(0, 0, 0, 0.4)',
-          borderRadius: 10,
-          padding: '10px 14px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 6
-        }}>
-          <div style={{ display: 'flex', gap: 2, height: 26, width: '100%', justifyContent: 'center', alignItems: 'center' }}>
-            {[4, 2, 1, 3, 2, 4, 1, 2, 3, 1, 4, 2, 1, 3, 2, 4, 1, 2, 4, 1, 3, 2, 1, 4, 2, 3, 1, 2, 4, 1].map((w, i) => (
-              <div
-                key={i}
-                style={{
-                  width: w,
-                  height: '100%',
-                  background: i % 2 === 0 ? '#10b981' : 'rgba(255, 255, 255, 0.8)'
-                }}
-              />
-            ))}
-          </div>
-          <div style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 10.5,
-            color: '#94a3b8',
-            letterSpacing: '3px'
-          }}>
-            {studentReg}
-          </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={handleSimulateTurnstile}
+            style={{
+              flex: 1,
+              padding: '10px 14px',
+              borderRadius: 8,
+              background: '#111827',
+              border: 'none',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: 12.5,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6
+            }}
+          >
+            <Zap size={14} /> Simulate Scan
+          </button>
+          <button
+            onClick={handleCopyPayload}
+            style={{
+              padding: '10px 14px',
+              borderRadius: 8,
+              background: '#f1f5f9',
+              border: '1px solid #e2e8f0',
+              color: '#0f172a',
+              fontWeight: 600,
+              fontSize: 12.5,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            {copied ? <Check size={14} color="#16a34a" /> : <Copy size={14} />} Copy Token
+          </button>
         </div>
-      </div>
-
-      {/* Interactive Actions for Student Pass */}
-      <div style={{
-        display: 'flex',
-        gap: 12,
-        marginTop: 24,
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        width: '100%',
-        maxWidth: 520
-      }}>
-        <button
-          onClick={handleSimulateTurnstile}
-          style={{
-            flex: 1,
-            minWidth: 160,
-            padding: '12px 18px',
-            borderRadius: 10,
-            background: '#10b981',
-            border: 'none',
-            color: '#080c14',
-            fontWeight: 800,
-            fontSize: 13,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            boxShadow: '0 0 20px rgba(16, 185, 129, 0.35)'
-          }}
-        >
-          <Zap size={16} />
-          <span>Simulate Turnstile Scan</span>
-        </button>
-
-        <button
-          onClick={handleCopyPayload}
-          style={{
-            padding: '12px 18px',
-            borderRadius: 10,
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: '#ffffff',
-            fontWeight: 600,
-            fontSize: 13,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 7
-          }}
-        >
-          {copied ? <Check size={15} color="#10b981" /> : <Copy size={15} />}
-          <span>{copied ? 'Copied!' : 'Copy QR Token'}</span>
-        </button>
-
-        <button
-          onClick={() => {
-            playClick();
-            toast.success('Library Pass card ready for physical wallet printing');
-            window.print?.();
-          }}
-          style={{
-            padding: '12px 18px',
-            borderRadius: 10,
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: '#ffffff',
-            fontWeight: 600,
-            fontSize: 13,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 7
-          }}
-        >
-          <Download size={15} />
-          <span>Save / Print</span>
-        </button>
       </div>
     </div>
   );
 }
+
+// ── Recent Scans Mock Data matching Panel 6 ──
+const INITIAL_RECENT_SCANS = [
+  { id: '1', title: 'Introduction to Algorithms', type: 'book', sub: 'BK001 · Cormen et al.', time: '2 mins ago', status: 'Issued', statusColor: '#f59e0b', statusBg: '#fef3c7' },
+  { id: '2', title: 'Rahul Verma', type: 'student', sub: 'RA2111003010124 · CSE', time: '14 mins ago', status: 'Valid', statusColor: '#10b981', statusBg: '#ecfdf5' },
+  { id: '3', title: 'Clean Code', type: 'book', sub: 'BK002 · Robert C. Martin', time: '32 mins ago', status: 'Returned', statusColor: '#3b82f6', statusBg: '#eff6ff' },
+  { id: '4', title: 'Operating System Concepts', type: 'book', sub: 'BK006 · Silberschatz', time: '1 hour ago', status: 'Available', statusColor: '#10b981', statusBg: '#ecfdf5' },
+  { id: '5', title: 'Priya Sharma', type: 'student', sub: 'RA2211003010452 · IT', time: '2 hours ago', status: 'Valid', statusColor: '#10b981', statusBg: '#ecfdf5' },
+];
 
 export default function Scanner() {
   const [activeTab, setActiveTab] = useState('scanner'); // 'scanner' | 'pass'
@@ -656,6 +519,7 @@ export default function Scanner() {
   const [showManualModal, setShowManualModal] = useState(false);
   const [scannedBook, setScannedBook] = useState(null);
   const [activeLoans, setActiveLoans] = useState([]);
+  const [recentScans, setRecentScans] = useState(INITIAL_RECENT_SCANS);
   const scannerRef = useRef(null);
 
   const startScanner = async () => {
@@ -666,7 +530,7 @@ export default function Scanner() {
       scannerRef.current = html5QrCode;
       await html5QrCode.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
         (decodedText) => {
           handleScanSuccess(decodedText);
         },
@@ -708,7 +572,22 @@ export default function Scanner() {
       if (matched) {
         playSuccessChime();
         toast.success(`Identified: ${matched.title}`);
-        // Fetch active loans
+        
+        // Add to recent scans list
+        setRecentScans(prev => [
+          {
+            id: Date.now().toString(),
+            title: matched.title,
+            type: 'book',
+            sub: `${matched.id} · ${matched.author}`,
+            time: 'Just now',
+            status: matched.available_copies > 0 ? 'Available' : 'Issued',
+            statusColor: matched.available_copies > 0 ? '#10b981' : '#f59e0b',
+            statusBg: matched.available_copies > 0 ? '#ecfdf5' : '#fef3c7'
+          },
+          ...prev.slice(0, 5)
+        ]);
+
         const rawTxs = await txApi.getAll();
         const txs = Array.isArray(rawTxs) ? rawTxs : (rawTxs?.transactions || []);
         const bookLoans = txs.filter(t => t.book_id === matched.id && t.status === 'issued');
@@ -733,79 +612,69 @@ export default function Scanner() {
   };
 
   return (
-    <div className="page" style={{ maxWidth: 840, margin: '0 auto', paddingBottom: 40 }}>
-      {/* ── Title & Subtitle matching Screen 6 ── */}
-      <div style={{ marginBottom: 20, textAlign: 'center' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto', paddingBottom: 40 }}>
+      {/* ── Title matching Panel 6 ── */}
+      <div style={{ marginBottom: 24 }}>
         <h1 style={{
           fontFamily: "'Plus Jakarta Sans', sans-serif",
           fontWeight: 800,
           fontSize: 26,
-          color: '#ffffff',
-          marginBottom: 6,
+          color: '#0f172a',
+          marginBottom: 4,
           letterSpacing: '-0.5px'
         }}>
-          QR Scanner & Digital Passes
+          QR / Barcode Scanner
         </h1>
-        <p style={{ fontSize: 13.5, color: '#94a3b8' }}>
-          Scan books and barcodes for instant transactions, or display your student library pass
+        <p style={{ fontSize: 13.5, color: '#64748b', margin: 0 }}>
+          Scan a book or student ID to quickly perform transactions
         </p>
       </div>
 
-      {/* ── Prominent Tab Switcher (Book Scanner vs Digital Pass) ── */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        marginBottom: 28
-      }}>
+      {/* ── Tab Switcher: Scanner vs Digital Pass ── */}
+      <div style={{ display: 'flex', marginBottom: 24 }}>
         <div style={{
           display: 'flex',
-          background: 'rgba(15, 22, 38, 0.85)',
-          padding: 4,
-          borderRadius: 12,
-          border: '1px solid rgba(255, 255, 255, 0.08)'
+          background: '#e2e8f0',
+          padding: 3,
+          borderRadius: 10
         }}>
           <button
             onClick={() => { playClick(); setActiveTab('scanner'); }}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 20px',
+              padding: '6px 16px',
               borderRadius: 8,
               fontSize: 13,
-              fontWeight: activeTab === 'scanner' ? 800 : 500,
+              fontWeight: activeTab === 'scanner' ? 700 : 500,
               border: 'none',
               cursor: 'pointer',
-              background: activeTab === 'scanner' ? '#10b981' : 'transparent',
-              color: activeTab === 'scanner' ? '#080c14' : '#94a3b8',
-              boxShadow: activeTab === 'scanner' ? '0 0 16px rgba(16, 185, 129, 0.4)' : 'none',
-              transition: 'all 150ms'
+              background: activeTab === 'scanner' ? '#ffffff' : 'transparent',
+              color: activeTab === 'scanner' ? '#0f172a' : '#64748b',
+              boxShadow: activeTab === 'scanner' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
             }}
           >
-            <Camera size={16} />
-            <span>Book Scanner</span>
+            <Camera size={15} /> Book Scanner
           </button>
-
           <button
             onClick={() => { playClick(); setActiveTab('pass'); }}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 20px',
+              padding: '6px 16px',
               borderRadius: 8,
               fontSize: 13,
-              fontWeight: activeTab === 'pass' ? 800 : 500,
+              fontWeight: activeTab === 'pass' ? 700 : 500,
               border: 'none',
               cursor: 'pointer',
-              background: activeTab === 'pass' ? '#10b981' : 'transparent',
-              color: activeTab === 'pass' ? '#080c14' : '#94a3b8',
-              boxShadow: activeTab === 'pass' ? '0 0 16px rgba(16, 185, 129, 0.4)' : 'none',
-              transition: 'all 150ms'
+              background: activeTab === 'pass' ? '#ffffff' : 'transparent',
+              color: activeTab === 'pass' ? '#0f172a' : '#64748b',
+              boxShadow: activeTab === 'pass' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
             }}
           >
-            <QrCode size={16} />
-            <span>My Digital Student Pass</span>
+            <QrCode size={15} /> My Student Pass
           </button>
         </div>
       </div>
@@ -813,209 +682,258 @@ export default function Scanner() {
       {activeTab === 'pass' ? (
         <StudentPassView />
       ) : (
-        /* ── Viewfinder Station (Screen 6 Layout) ── */
+        /* ── 2-Column Grid Layout matching Screen 6 Mockup ── */
         <div style={{
-          background: 'rgba(14, 22, 38, 0.85)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: 20,
-          padding: '40px 24px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)'
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)',
+          gap: 24,
+          alignItems: 'start'
         }}>
-          {/* Scanner Viewport with Glowing Corner Reticles */}
+          {/* Left Column: Viewfinder Container */}
           <div style={{
-            width: 260,
-            height: 260,
-            borderRadius: 20,
-            background: '#080c14',
-            border: '1px solid rgba(16, 185, 129, 0.2)',
-            position: 'relative',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 16,
+            padding: '36px 24px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            marginBottom: 28
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
           }}>
-            {/* Top-Left Corner Reticle */}
+            {/* Dark Viewfinder Screen with Illuminated Corner Reticles */}
             <div style={{
-              position: 'absolute', top: 12, left: 12, width: 24, height: 24,
-              borderTop: '3px solid #10b981', borderLeft: '3px solid #10b981',
-              borderRadius: '4px 0 0 0', boxShadow: '0 0 10px rgba(16, 185, 129, 0.6)'
-            }} />
-            {/* Top-Right Corner Reticle */}
-            <div style={{
-              position: 'absolute', top: 12, right: 12, width: 24, height: 24,
-              borderTop: '3px solid #10b981', borderRight: '3px solid #10b981',
-              borderRadius: '0 4px 0 0', boxShadow: '0 0 10px rgba(16, 185, 129, 0.6)'
-            }} />
-            {/* Bottom-Left Corner Reticle */}
-            <div style={{
-              position: 'absolute', bottom: 12, left: 12, width: 24, height: 24,
-              borderBottom: '3px solid #10b981', borderLeft: '3px solid #10b981',
-              borderRadius: '0 0 0 4px', boxShadow: '0 0 10px rgba(16, 185, 129, 0.6)'
-            }} />
-            {/* Bottom-Right Corner Reticle */}
-            <div style={{
-              position: 'absolute', bottom: 12, right: 12, width: 24, height: 24,
-              borderBottom: '3px solid #10b981', borderRight: '3px solid #10b981',
-              borderRadius: '0 0 4px 0', boxShadow: '0 0 10px rgba(16, 185, 129, 0.6)'
-            }} />
+              width: 280,
+              height: 280,
+              borderRadius: 16,
+              background: '#0f172a',
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              marginBottom: 24
+            }}>
+              {/* Corner Reticles */}
+              <div style={{ position: 'absolute', top: 16, left: 16, width: 28, height: 28, borderTop: '3px solid #10b981', borderLeft: '3px solid #10b981', borderRadius: '4px 0 0 0' }} />
+              <div style={{ position: 'absolute', top: 16, right: 16, width: 28, height: 28, borderTop: '3px solid #10b981', borderRight: '3px solid #10b981', borderRadius: '0 4px 0 0' }} />
+              <div style={{ position: 'absolute', bottom: 16, left: 16, width: 28, height: 28, borderBottom: '3px solid #10b981', borderLeft: '3px solid #10b981', borderRadius: '0 0 0 4px' }} />
+              <div style={{ position: 'absolute', bottom: 16, right: 16, width: 28, height: 28, borderBottom: '3px solid #10b981', borderRight: '3px solid #10b981', borderRadius: '0 0 4px 0' }} />
 
-            {/* Camera Stream Target Container */}
-            <div id="qr-reader" style={{ width: '100%', height: '100%', display: cameraActive ? 'block' : 'none' }} />
+              {/* Camera Stream target */}
+              <div id="qr-reader" style={{ width: '100%', height: '100%', display: cameraActive ? 'block' : 'none' }} />
 
-            {/* Fallback Viewfinder Graphic */}
-            {!cameraActive && (
-              <>
-                <div style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 14,
-                  background: 'rgba(16, 185, 129, 0.1)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
+              {/* Fallback Viewfinder Graphic */}
+              {!cameraActive && (
+                <>
+                  <div style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 16,
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    marginBottom: 14
+                  }}>
+                    <QrCode size={40} />
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff', textAlign: 'center' }}>
+                    Position code in frame
+                  </div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>
+                    Auto-detection active
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Action Buttons Row matching Screen 6 */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+              <button
+                onClick={cameraActive ? stopScanner : startScanner}
+                style={{
+                  padding: '11px 22px',
+                  borderRadius: 10,
+                  background: '#0f172a',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#10b981',
-                  marginBottom: 14,
-                  boxShadow: '0 0 20px rgba(16, 185, 129, 0.25)'
-                }}>
-                  <QrCode size={36} />
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#ffffff', textAlign: 'center', maxWidth: 180 }}>
-                  Position the QR code within the frame
-                </div>
-                <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>
-                  Waiting for scan...
-                </div>
-              </>
-            )}
-          </div>
+                  gap: 8,
+                  transition: 'opacity 150ms'
+                }}
+              >
+                <Camera size={16} />
+                <span>{cameraActive ? 'Stop Camera' : 'Use Camera'}</span>
+              </button>
 
-          {/* Action Buttons Row matching Screen 6 */}
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 24 }}>
-            <button
-              onClick={() => { playClick(); setShowManualModal(true); }}
-              style={{
-                padding: '12px 22px',
-                borderRadius: 10,
-                background: 'rgba(8, 12, 20, 0.8)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#ffffff',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                transition: 'all 150ms'
-              }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.4)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-            >
-              <Keyboard size={16} color="#10b981" />
-              <span>Enter Book ID Manually</span>
-            </button>
-
-            <button
-              onClick={cameraActive ? stopScanner : startScanner}
-              style={{
-                padding: '12px 24px',
-                borderRadius: 10,
-                background: '#10b981',
-                border: 'none',
-                color: '#080c14',
-                fontSize: 13,
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                boxShadow: '0 0 20px rgba(16, 185, 129, 0.35)'
-              }}
-            >
-              <Camera size={16} />
-              <span>{cameraActive ? 'Stop Camera' : 'Use Camera'}</span>
-            </button>
-          </div>
-
-          {/* Instant Testing Simulator Chips */}
-          <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 8 }}>
-              Instant Testing Triggers (Simulate QR Detection)
+              <button
+                onClick={() => { playClick(); setShowManualModal(true); }}
+                style={{
+                  padding: '11px 20px',
+                  borderRadius: 10,
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  color: '#0f172a',
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}
+              >
+                <Keyboard size={16} color="#64748b" />
+                <span>Enter ID Manually</span>
+              </button>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {[
-                { id: 'BK002', name: 'Clean Code' },
-                { id: 'BK006', name: 'OS Concepts' },
-                { id: 'BK007', name: 'Database Systems' },
-                { id: 'BK001', name: 'Algorithms' }
-              ].map(b => (
-                <button
-                  key={b.id}
-                  onClick={() => handleScanSuccess(b.id)}
+
+            {/* Quick Test Simulator Chips */}
+            <div style={{ textAlign: 'center', marginBottom: 18 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
+                Quick Test Triggers
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+                {[
+                  { id: 'BK002', label: 'Clean Code' },
+                  { id: 'BK006', label: 'OS Concepts' },
+                  { id: 'BK001', label: 'Algorithms' },
+                ].map(b => (
+                  <button
+                    key={b.id}
+                    onClick={() => handleScanSuccess(b.id)}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: 6,
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      color: '#475569',
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {b.label} ({b.id})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Pill */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              color: '#64748b',
+              background: '#f8fafc',
+              padding: '4px 14px',
+              borderRadius: 999,
+              border: '1px solid #e2e8f0'
+            }}>
+              <CheckCircle2 size={14} color="#10b981" />
+              <span>Supports QR codes and barcodes</span>
+            </div>
+          </div>
+
+          {/* Right Column: Recent Scans Card matching Screen 6 */}
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 16,
+            padding: 24,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>Recent Scans</h2>
+              <button
+                onClick={() => toast.info('Displaying latest 5 scanning log events')}
+                style={{ fontSize: 12.5, fontWeight: 600, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                View All →
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {recentScans.map(item => (
+                <div
+                  key={item.id}
                   style={{
-                    padding: '5px 12px',
-                    borderRadius: 6,
-                    background: 'rgba(16, 185, 129, 0.08)',
-                    border: '1px solid rgba(16, 185, 129, 0.2)',
-                    color: '#34d399',
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    cursor: 'pointer'
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 14px',
+                    borderRadius: 10,
+                    background: '#f8fafc',
+                    border: '1px solid #f1f5f9'
                   }}
                 >
-                  Scan {b.name} ({b.id})
-                </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 8,
+                      background: item.type === 'book' ? '#eff6ff' : '#f0fdf4',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: item.type === 'book' ? '#2563eb' : '#16a34a'
+                    }}>
+                      {item.type === 'book' ? <BookOpen size={18} /> : <User size={18} />}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>{item.title}</div>
+                      <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 1 }}>
+                        {item.sub} · <span style={{ color: '#94a3b8' }}>{item.time}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: '3px 9px',
+                    borderRadius: 999,
+                    background: item.statusBg,
+                    color: item.statusColor
+                  }}>
+                    {item.status}
+                  </span>
+                </div>
               ))}
             </div>
-          </div>
-
-          {/* Bottom Pill matching Screen 6 */}
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 11.5,
-            color: '#94a3b8',
-            background: 'rgba(8, 12, 20, 0.5)',
-            padding: '4px 14px',
-            borderRadius: 999,
-            border: '1px solid rgba(255, 255, 255, 0.06)'
-          }}>
-            <CheckCircle2 size={13} color="#10b981" />
-            <span>Supports QR codes and barcodes</span>
           </div>
         </div>
       )}
 
-      {/* Manual Book ID Input Modal */}
+      {/* Manual Input Dialog Modal */}
       {showManualModal && (
         <div className="modal-overlay" onClick={() => setShowManualModal(false)} style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(8px)',
+          background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 20
         }}>
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              background: '#0d1527',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
               borderRadius: 16,
               width: '100%',
               maxWidth: 400,
-              padding: 24
+              padding: 24,
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)'
             }}
           >
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', marginBottom: 6 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>
               Manual Identification
             </h3>
-            <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>
+            <p style={{ fontSize: 12.5, color: '#64748b', marginBottom: 16 }}>
               Input Book Identifier (e.g. BK002) or ISBN number:
             </p>
 
@@ -1029,12 +947,13 @@ export default function Scanner() {
                 required
                 style={{
                   width: '100%',
-                  background: 'rgba(8, 12, 20, 0.8)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
                   borderRadius: 8,
                   padding: '10px 12px',
-                  color: '#ffffff',
-                  fontSize: 13
+                  color: '#0f172a',
+                  fontSize: 13,
+                  outline: 'none'
                 }}
               />
 
@@ -1046,8 +965,8 @@ export default function Scanner() {
                     padding: '8px 16px',
                     borderRadius: 8,
                     background: 'transparent',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#94a3b8',
+                    border: '1px solid #e2e8f0',
+                    color: '#64748b',
                     cursor: 'pointer'
                   }}
                 >
@@ -1058,14 +977,14 @@ export default function Scanner() {
                   style={{
                     padding: '8px 18px',
                     borderRadius: 8,
-                    background: '#10b981',
+                    background: '#111827',
                     border: 'none',
-                    color: '#080c14',
+                    color: '#ffffff',
                     fontWeight: 700,
                     cursor: 'pointer'
                   }}
                 >
-                  Confirm
+                  Identify
                 </button>
               </div>
             </form>
@@ -1073,7 +992,7 @@ export default function Scanner() {
         </div>
       )}
 
-      {/* Scanned Book Checkout / Return Modal */}
+      {/* Scanned Book Modal */}
       {scannedBook && (
         <IssueModal
           book={scannedBook}

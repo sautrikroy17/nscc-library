@@ -119,17 +119,17 @@ export default function App() {
       case 'dashboard':    return <Dashboard onNavigate={setActivePage} />;
       case 'catalog':      
       case 'search':       
-      case 'wishlist':     return (
+      case 'wishlist':     
+      case 'borrowings':
+      case 'history':      return (
         <Catalog 
           onNavigate={setActivePage} 
           searchQuery={searchQuery} 
           onSearchChange={setSearchQuery} 
-          initialTab={activePage} 
+          initialTab={activePage === 'catalog' || activePage === 'search' ? 'all' : activePage} 
         />
       );
-      case 'borrowings':   return <Dashboard onNavigate={setActivePage} />;
       case 'scanner':      return <Scanner />;
-      case 'history':      
       case 'transactions': return <Transactions />;
       case 'students':     return <AdminPanel defaultTab="students" />;
       case 'admin':        return <AdminPanel defaultTab="overdue" />;
@@ -142,7 +142,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#080c14' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
       {/* ── Left Sidebar matching Mockup ── */}
       <Sidebar
         activePage={activePage}
@@ -151,14 +151,13 @@ export default function App() {
       />
 
       {/* ── Main Content Area ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {/* ── Top Bar matching Mockup Screens 2 & 3 ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: '#f8fafc' }}>
+        {/* ── Top Bar matching Mockup ── */}
         <header style={{
-          height: 68,
+          height: 64,
           padding: '0 32px',
-          background: 'rgba(10, 15, 29, 0.85)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          background: '#ffffff',
+          borderBottom: '1px solid #e2e8f0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -166,49 +165,25 @@ export default function App() {
           top: 0,
           zIndex: 40
         }} className="desktop-only">
-          {/* Left Brand Badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 28,
-              height: 28,
-              borderRadius: 7,
-              background: 'rgba(16, 185, 129, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#10b981'
-            }}>
-              <BookOpen size={16} />
-            </div>
-            <span style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 800,
-              fontSize: 16,
-              color: '#ffffff'
-            }}>
-              LibraX
-            </span>
-          </div>
-
-          {/* Center Search Input with ⌘ K badge (Screen 2 / Screen 3 exact component) */}
+          {/* Center Search Input (Mockup Panels 3–15) */}
           <div
             onClick={() => { playClick(); setActivePage('catalog'); }}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              background: 'rgba(15, 22, 38, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
               borderRadius: 10,
               padding: '8px 14px',
-              width: 360,
+              width: 420,
               cursor: 'pointer',
               transition: 'all 150ms'
             }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.35)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)'}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}
           >
-            <Search size={15} color="#64748b" />
+            <Search size={16} color="#94a3b8" />
             <input
               type="text"
               value={searchQuery}
@@ -218,17 +193,17 @@ export default function App() {
                   setActivePage('catalog');
                 }
               }}
-              placeholder="Search books, authors, ISBN, Harry Potter..."
+              placeholder="Search books, authors, ISBN..."
               style={{
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
-                color: '#ffffff',
-                fontSize: 12.5,
+                color: '#0f172a',
+                fontSize: 13,
                 flex: 1
               }}
             />
-            {searchQuery ? (
+            {searchQuery && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -248,77 +223,21 @@ export default function App() {
               >
                 ✕
               </button>
-            ) : (
-              <span style={{
-                fontSize: 10,
-                fontWeight: 700,
-                padding: '2px 6px',
-                borderRadius: 4,
-                background: 'rgba(255, 255, 255, 0.06)',
-                color: '#94a3b8',
-                fontFamily: 'JetBrains Mono, monospace'
-              }}>
-                ⌘ K
-              </span>
             )}
           </div>
 
-          {/* Dedicated QR Scanner Quick Action */}
-          <button
-            onClick={() => { playClick(); setActivePage('scanner'); }}
-            title="Open QR Scanner & Digital Student Pass"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 7,
-              padding: '7px 14px',
-              borderRadius: 8,
-              background: activePage === 'scanner' ? '#10b981' : 'rgba(16, 185, 129, 0.12)',
-              border: '1px solid rgba(16, 185, 129, 0.35)',
-              color: activePage === 'scanner' ? '#080c14' : '#10b981',
-              fontWeight: 700,
-              fontSize: 12.5,
-              cursor: 'pointer',
-              transition: 'all 150ms',
-              boxShadow: activePage === 'scanner' ? '0 0 16px rgba(16, 185, 129, 0.5)' : '0 0 10px rgba(16, 185, 129, 0.15)'
-            }}
-          >
-            <QrCode size={15} strokeWidth={2.5} />
-            <span>QR Scanner</span>
-          </button>
-
-          {/* Right User Profile Pill & Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {/* Audio Toggle */}
-            <button
-              onClick={handleSoundToggle}
-              title={soundOn ? 'Mute Interface Soundscapes' : 'Unmute Interface Soundscapes'}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 8,
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                color: soundOn ? '#10b981' : '#64748b',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer'
-              }}
-            >
-              {soundOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
-            </button>
-
+          {/* Right Profile & Notifications */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
             {/* Notification Bell */}
             <button
               onClick={() => { playClick(); setShowNotifications(!showNotifications); }}
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 8,
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                color: '#94a3b8',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                color: '#64748b',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -326,47 +245,41 @@ export default function App() {
                 position: 'relative'
               }}
             >
-              <Bell size={15} />
+              <Bell size={16} />
               <span style={{
                 position: 'absolute',
-                top: 7,
-                right: 7,
-                width: 6,
-                height: 6,
+                top: 8,
+                right: 8,
+                width: 7,
+                height: 7,
                 borderRadius: '50%',
-                background: '#10b981'
+                background: '#ef4444',
+                border: '1.5px solid #ffffff'
               }} />
             </button>
 
-            {/* User Profile Pill matching Screens 2 & 3 */}
+            {/* User Profile Pill matching Mockup */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
-              padding: '4px 10px 4px 6px',
-              borderRadius: 20,
-              background: 'rgba(15, 22, 38, 0.6)',
-              border: '1px solid rgba(255, 255, 255, 0.08)'
+              gap: 10
             }}>
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: isStudent ? 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)' : 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 800,
-                fontSize: 12,
-                color: '#ffffff'
-              }}>
-                {profileName.charAt(0)}
-              </div>
+              <img
+                src={isStudent ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80" : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"}
+                alt="Avatar"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '1.5px solid #e2e8f0'
+                }}
+              />
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: '#ffffff', lineHeight: 1.2 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
                   {profileName}
                 </div>
-                <div style={{ fontSize: 10.5, color: '#94a3b8', lineHeight: 1.1 }}>
+                <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.1 }}>
                   {profileRole}
                 </div>
               </div>

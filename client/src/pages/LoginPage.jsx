@@ -846,9 +846,10 @@ export default function LoginPage() {
         </div>
       </section>
 
-      {/* ── HOW LIBRAX WORKS: 4 Steps Horizontal Flow ── */}
+      {/* ── HOW LIBRAX WORKS / ABOUT: 4 Steps Horizontal Flow ── */}
       <section 
-        ref={workflowRef}
+        ref={(el) => { workflowRef.current = el; aboutRef.current = el; }}
+        id="about"
         style={{
           padding: '80px 48px',
           background: '#ffffff'

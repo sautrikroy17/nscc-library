@@ -13,54 +13,54 @@ button { cursor: pointer; font: inherit; border: none; background: none; }
 input, textarea, select { font: inherit; }
 a { color: inherit; text-decoration: none; }
 
-/* ── Core Design Tokens ─────────────────────────────────────── */
+/* ── Core Design Tokens (Light Editorial Theme matching Mockup) ── */
 :root {
-  /* Backgrounds */
-  --bg-base:      #080c14;
-  --bg-deep:      #0b0f1a;
-  --bg-surface:   #0f1623;
-  --bg-elevated:  #141c2e;
-  --bg-card:      rgba(15, 22, 35, 0.85);
-  --bg-glass:     rgba(20, 28, 46, 0.70);
-  --bg-hover:     rgba(30, 42, 65, 0.60);
+  /* Clean Light Backgrounds */
+  --bg-base:      #f8fafc;
+  --bg-deep:      #f1f5f9;
+  --bg-surface:   #ffffff;
+  --bg-elevated:  #ffffff;
+  --bg-card:      #ffffff;
+  --bg-glass:     rgba(255, 255, 255, 0.95);
+  --bg-hover:     #f8fafc;
 
-  /* Borders */
-  --border:       rgba(255,255,255,0.07);
-  --border-soft:  rgba(255,255,255,0.04);
-  --border-glow:  rgba(16, 185, 129, 0.30);
+  /* Crisp Borders */
+  --border:       #e2e8f0;
+  --border-soft:  #f1f5f9;
+  --border-glow:  rgba(16, 185, 129, 0.20);
 
-  /* Text */
-  --text:         #e8edf5;
-  --text-2:       #94a3b8;
+  /* High-Contrast Crisp Typography */
+  --text:         #0f172a;
+  --text-2:       #334155;
   --text-3:       #64748b;
-  --text-4:       #3f5168;
+  --text-4:       #94a3b8;
 
-  /* Primary — Emerald (availability, active, success) */
+  /* Primary — Emerald */
   --accent:       #10b981;
-  --accent-bright:#34d399;
-  --accent-hover: #059669;
-  --accent-glow:  rgba(16,185,129,0.20);
+  --accent-bright:#059669;
+  --accent-hover: #047857;
+  --accent-glow:  rgba(16,185,129,0.15);
   --accent-soft:  rgba(16,185,129,0.08);
 
-  /* Secondary — Cyan (AI, scanner, technology) */
-  --cyan:         #06b6d4;
-  --cyan-bright:  #22d3ee;
-  --cyan-glow:    rgba(6,182,212,0.20);
-  --cyan-soft:    rgba(6,182,212,0.08);
+  /* Secondary — Blue/Cyan */
+  --cyan:         #2563eb;
+  --cyan-bright:  #3b82f6;
+  --cyan-glow:    rgba(37,99,235,0.15);
+  --cyan-soft:    rgba(37,99,235,0.08);
 
-  /* Purple — Librarian & premium */
-  --purple:       #8b5cf6;
-  --purple-soft:  rgba(139,92,246,0.10);
+  /* Purple — Librarian & Accent */
+  --purple:       #7c3aed;
+  --purple-soft:  rgba(124,58,237,0.08);
 
   /* Status Colors */
   --success:      #10b981;
   --success-soft: rgba(16,185,129,0.10);
   --warning:      #f59e0b;
   --warning-soft: rgba(245,158,11,0.10);
-  --danger:       #f43f5e;
-  --danger-soft:  rgba(244,63,94,0.10);
-  --info:         #06b6d4;
-  --info-soft:    rgba(6,182,212,0.10);
+  --danger:       #ef4444;
+  --danger-soft:  rgba(239,68,68,0.10);
+  --info:         #3b82f6;
+  --info-soft:    rgba(59,130,246,0.10);
 
   /* Radii */
   --r-xs:   6px;
@@ -72,11 +72,11 @@ a { color: inherit; text-decoration: none; }
   --r-full: 9999px;
 
   /* Shadows */
-  --shadow-sm:    0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
-  --shadow-md:    0 4px 12px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3);
-  --shadow-lg:    0 10px 30px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-glow:  0 0 20px rgba(16,185,129,0.15), 0 0 40px rgba(16,185,129,0.05);
-  --shadow-cyan:  0 0 20px rgba(6,182,212,0.15), 0 0 40px rgba(6,182,212,0.05);
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.03);
+  --shadow-lg:    0 10px 30px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.03);
+  --shadow-glow:  0 0 20px rgba(16,185,129,0.10);
+  --shadow-cyan:  0 0 20px rgba(37,99,235,0.10);
 
   /* Transitions */
   --t-fast:   150ms ease;
@@ -98,26 +98,11 @@ body {
   overflow-x: hidden;
 }
 
-/* Subtle ambient cyber mesh background pattern */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    radial-gradient(ellipse 70% 50% at 15% -5%, rgba(16,185,129,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 65% 45% at 85% 100%, rgba(6,182,212,0.10) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 50% 45%, rgba(139,92,246,0.06) 0%, transparent 70%),
-    radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Custom Obsidian Scrollbar */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(16,185,129,0.45); }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 #root { position: relative; z-index: 1; min-height: 100vh; }
 
@@ -358,88 +343,79 @@ body::before {
   margin-top: 4px;
 }
 
-/* ── Glass Cards with Specular Highlights ───────────────────── */
+/* ── Clean Light Cards matching Mockup ───────────────────── */
 .card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--r-xl);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   overflow: hidden;
   position: relative;
-  transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.28s ease, border-color 0.28s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .card:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .card-header {
-  padding: 18px 24px;
-  border-bottom: 1px solid var(--border-soft);
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
+  background: #ffffff;
 }
 
 .card-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 800;
-  font-size: 15.5px;
-  color: var(--text);
+  font-weight: 700;
+  font-size: 15px;
+  color: #0f172a;
   letter-spacing: -0.2px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.card-body { padding: 24px; }
+.card-body { padding: 20px; }
 
-/* ── Stat Cards (Dashboard KPIs - Cyber Elevation) ─────────── */
+/* ── Stat Cards (Light Dashboard KPIs matching Mockup) ─────────── */
 .stat-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: var(--r-xl);
-  padding: 22px 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.28s ease, border-color 0.28s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-4px) scale(1.01);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .stat-card.emerald:hover {
   border-color: rgba(16, 185, 129, 0.45);
-  box-shadow: 0 16px 40px -10px rgba(0,0,0,0.7), 0 0 30px rgba(16,185,129,0.20);
 }
 
 .stat-card.cyan:hover {
   border-color: rgba(6, 182, 212, 0.45);
-  box-shadow: 0 16px 40px -10px rgba(0,0,0,0.7), 0 0 30px rgba(6,182,212,0.20);
 }
 
 .stat-card.warning:hover {
   border-color: rgba(245, 158, 11, 0.45);
-  box-shadow: 0 16px 40px -10px rgba(0,0,0,0.7), 0 0 30px rgba(245,158,11,0.20);
 }
 
 .stat-card.danger:hover {
-  border-color: rgba(244, 63, 94, 0.45);
-  box-shadow: 0 16px 40px -10px rgba(0,0,0,0.7), 0 0 30px rgba(244,63,94,0.20);
+  border-color: rgba(239, 68, 68, 0.45);
 }
 
 .stat-card.purple:hover {
-  border-color: rgba(139, 92, 246, 0.45);
-  box-shadow: 0 16px 40px -10px rgba(0,0,0,0.7), 0 0 30px rgba(139,92,246,0.20);
+  border-color: rgba(124, 58, 237, 0.45);
 }
 
 .stat-card::before {

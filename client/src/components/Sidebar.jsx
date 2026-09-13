@@ -22,28 +22,25 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from '../context/ToastContext';
 import { playClick } from '../utils/audio';
 
-// Navigation matching Screenshot 1, 2, 3, 4
 const STUDENT_NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'catalog', label: 'Browse Books', icon: BookOpen },
-  { id: 'scanner', label: 'QR Scanner & Passes', icon: QrCode },
   { id: 'borrowings', label: 'My Borrowings', icon: FileText },
-  { id: 'search', label: 'Search', icon: Search },
-  { id: 'history', label: 'History', icon: Clock },
   { id: 'wishlist', label: 'Wishlist', icon: Heart },
+  { id: 'history', label: 'History', icon: Clock },
   { id: 'notifications', label: 'Notifications', icon: Bell, badge: '3' },
   { id: 'ai', label: 'AI Assistant', icon: Sparkles },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 const LIBRARIAN_NAV = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'catalog', label: 'Browse Books', icon: BookOpen },
+  { id: 'dashboard', label: 'Librarian Dashboard', icon: LayoutDashboard },
+  { id: 'catalog', label: 'Books', icon: BookOpen },
   { id: 'students', label: 'Students', icon: Users },
   { id: 'transactions', label: 'Transactions', icon: ArrowLeftRight },
-  { id: 'scanner', label: 'QR Scanner', icon: QrCode },
   { id: 'admin', label: 'Overdue', icon: ShieldAlert },
   { id: 'reports', label: 'Reports', icon: FileSpreadsheet },
+  { id: 'scanner', label: 'Scan QR', icon: QrCode },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -144,14 +141,14 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
                   alignItems: 'center',
                   gap: 12,
                   width: '100%',
-                  padding: '9px 14px',
-                  borderRadius: 8,
+                  padding: '10px 14px',
+                  borderRadius: 10,
                   fontSize: 13.5,
                   fontWeight: isActive ? 600 : 500,
                   border: 'none',
                   cursor: 'pointer',
-                  background: isActive ? '#eff6ff' : 'transparent',
-                  color: isActive ? '#1d4ed8' : '#475569',
+                  background: isActive ? '#111827' : 'transparent',
+                  color: isActive ? '#ffffff' : '#64748b',
                   transition: 'all 120ms ease-out',
                   textAlign: 'left'
                 }}
@@ -163,12 +160,12 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
                 }}
                 onMouseLeave={e => {
                   if (!isActive) {
-                    e.currentTarget.style.color = '#475569';
+                    e.currentTarget.style.color = '#64748b';
                     e.currentTarget.style.background = 'transparent';
                   }
                 }}
               >
-                <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} color={isActive ? '#1d4ed8' : '#64748b'} />
+                <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} color={isActive ? '#ffffff' : '#64748b'} />
                 <span style={{ flex: 1 }}>{item.label}</span>
                 
                 {item.badge && (
@@ -200,60 +197,6 @@ export default function Sidebar({ activePage, setActivePage, overdueCount = 0 })
             );
           })}
         </nav>
-
-        {/* Sidebar Photo Banner Card matching Screenshot 1, 2, 3, 4 */}
-        <div style={{
-          marginTop: 12,
-          marginBottom: 12,
-          position: 'relative',
-          borderRadius: 10,
-          overflow: 'hidden',
-          height: 150,
-          border: '1px solid #edebe6',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
-        }}>
-          <img 
-            src="/hero_library.jpg" 
-            alt="SRM Library" 
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
-            }}
-          />
-          {/* Subtle Top & Bottom Gradient Overlays */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.4) 40%, rgba(15,23,42,0.85) 100%)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            padding: '10px 12px'
-          }}>
-            <div>
-              <div style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: 13,
-                fontWeight: 700,
-                color: '#0f172a',
-                lineHeight: 1.2
-              }}>
-                Good Books<br />Better People
-              </div>
-              <div style={{ width: 24, height: 1.5, background: '#0f172a', marginTop: 4 }} />
-            </div>
-            <div style={{
-              fontSize: 9,
-              color: '#ffffff',
-              fontWeight: 600,
-              letterSpacing: '0.3px',
-              textShadow: '0 1px 2px rgba(0,0,0,0.8)'
-            }}>
-              Learn · Belong · Grow<br />at SRM IST
-            </div>
-          </div>
-        </div>
 
         {/* Bottom Log Out Section */}
         <div style={{ paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
