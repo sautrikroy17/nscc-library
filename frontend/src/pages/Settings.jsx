@@ -16,11 +16,13 @@ import {
 } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import { useAuth } from '../context/AuthContext';
+import { useLibrary } from '../context/LibraryContext';
 import { toast } from '../context/ToastContext';
 import { playClick, playSuccessChime } from '../utils/audio';
 
 export default function Settings({ onNavigate = () => {}, initialTab = 'profile' }) {
   const { user } = useAuth();
+  const { preferences, updatePreferences } = useLibrary();
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const isStudent = user?.role === 'student';
@@ -35,15 +37,24 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
   });
 
   // Library Preferences Form State
-  const [libraryPrefs, setLibraryPrefs] = useState({
+  const [libraryPrefs, setLibraryPrefs] = useState(() => preferences || {
     borrowPeriod: '14 days (Standard)',
     categories: ['Computer Science', 'Software Engineering', 'AI & ML'],
     language: 'English',
-    theme: 'light' // 'light' | 'dark' | 'system'
+    theme: 'light'
   });
 
+  const [readingGoal, setReadingGoal] = useState(15);
+  const [defaultView, setDefaultView] = useState('grid');
   const [newCatInput, setNewCatInput] = useState('');
   const [showAddCat, setShowAddCat] = useState(false);
+
+  // Sync preferences from context
+  useEffect(() => {
+    if (preferences) {
+      setLibraryPrefs(prev => ({ ...prev, ...preferences }));
+    }
+  }, [preferences]);
 
   // Notification Toggles State
   const [notifications, setNotifications] = useState({
@@ -68,25 +79,43 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
     toast.success('Profile information saved successfully!');
   };
 
+  const handleThemeChange = (newTheme) => {
+    playClick();
+    const updated = { ...libraryPrefs, theme: newTheme };
+    setLibraryPrefs(updated);
+    updatePreferences(updated);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark-theme');
+      document.body.classList.add('dark-theme');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark-theme');
+      document.body.classList.remove('dark-theme');
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  };
+
   const handlePrefsSave = () => {
     playSuccessChime();
+    updatePreferences(libraryPrefs);
     toast.success('Library preferences updated successfully!');
   };
 
   const removeCategory = (catToRemove) => {
-    setLibraryPrefs(prev => ({
-      ...prev,
-      categories: prev.categories.filter(c => c !== catToRemove)
-    }));
+    const updated = libraryPrefs.categories.filter(c => c !== catToRemove);
+    setLibraryPrefs(prev => ({ ...prev, categories: updated }));
+    updatePreferences({ categories: updated });
+    toast.info(`Removed "${catToRemove}" from preferences`);
   };
 
   const addCategory = () => {
     if (!newCatInput.trim()) return;
-    if (!libraryPrefs.categories.includes(newCatInput.trim())) {
-      setLibraryPrefs(prev => ({
-        ...prev,
-        categories: [...prev.categories, newCatInput.trim()]
-      }));
+    const trimmed = newCatInput.trim();
+    if (!libraryPrefs.categories.includes(trimmed)) {
+      const updated = [...libraryPrefs.categories, trimmed];
+      setLibraryPrefs(prev => ({ ...prev, categories: updated }));
+      updatePreferences({ categories: updated });
+      toast.success(`Added "${trimmed}" to preferred categories!`);
     }
     setNewCatInput('');
     setShowAddCat(false);
@@ -150,9 +179,9 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
       </div>
 
       {/* ═══════════════════════════════════════════════════════════
-         PROFILE & PREFERENCES VIEW (Screenshot 5 Bottom-Left)
+         PROFILE VIEW (When activeTab === 'profile')
          ═══════════════════════════════════════════════════════════ */}
-      {(activeTab === 'profile' || activeTab === 'preferences') && (
+      {activeTab === 'profile' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
           
           {/* Column 1: Profile Information */}
@@ -315,7 +344,69 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
             </form>
           </div>
 
-          {/* Column 2: Library Preferences */}
+          {/* Column 2: SRM Central Library Membership Details */}
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 14,
+            padding: '24px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16
+          }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+              SRM Institutional Membership
+            </h2>
+
+            <div style={{
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+              color: '#ffffff',
+              borderRadius: 12,
+              padding: 20,
+              boxShadow: '0 8px 20px rgba(15,23,42,0.15)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#38bdf8', letterSpacing: '0.5px' }}>
+                SRM CENTRAL LIBRARY · SMART CARD
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 800, marginTop: 8 }}>
+                {profileForm.name}
+              </div>
+              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2, fontFamily: 'monospace' }}>
+                {profileForm.rollNumber}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 18, fontSize: 11 }}>
+                <div>
+                  <div style={{ color: '#64748b' }}>STATUS</div>
+                  <div style={{ fontWeight: 700, color: '#10b981' }}>Active Member</div>
+                </div>
+                <div>
+                  <div style={{ color: '#64748b' }}>BORROW LIMIT</div>
+                  <div style={{ fontWeight: 700, color: '#ffffff' }}>5 Volumes</div>
+                </div>
+                <div>
+                  <div style={{ color: '#64748b' }}>FINES</div>
+                  <div style={{ fontWeight: 700, color: '#10b981' }}>₹0 Outstanding</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 12.5, color: '#475569', lineHeight: 1.5, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <strong>RFID Barcode Sync:</strong> Your student ID card is linked to institutional physical kiosks. For quota expansions or thesis repository clearance, contact Central Library Level 2 Help Desk.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+         PREFERENCES VIEW (When activeTab === 'preferences')
+         ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'preferences' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
+          {/* Column 1: Library Preferences */}
           <div style={{
             background: '#ffffff',
             border: '1px solid #e2e8f0',
@@ -334,7 +425,11 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
               <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Default Borrowing Period</label>
               <select
                 value={libraryPrefs.borrowPeriod}
-                onChange={e => setLibraryPrefs({ ...libraryPrefs, borrowPeriod: e.target.value })}
+                onChange={e => {
+                  const val = e.target.value;
+                  setLibraryPrefs(prev => ({ ...prev, borrowPeriod: val }));
+                  updatePreferences({ borrowPeriod: val });
+                }}
                 style={{
                   width: '100%',
                   padding: '9px 12px',
@@ -356,7 +451,7 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>Preferred Categories</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                {libraryPrefs.categories.map(cat => (
+                {(libraryPrefs.categories || []).map(cat => (
                   <span
                     key={cat}
                     style={{
@@ -373,6 +468,7 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
                   >
                     {cat}
                     <button
+                      type="button"
                       onClick={() => removeCategory(cat)}
                       style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', padding: 0, display: 'flex' }}
                     >
@@ -399,8 +495,8 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
                         width: 130
                       }}
                     />
-                    <button onClick={addCategory} style={{ padding: '4px 8px', borderRadius: 6, background: '#2563eb', color: '#fff', border: 'none', fontSize: 11, cursor: 'pointer' }}>Add</button>
-                    <button onClick={() => setShowAddCat(false)} style={{ padding: '4px 8px', borderRadius: 6, background: '#f1f5f9', color: '#64748b', border: 'none', fontSize: 11, cursor: 'pointer' }}>✕</button>
+                    <button type="button" onClick={addCategory} style={{ padding: '4px 8px', borderRadius: 6, background: '#2563eb', color: '#fff', border: 'none', fontSize: 11, cursor: 'pointer' }}>Add</button>
+                    <button type="button" onClick={() => setShowAddCat(false)} style={{ padding: '4px 8px', borderRadius: 6, background: '#f1f5f9', color: '#64748b', border: 'none', fontSize: 11, cursor: 'pointer' }}>✕</button>
                   </div>
                 ) : (
                   <button
@@ -430,7 +526,11 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
               <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Language</label>
               <select
                 value={libraryPrefs.language}
-                onChange={e => setLibraryPrefs({ ...libraryPrefs, language: e.target.value })}
+                onChange={e => {
+                  const val = e.target.value;
+                  setLibraryPrefs(prev => ({ ...prev, language: val }));
+                  updatePreferences({ language: val });
+                }}
                 style={{
                   width: '100%',
                   padding: '9px 12px',
@@ -464,7 +564,7 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
                     <button
                       key={t.id}
                       type="button"
-                      onClick={() => { playClick(); setLibraryPrefs({ ...libraryPrefs, theme: t.id }); }}
+                      onClick={() => handleThemeChange(t.id)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -508,6 +608,98 @@ export default function Settings({ onNavigate = () => {}, initialTab = 'profile'
             </div>
           </div>
 
+          {/* Column 2: Reading & Catalog Experience */}
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 14,
+            padding: '24px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 18
+          }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+              Reading Goals & Display Customization
+            </h2>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Semester Reading Target</label>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#2563eb' }}>{readingGoal} books</span>
+              </div>
+              <input
+                type="range"
+                min="5"
+                max="40"
+                value={readingGoal}
+                onChange={e => setReadingGoal(Number(e.target.value))}
+                style={{ width: '100%', accentColor: '#2563eb' }}
+              />
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                Current progress: 12 of {readingGoal} books completed this semester.
+              </div>
+            </div>
+
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 8 }}>Default Catalog View</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setDefaultView('grid'); toast.info('Default view set to Grid'); }}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: defaultView === 'grid' ? '1.5px solid #0f172a' : '1px solid #e2e8f0',
+                    background: defaultView === 'grid' ? '#f8fafc' : '#ffffff',
+                    fontWeight: defaultView === 'grid' ? 700 : 500,
+                    fontSize: 12.5,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Grid Cards View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { playClick(); setDefaultView('list'); toast.info('Default view set to List'); }}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: defaultView === 'list' ? '1.5px solid #0f172a' : '1px solid #e2e8f0',
+                    background: defaultView === 'list' ? '#f8fafc' : '#ffffff',
+                    fontWeight: defaultView === 'list' ? 700 : 500,
+                    fontSize: 12.5,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Compact List View
+                </button>
+              </div>
+            </div>
+
+            <div style={{ padding: 14, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12.5, color: '#475569' }}>
+              <strong>Automatic Book Renewals:</strong> When enabled, eligible volumes with zero waitlist reservations will renew automatically 48 hours prior to due date.
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => { playSuccessChime(); toast.success('Reading customizations saved!'); }}
+                style={{
+                  padding: '9px 20px',
+                  borderRadius: 8,
+                  background: '#0f172a',
+                  color: '#ffffff',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                Save Customizations
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

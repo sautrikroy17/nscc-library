@@ -3,7 +3,11 @@ import { localStore } from '../data/localStore';
 import { INITIAL_BOOKS } from '../data/seedData';
 
 export function getActiveGroqKey() {
-  return import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('librax_groq_key') || '';
+  const envKey = import.meta.env?.VITE_GROQ_API_KEY;
+  if (envKey && envKey.trim()) return envKey.trim();
+  const storedKey = typeof localStorage !== 'undefined' ? localStorage.getItem('librax_groq_key') : null;
+  if (storedKey && storedKey.trim()) return storedKey.trim();
+  return '';
 }
 
 export function setCustomGroqKey(key) {
@@ -14,9 +18,10 @@ export function setCustomGroqKey(key) {
 export const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
 export const GROQ_MODELS = {
-  SPEED: 'qwen/qwen3.8-27b',       // Ultra fast (<0.8s), high intelligence, 131k ctx
-  REASONING: 'openai/gpt-oss-120b', // 120B Flagship Reasoning
-  BALANCED: 'qwen/qwen3.6-27b',    // Dependable fallback
+  SPEED: 'qwen/qwen3.8-27b',        // Ultra-fast (<0.1s), high intelligence
+  REASONING: 'openai/gpt-oss-20b',  // Ultra-smart reasoning & conversational
+  FLAGSHIP: 'openai/gpt-oss-120b',  // 120B reasoning
+  BALANCED: 'qwen/qwen3.6-27b',     // Dependable fallback
 };
 
 function getCatalogContext() {
@@ -77,7 +82,7 @@ export const groqService = {
     const startTime = performance.now();
     const catalog = getCatalogContext();
 
-    const systemPrompt = `You are Alexandria, the articulate, brilliant, and friendly AI Librarian for the SRM Institute of Science and Technology (SRM IST) Central Library and Newton School Coding Club (NSCC) Library System (LibraX).
+    const systemPrompt = `You are Lyra, the articulate, brilliant, warm, and friendly AI Librarian companion for the SRM Institute of Science and Technology (SRM IST) Central Library and Newton School Coding Club (NSCC) Library System (LibraX). You speak directly with students like Sautrik Roy. You love literature, engineering, romance, thrillers, and all genres! When asked general conversational questions like "How are u", answer warmly and naturally as Lyra! When asked for book recommendations (including romantic reads, sci-fi, DSA, system design, fiction, or philosophy), provide inspiring, thoughtful, and well-structured suggestions. If any book matches our SRM catalog, include its ID in square brackets like [BK001]!
 
 Current Real-Time Library Catalog in Stacks:
 ${catalog}
@@ -98,9 +103,9 @@ Your Guidelines:
 
     // Map history to OpenAI format
     const formattedHistory = history.slice(-8).map(h => ({
-      role: h.role === 'ai' || h.role === 'assistant' ? 'assistant' : 'user',
-      content: h.content
-    }));
+      role: (h.sender === 'ai' || h.sender === 'assistant' || h.role === 'assistant') ? 'assistant' : 'user',
+      content: h.text || h.content || ''
+    })).filter(h => Boolean(h.content));
 
     const messages = [
       { role: 'system', content: systemPrompt },

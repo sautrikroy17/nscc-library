@@ -23,55 +23,36 @@ import {
   Target
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLibrary } from '../context/LibraryContext';
 import { toast } from '../context/ToastContext';
 import { playClick, playSuccessChime, playReturnChime } from '../utils/audio';
 import BackButton from '../components/BackButton';
 import BookCover from '../components/BookCover';
+import BookActionMenu from '../components/BookActionMenu';
+import LibraryHoursModal from '../components/LibraryHoursModal';
 
 export default function Dashboard({ onNavigate = () => {} }) {
   const { user } = useAuth();
+  const { 
+    borrowedBooks, 
+    returnBook, 
+    renewBook, 
+    wishlist, 
+    books, 
+    history, 
+    recentScans 
+  } = useLibrary();
+
   const isLibrarian = user?.role === 'librarian';
   const greetingName = isLibrarian ? (user?.name || 'Librarian (LIB-SRM-042)') : (user?.name || 'Sautrik Roy');
 
-  // ── Timeframe state for Librarian trend chart ──
-  const [trendPeriod, setTrendPeriod] = useState('week'); // 'week' | 'month' | 'semester'
+  // Timeframe state for Librarian trend chart
+  const [trendPeriod, setTrendPeriod] = useState('week');
   const [hoveredBar, setHoveredBar] = useState(null);
-
-  // ── Student Currently Borrowed State ──
-  const [borrowedBooks, setBorrowedBooks] = useState([
-    {
-      id: 'BK002',
-      title: 'Clean Code',
-      author: 'Robert C. Martin',
-      dueText: 'Due in 2 days',
-      dueColor: '#ef4444',
-      dueBg: '#fef2f2',
-      cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80'
-    },
-    {
-      id: 'BK006',
-      title: 'Operating System Concepts',
-      author: 'Silberschatz, Galvin, Gagne',
-      dueText: 'Due in 5 days',
-      dueColor: '#f59e0b',
-      dueBg: '#fffbeb',
-      cover: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=200&auto=format&fit=crop&q=80'
-    },
-    {
-      id: 'BK007',
-      title: 'Database System Concepts',
-      author: 'Silberschatz, Korth, Sudarshan',
-      dueText: 'Due in 12 days',
-      dueColor: '#64748b',
-      dueBg: '#f8fafc',
-      cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&auto=format&fit=crop&q=80'
-    }
-  ]);
+  const [showHoursModal, setShowHoursModal] = useState(false);
 
   const handleQuickReturn = (book) => {
-    playReturnChime();
-    setBorrowedBooks(prev => prev.filter(b => b.id !== book.id));
-    toast.success(`"${book.title}" returned successfully! Borrow quota updated.`);
+    returnBook(book);
   };
 
   // ── Student Recommendations Data ──
@@ -810,115 +791,132 @@ export default function Dashboard({ onNavigate = () => {} }) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-            {borrowedBooks.map(book => (
-              <div
-                key={book.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  borderRadius: 10,
-                  border: '1px solid #f1f5f9',
-                  background: '#ffffff',
-                  transition: 'all 120ms'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#f1f5f9'; e.currentTarget.style.background = '#ffffff'; }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <img
-                    src={book.cover}
-                    alt={book.title}
-                    style={{ width: 40, height: 54, borderRadius: 4, objectFit: 'cover', border: '1px solid #e2e8f0' }}
-                  />
-                  <div>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>
-                      {book.title}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                      {book.author}
+            {borrowedBooks.length === 0 ? (
+              <div style={{ padding: '36px 16px', textAlign: 'center', background: '#f8fafc', borderRadius: 10, border: '1px dashed #cbd5e1' }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>No books currently borrowed</div>
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>Explore the library catalog and borrow books!</div>
+                <button
+                  onClick={() => onNavigate('catalog')}
+                  style={{ marginTop: 12, padding: '6px 16px', borderRadius: 8, background: '#2563eb', color: '#ffffff', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Browse Catalog
+                </button>
+              </div>
+            ) : (
+              borrowedBooks.map(book => (
+                <div
+                  key={book.id || book.bookId}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 14px',
+                    borderRadius: 10,
+                    border: '1px solid #f1f5f9',
+                    background: '#ffffff',
+                    transition: 'all 120ms'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#f1f5f9'; e.currentTarget.style.background = '#ffffff'; }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <img
+                      src={book.cover || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80'}
+                      alt={book.title}
+                      onError={e => { e.currentTarget.src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80'; }}
+                      style={{ width: 40, height: 54, borderRadius: 4, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }}
+                    />
+                    <div>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>
+                        {book.title}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                        {book.author}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: book.dueColor, background: book.dueBg, padding: '3px 8px', borderRadius: 6 }}>
-                    {book.dueText}
-                  </span>
-                  <button
-                    onClick={() => handleQuickReturn(book)}
-                    title="Return book to stacks"
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#ffffff', color: '#0f172a', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    <RotateCcw size={11} /> Return
-                  </button>
-                  <button
-                    onClick={() => toast.info(`Viewing record for ${book.title}`)}
-                    style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
-                  >
-                    <MoreVertical size={15} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: book.dueColor || '#059669', background: book.dueBg || '#ecfdf5', padding: '3px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+                      {book.dueText || 'Due in 14 days'}
+                    </span>
+                    <button
+                      onClick={() => handleQuickReturn(book)}
+                      title="Return book to stacks"
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#ffffff', color: '#0f172a', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      <RotateCcw size={11} /> Return
+                    </button>
+                    <BookActionMenu book={book} isBorrowed={true} align="right" />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
-        {/* Center: Due Soon Hero Card (Clean Code) */}
-        <div className="card" style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: '1px solid #fed7aa', background: '#fffdfa' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 800, color: '#c2410c' }}>
-              <Bookmark size={14} /> Due Soon
-            </span>
-            <span style={{ fontSize: 11.5, color: '#64748b', fontWeight: 600 }}>1 book</span>
-          </div>
-
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 14 }}>
-            <img
-              src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80"
-              alt="Clean Code"
-              style={{ width: 85, height: 115, borderRadius: 6, objectFit: 'cover', border: '1px solid #fed7aa', boxShadow: '0 4px 10px rgba(0,0,0,0.06)' }}
-            />
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>Clean Code</div>
-              <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>Robert C. Martin</div>
-              <div style={{ marginTop: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#ea580c', background: '#fff7ed', border: '1px solid #ffedd5', padding: '3px 8px', borderRadius: 6 }}>
-                  Due in 2 days
+        {/* Center: Due Soon Hero Card */}
+        {(() => {
+          const dueSoonBook = borrowedBooks[0];
+          return (
+            <div className="card" style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: '1px solid #fed7aa', background: '#fffdfa' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 800, color: '#c2410c' }}>
+                  <Bookmark size={14} /> Due Soon
                 </span>
-                <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>15 Sep 2025</span>
+                <span style={{ fontSize: 11.5, color: '#64748b', fontWeight: 600 }}>{borrowedBooks.length > 0 ? '1 book' : '0 books'}</span>
               </div>
+
+              {dueSoonBook ? (
+                <>
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 14 }}>
+                    <img
+                      src={dueSoonBook.cover || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80'}
+                      alt={dueSoonBook.title}
+                      onError={e => { e.currentTarget.src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80'; }}
+                      style={{ width: 85, height: 115, borderRadius: 6, objectFit: 'cover', border: '1px solid #fed7aa', boxShadow: '0 4px 10px rgba(0,0,0,0.06)' }}
+                    />
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>{dueSoonBook.title}</div>
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>{dueSoonBook.author}</div>
+                      <div style={{ marginTop: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#ea580c', background: '#fff7ed', border: '1px solid #ffedd5', padding: '3px 8px', borderRadius: 6 }}>
+                          {dueSoonBook.dueText || 'Due in 2 days'}
+                        </span>
+                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>{dueSoonBook.due || 'Soon'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 12, fontStyle: 'italic', color: '#475569', background: '#ffffff', border: '1px solid #f1f5f9', padding: '10px 12px', borderRadius: 8, marginBottom: 16 }}>
+                    "Knowledge is of no value unless you put it into practice."
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      onClick={() => handleQuickReturn(dueSoonBook)}
+                      style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: 'none', background: '#0f172a', color: '#ffffff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}
+                    >
+                      Return Now
+                    </button>
+                    <button
+                      onClick={() => renewBook(dueSoonBook.bookId || dueSoonBook.id)}
+                      style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: '1px solid #e2e8f0', background: '#ffffff', color: '#0f172a', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}
+                    >
+                      Renew
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ padding: '30px 10px', textAlign: 'center', color: '#16a34a' }}>
+                  <CheckCircle2 size={32} style={{ margin: '0 auto 8px' }} />
+                  <div style={{ fontWeight: 800, fontSize: 14 }}>All clear!</div>
+                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>You have zero pending or overdue books.</div>
+                </div>
+              )}
             </div>
-          </div>
-
-          <div style={{ fontSize: 12, fontStyle: 'italic', color: '#475569', background: '#ffffff', border: '1px solid #f1f5f9', padding: '10px 12px', borderRadius: 8, marginBottom: 16 }}>
-            "Even bad code can work. But if code isn't clean..."
-          </div>
-
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              onClick={() => {
-                playReturnChime();
-                setBorrowedBooks(prev => prev.filter(b => b.id !== 'BK002'));
-                toast.success('Clean Code returned to stacks successfully!');
-              }}
-              style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: 'none', background: '#0f172a', color: '#ffffff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}
-            >
-              Return Now
-            </button>
-            <button
-              onClick={() => {
-                playSuccessChime();
-                setBorrowedBooks(prev => prev.map(b => b.id === 'BK002' ? { ...b, dueText: 'Due in 16 days', dueColor: '#2563eb', dueBg: '#eff6ff' } : b));
-                toast.success('Clean Code renewed! Due date extended by 14 days.');
-              }}
-              style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: '1px solid #e2e8f0', background: '#ffffff', color: '#0f172a', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}
-            >
-              Renew
-            </button>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Right: Quick Actions + Library Hours + Upcoming Events */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -950,7 +948,13 @@ export default function Dashboard({ onNavigate = () => {} }) {
           </div>
 
           {/* Library Hours */}
-          <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div 
+            className="card" 
+            onClick={() => { playClick(); setShowHoursModal(true); }}
+            style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 120ms' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#93c5fd'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(37,99,235,0.08)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
+          >
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>Library Hours</span>
@@ -960,7 +964,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                 <Clock size={12} /> 8:00 AM — 10:00 PM <span style={{ fontSize: 11, color: '#94a3b8' }}>· Mon - Sun</span>
               </div>
             </div>
-            <ChevronRight size={16} color="#cbd5e1" />
+            <ChevronRight size={16} color="#2563eb" />
           </div>
 
           {/* Upcoming Events */}
@@ -1221,6 +1225,12 @@ export default function Dashboard({ onNavigate = () => {} }) {
           </div>
         </div>
       </div>
+
+      {/* Interactive Library Schedule & Hours Modal */}
+      <LibraryHoursModal 
+        isOpen={showHoursModal} 
+        onClose={() => setShowHoursModal(false)} 
+      />
     </div>
   );
 }

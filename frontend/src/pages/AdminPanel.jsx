@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { books as booksApi, transactions as txApi, stats as statsApi, exportData } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useLibrary } from '../context/LibraryContext';
 import { toast } from '../context/ToastContext';
 import { playClick, playSuccessChime } from '../utils/audio';
 import BackButton from '../components/BackButton';
@@ -40,6 +41,7 @@ import BackButton from '../components/BackButton';
 // Panel 10: Add New Book Form
 // ─────────────────────────────────────────────────────────────
 function AddBookForm({ onBookAdded, onCancel }) {
+  const { addBook } = useLibrary();
   const [form, setForm] = useState({
     id: `BK${Math.floor(100 + Math.random() * 900)}`,
     title: '',
@@ -79,12 +81,8 @@ function AddBookForm({ onBookAdded, onCancel }) {
     }
     setLoading(true);
     try {
-      await booksApi.create({
-        ...form,
-        available_copies: form.total_copies
-      });
+      addBook(form);
       playSuccessChime();
-      toast.success(`Book "${form.title}" added to library catalog!`);
       onBookAdded?.();
     } catch (err) {
       toast.error(err.message || 'Failed to add book');
@@ -297,7 +295,8 @@ const INITIAL_STUDENTS = [
 ];
 
 function StudentManagement({ onNavigate = () => {} }) {
-  const [students, setStudents] = useState(INITIAL_STUDENTS);
+  const { students: contextStudents, setStudents } = useLibrary();
+  const students = contextStudents && contextStudents.length > 0 ? contextStudents : INITIAL_STUDENTS;
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('All');
   const [yearFilter, setYearFilter] = useState('All');

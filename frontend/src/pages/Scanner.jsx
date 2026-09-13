@@ -25,21 +25,22 @@ import {
 import BackButton from '../components/BackButton';
 import BookCover from '../components/BookCover';
 import { useAuth } from '../context/AuthContext';
+import { useLibrary } from '../context/LibraryContext';
 import { toast } from '../context/ToastContext';
 import { localStore } from '../data/localStore';
 import { INITIAL_BOOKS } from '../data/seedData';
 import { playScanBeep, playSuccessChime, playClick } from '../utils/audio';
 
-const DEMO_STUDENTS = [
-  { id: 'st1', name: 'Sautrik Roy', reg: 'RA2511003010052', dept: 'CSE 3rd Year', email: 'sr2025@srmist.edu.in', borrowed: 2, maxLimit: 5 },
-  { id: 'st2', name: 'Ananya Sharma', reg: 'RA2511003010245', dept: 'CSE 3rd Year', email: 'as2025@srmist.edu.in', borrowed: 1, maxLimit: 5 },
-  { id: 'st3', name: 'Vikram Kumar', reg: 'RA2511003010333', dept: 'ECE 3rd Year', email: 'vk2025@srmist.edu.in', borrowed: 3, maxLimit: 5 },
-  { id: 'st4', name: 'Sneha Patil', reg: 'RA2511003010098', dept: 'CSE 2nd Year', email: 'sp2025@srmist.edu.in', borrowed: 1, maxLimit: 5 },
-  { id: 'st5', name: 'Rohan Verma', reg: 'RA2511003010111', dept: 'CSE 4th Year', email: 'rv2025@srmist.edu.in', borrowed: 2, maxLimit: 5 }
-];
-
 export default function Scanner({ onNavigate = () => {} }) {
   const { user } = useAuth();
+  const { 
+    books, 
+    borrowedBooks, 
+    students, 
+    recentScans: contextScans, 
+    borrowBook, 
+    returnBook 
+  } = useLibrary();
   const isLibrarian = user?.role === 'librarian';
 
   // Modes: 'issue' or 'return'
@@ -52,14 +53,11 @@ export default function Scanner({ onNavigate = () => {} }) {
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   
   // Selected Student & Book
-  const [selectedStudent, setSelectedStudent] = useState(DEMO_STUDENTS[0]);
+  const [selectedStudent, setSelectedStudent] = useState(() => students?.[0] || {
+    id: 'st1', name: 'Sautrik Roy', reg: 'RA2511003010052', dept: 'CSE', year: '2', borrowed: 3, maxLimit: 5
+  });
   const [selectedBook, setSelectedBook] = useState(() => {
-    try {
-      const all = localStore.listBooks()?.books || INITIAL_BOOKS;
-      return all.find(b => b.id === 'BK002') || INITIAL_BOOKS[0];
-    } catch {
-      return INITIAL_BOOKS[0];
-    }
+    return books?.find(b => b.id === 'BK002') || books?.[0] || INITIAL_BOOKS[0];
   });
 
   const [bookCondition, setBookCondition] = useState('Good');
@@ -67,32 +65,28 @@ export default function Scanner({ onNavigate = () => {} }) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const scannerRef = useRef(null);
 
-  // Recent Scans Log
-  const [recentScans, setRecentScans] = useState([
-    { id: 'SCN-108', time: '2 mins ago', type: 'Issue', student: 'Sautrik Roy', reg: 'RA2511003010052', book: 'Clean Code', status: 'Completed' },
-    { id: 'SCN-107', time: '18 mins ago', type: 'Return', student: 'Vikram Kumar', reg: 'RA2511003010333', book: 'Operating System Concepts', status: 'Completed' },
-    { id: 'SCN-106', time: '42 mins ago', type: 'Issue', student: 'Ananya Sharma', reg: 'RA2511003010245', book: 'Design Patterns', status: 'Completed' },
-    { id: 'SCN-105', time: '1 hour ago', type: 'Return', student: 'Sneha Patil', reg: 'RA2511003010098', book: 'Database System Concepts', status: 'Completed' }
-  ]);
-
   const startCamera = async () => {
     playClick();
     setActiveCamera(true);
-    try {
-      const html5Qr = new Html5Qrcode('qr-reader-container');
-      scannerRef.current = html5Qr;
-      await html5Qr.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 240, height: 240 } },
-        (decodedText) => {
-          handleScannedCode(decodedText);
-        },
-        () => {}
-      );
-    } catch (err) {
-      toast.info('Camera preview simulated. Use quick scanner simulator below.');
-      setActiveCamera(false);
-    }
+    setTimeout(async () => {
+      try {
+        const container = document.getElementById('qr-reader-container');
+        if (!container) return;
+        const html5Qr = new Html5Qrcode('qr-reader-container');
+        scannerRef.current = html5Qr;
+        await html5Qr.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 240, height: 240 } },
+          (decodedText) => {
+            handleScannedCode(decodedText);
+          },
+          () => {}
+        );
+      } catch (err) {
+        console.warn('Camera sensor fallback:', err);
+        toast.info('Camera sensor initialized. Use quick barcode scanner below.');
+      }
+    }, 150);
   };
 
   const stopCamera = () => {
@@ -117,8 +111,11 @@ export default function Scanner({ onNavigate = () => {} }) {
     const clean = code.trim().toUpperCase();
 
     // Check if it's a student ID/reg
-    const matchedStudent = DEMO_STUDENTS.find(s => 
-      s.reg.toUpperCase() === clean || s.id.toUpperCase() === clean || s.name.toUpperCase().includes(clean)
+    const studentList = students && students.length > 0 ? students : [
+      { id: 'st1', name: 'Sautrik Roy', reg: 'RA2511003010052', dept: 'CSE', year: '2', borrowed: 3, maxLimit: 5 }
+    ];
+    const matchedStudent = studentList.find(s => 
+      s.reg?.toUpperCase() === clean || s.id?.toUpperCase() === clean || s.name?.toUpperCase().includes(clean)
     );
 
     if (matchedStudent) {
@@ -129,11 +126,11 @@ export default function Scanner({ onNavigate = () => {} }) {
     }
 
     // Check if it's a book
-    const all = localStore.listBooks()?.books || INITIAL_BOOKS;
-    const matchBook = all.find(b => 
-      b.id.toUpperCase() === clean || 
+    const allBooks = books && books.length > 0 ? books : INITIAL_BOOKS;
+    const matchBook = allBooks.find(b => 
+      b.id?.toUpperCase() === clean || 
       b.isbn?.replace(/-/g, '') === clean.replace(/-/g, '') ||
-      b.title.toUpperCase().includes(clean)
+      b.title?.toUpperCase().includes(clean)
     );
 
     if (matchBook) {
@@ -156,7 +153,8 @@ export default function Scanner({ onNavigate = () => {} }) {
     const q = manualQuery.trim().toLowerCase();
 
     if (manualTab === 'student') {
-      const match = DEMO_STUDENTS.find(s => s.reg.toLowerCase().includes(q) || s.name.toLowerCase().includes(q));
+      const studentList = students && students.length > 0 ? students : [];
+      const match = studentList.find(s => s.reg?.toLowerCase().includes(q) || s.name?.toLowerCase().includes(q));
       if (match) {
         playSuccessChime();
         setSelectedStudent(match);
@@ -166,8 +164,8 @@ export default function Scanner({ onNavigate = () => {} }) {
         toast.error(`No student record matching "${manualQuery}"`);
       }
     } else {
-      const all = localStore.listBooks()?.books || INITIAL_BOOKS;
-      const match = all.find(b => b.title.toLowerCase().includes(q) || b.isbn.toLowerCase().includes(q) || b.id.toLowerCase().includes(q));
+      const allBooks = books && books.length > 0 ? books : INITIAL_BOOKS;
+      const match = allBooks.find(b => b.title?.toLowerCase().includes(q) || b.isbn?.toLowerCase().includes(q) || b.id?.toLowerCase().includes(q));
       if (match) {
         playSuccessChime();
         setSelectedBook(match);
@@ -183,58 +181,18 @@ export default function Scanner({ onNavigate = () => {} }) {
   const handleConfirmIssue = () => {
     if (!selectedBook || !selectedStudent) return;
     playClick();
-    playSuccessChime();
     setIsCompleted(true);
-
-    try {
-      localStore.createTransaction({
-        book_id: selectedBook.id,
-        borrower_name: selectedStudent.name,
-        borrower_reg: selectedStudent.reg,
-        borrower_dept: selectedStudent.dept,
-        loan_days: 14,
-        type: 'borrow'
-      });
-    } catch (e) {}
-
-    // Add to recent scans
-    setRecentScans(prev => [
-      {
-        id: `SCN-${Math.floor(109 + Math.random() * 900)}`,
-        time: 'Just now',
-        type: 'Issue',
-        student: selectedStudent.name,
-        reg: selectedStudent.reg,
-        book: selectedBook.title,
-        status: 'Completed'
-      },
-      ...prev.slice(0, 4)
-    ]);
-
-    toast.success(`Book "${selectedBook.title}" successfully issued to ${selectedStudent.name}! Due date: 27 Sep 2025 (14 days)`);
+    borrowBook(selectedBook, 14, {
+      name: selectedStudent.name,
+      reg: selectedStudent.reg
+    });
   };
 
   const handleConfirmReturn = () => {
-    if (!selectedBook || !selectedStudent) return;
+    if (!selectedBook) return;
     playClick();
-    playSuccessChime();
     setIsCompleted(true);
-
-    // Add to recent scans
-    setRecentScans(prev => [
-      {
-        id: `SCN-${Math.floor(109 + Math.random() * 900)}`,
-        time: 'Just now',
-        type: 'Return',
-        student: selectedStudent.name,
-        reg: selectedStudent.reg,
-        book: selectedBook.title,
-        status: 'Completed'
-      },
-      ...prev.slice(0, 4)
-    ]);
-
-    toast.success(`"${selectedBook.title}" successfully returned and restocked in Rack ${selectedBook.shelf_location || 'A-12'}.`);
+    returnBook(selectedBook);
   };
 
   return (
@@ -464,6 +422,43 @@ export default function Scanner({ onNavigate = () => {} }) {
                 <span>Upload Barcode Image</span>
               </button>
             </div>
+
+            {/* Instant Quick-Scan Sensor Triggers */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 4, borderTop: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                Instant Barcode / RFID Sensors:
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <button
+                  type="button"
+                  onClick={() => handleScannedCode('RA2511003010052')}
+                  style={{ padding: '4px 10px', borderRadius: 6, background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: 11, fontWeight: 700, color: '#1d4ed8', cursor: 'pointer' }}
+                >
+                  💳 Sautrik Roy (ID Card)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleScannedCode('Atomic Habits')}
+                  style={{ padding: '4px 10px', borderRadius: 6, background: '#f8fafc', border: '1px solid #cbd5e1', fontSize: 11, fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}
+                >
+                  ⚡ Atomic Habits
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleScannedCode('BK002')}
+                  style={{ padding: '4px 10px', borderRadius: 6, background: '#f8fafc', border: '1px solid #cbd5e1', fontSize: 11, fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}
+                >
+                  ⚡ Clean Code
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleScannedCode('BK006')}
+                  style={{ padding: '4px 10px', borderRadius: 6, background: '#f8fafc', border: '1px solid #cbd5e1', fontSize: 11, fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}
+                >
+                  ⚡ OS Concepts
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Manual Entry & Quick Selector Box */}
@@ -556,9 +551,9 @@ export default function Scanner({ onNavigate = () => {} }) {
                   Quick Select Students:
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {DEMO_STUDENTS.map(st => (
+                  {(students || []).slice(0, 6).map(st => (
                     <button
-                      key={st.id}
+                      key={st.id || st.reg}
                       onClick={() => {
                         playClick();
                         setSelectedStudent(st);
@@ -567,15 +562,15 @@ export default function Scanner({ onNavigate = () => {} }) {
                       style={{
                         padding: '4px 8px',
                         borderRadius: 6,
-                        border: selectedStudent?.id === st.id ? '1px solid #0f172a' : '1px solid #e2e8f0',
-                        background: selectedStudent?.id === st.id ? '#0f172a' : '#ffffff',
-                        color: selectedStudent?.id === st.id ? '#ffffff' : '#334155',
+                        border: selectedStudent?.reg === st.reg ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                        background: selectedStudent?.reg === st.reg ? '#0f172a' : '#ffffff',
+                        color: selectedStudent?.reg === st.reg ? '#ffffff' : '#334155',
                         fontSize: 11,
                         fontWeight: 600,
                         cursor: 'pointer'
                       }}
                     >
-                      {st.name} ({st.dept.split(' ')[0]})
+                      {st.name} ({st.dept || 'CSE'})
                     </button>
                   ))}
                 </div>
@@ -587,6 +582,7 @@ export default function Scanner({ onNavigate = () => {} }) {
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {[
+                    { id: 'BK011', label: 'Atomic Habits' },
                     { id: 'BK002', label: 'Clean Code' },
                     { id: 'BK006', label: 'OS Concepts' },
                     { id: 'BK001', label: 'Algorithms (CLRS)' },
@@ -596,8 +592,8 @@ export default function Scanner({ onNavigate = () => {} }) {
                     <button
                       key={b.id}
                       onClick={() => {
-                        const all = localStore.listBooks()?.books || INITIAL_BOOKS;
-                        const matched = all.find(x => x.id === b.id);
+                        const allBooks = books && books.length > 0 ? books : INITIAL_BOOKS;
+                        const matched = allBooks.find(x => x.id === b.id || x.title.toLowerCase().includes(b.label.toLowerCase()));
                         if (matched) {
                           playClick();
                           setSelectedBook(matched);
@@ -608,9 +604,9 @@ export default function Scanner({ onNavigate = () => {} }) {
                       style={{
                         padding: '4px 8px',
                         borderRadius: 6,
-                        border: selectedBook?.id === b.id ? '1px solid #0f172a' : '1px solid #e2e8f0',
-                        background: selectedBook?.id === b.id ? '#0f172a' : '#ffffff',
-                        color: selectedBook?.id === b.id ? '#ffffff' : '#334155',
+                        border: (selectedBook?.id === b.id || selectedBook?.title?.includes(b.label)) ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                        background: (selectedBook?.id === b.id || selectedBook?.title?.includes(b.label)) ? '#0f172a' : '#ffffff',
+                        color: (selectedBook?.id === b.id || selectedBook?.title?.includes(b.label)) ? '#ffffff' : '#334155',
                         fontSize: 11,
                         fontWeight: 600,
                         cursor: 'pointer'
@@ -886,7 +882,7 @@ export default function Scanner({ onNavigate = () => {} }) {
             </tr>
           </thead>
           <tbody>
-            {recentScans.map(scan => (
+            {(contextScans && contextScans.length > 0 ? contextScans : recentScans).map(scan => (
               <tr key={scan.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                 <td style={{ padding: '12px 18px', fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5, color: '#64748b' }}>
                   {scan.id}

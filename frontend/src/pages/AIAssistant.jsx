@@ -23,6 +23,8 @@ import BackButton from '../components/BackButton';
 import BookCover from '../components/BookCover';
 import { playClick, playSuccessChime } from '../utils/audio';
 import { toast } from '../context/ToastContext';
+import { groqService } from '../services/groqService';
+import { useLibrary } from '../context/LibraryContext';
 
 const MOODS = [
   { id: 'focus', emoji: '⚡', label: 'Deep Focus & Study', query: 'I need to get into deep focus mode for exams. Suggest rigorous, structured textbooks.' },
@@ -76,17 +78,20 @@ export default function AIAssistant({ onNavigate = () => {} }) {
   const [activeMood, setActiveMood] = useState(null);
   const chatBottomRef = useRef(null);
 
+  const { borrowBook, toggleWishlist, wishlist } = useLibrary();
+  const [isThinking, setIsThinking] = useState(false);
+
   const scrollToBottom = () => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isThinking]);
 
-  const handleSend = (textToSend) => {
+  const handleSend = async (textToSend) => {
     const query = (textToSend || inputVal).trim();
-    if (!query) return;
+    if (!query || isThinking) return;
 
     playClick();
     const newMsg = {
@@ -97,10 +102,50 @@ export default function AIAssistant({ onNavigate = () => {} }) {
 
     setMessages(prev => [...prev, newMsg]);
     setInputVal('');
+    setIsThinking(true);
 
-    setTimeout(() => {
-      generateLyraResponse(query);
-    }, 600);
+    try {
+      const res = await groqService.chat(query, messages);
+      playSuccessChime();
+
+      const recommendedBooks = (res.books && res.books.length > 0)
+        ? res.books.slice(0, 4).map((b, idx) => ({
+            id: b.id,
+            num: idx + 1,
+            title: b.title,
+            author: b.author,
+            category: b.category,
+            coverUrl: b.cover_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&auto=format&fit=crop&q=80'
+          }))
+        : [];
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ai_${Date.now()}`,
+          sender: 'ai',
+          text: res.reply,
+          books: recommendedBooks,
+          followUp: recommendedBooks.length > 0 
+            ? "Would you like me to issue any of these for you, or reserve a study cubicle? ✨"
+            : "Let me know if you would like more recommendations or specific syllabus references!"
+        }
+      ]);
+    } catch (err) {
+      console.warn('Groq AI inference error:', err);
+      // Fallback
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ai_${Date.now()}`,
+          sender: 'ai',
+          text: `I'm right here with you! Exploring our SRM Central Library stacks for "${query}" is a wonderful journey. Let me know which topics, author styles, or specific subjects you would like to delve into!`,
+          books: []
+        }
+      ]);
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   const handleMoodSelect = (mood) => {
@@ -108,91 +153,8 @@ export default function AIAssistant({ onNavigate = () => {} }) {
     handleSend(mood.query);
   };
 
-  const generateLyraResponse = (query) => {
-    playSuccessChime();
-    const qLower = query.toLowerCase();
-
-    if (qLower.includes('stressed') || qLower.includes('overwhelmed') || qLower.includes('clarity')) {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `ai_${Date.now()}`,
-          sender: 'ai',
-          text: "Take a deep breath! You're doing amazing, and university exams can feel heavy sometimes. When you're stressed, you don't need dense 1,000-page textbooks—you need clear, gentle authors who explain things intuitively with diagrams. Here are gentle, calming, crystal-clear reads:",
-          books: [
-            { id: 'BK003', num: 1, title: 'The Pragmatic Programmer', author: 'David Thomas & Andrew Hunt', coverUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK026', num: 2, title: 'Modern Web Development', author: 'Matt Ridley', coverUrl: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK002', num: 3, title: 'Clean Code', author: 'Robert C. Martin', coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80' }
-          ],
-          followUp: "Remember: small steps lead to big knowledge. Would you like me to summarize the 3 most important takeaway rules from any of these?"
-        }
-      ]);
-    } else if (qLower.includes('placement') || qLower.includes('career') || qLower.includes('interview')) {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `ai_${Date.now()}`,
-          sender: 'ai',
-          text: "Let's get that dream offer! 🚀 Top tech companies look for two things: crystal clear algorithmic thinking and robust architectural instincts. Here is my ultimate high-yield placement toolkit currently in our stacks:",
-          books: [
-            { id: 'BK010', num: 1, title: 'Cracking the Coding Interview', author: 'Gayle Laakmann McDowell', coverUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK001', num: 2, title: 'Introduction to Algorithms (CLRS)', author: 'Cormen, Leiserson et al.', coverUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK014', num: 3, title: 'System Design Interview', author: 'Alex Xu', coverUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=200&auto=format&fit=crop&q=80' }
-          ],
-          followUp: "Want me to quiz you on a classic interview question like LRU Cache design or binary tree inversions?"
-        }
-      ]);
-    } else if (qLower.includes('focus') || qLower.includes('study') || qLower.includes('exam')) {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `ai_${Date.now()}`,
-          sender: 'ai',
-          text: "Locked in! ⚡ Deep focus requires rigorous, distraction-free syllabus textbooks. Here are the core SRM engineering curriculum references with complete problem sets:",
-          books: [
-            { id: 'BK006', num: 1, title: 'Operating System Concepts (Dinosaur Book)', author: 'Silberschatz, Galvin, Gagne', coverUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK007', num: 2, title: 'Database System Concepts', author: 'Silberschatz, Korth, Sudarshan', coverUrl: 'https://images.unsplash.com/photo-1507842229452-710892015502?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK005', num: 3, title: 'Computer Networks (Tanenbaum)', author: 'Andrew S. Tanenbaum', coverUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=200&auto=format&fit=crop&q=80' }
-          ],
-          followUp: "Both physical copies and reserved shelf locations are available right now on 2nd Floor - Stacks A & B."
-        }
-      ]);
-    } else if (qLower.includes('curious') || qLower.includes('explor')) {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `ai_${Date.now()}`,
-          sender: 'ai',
-          text: "I love your curiosity! ✨ Reading outside your immediate syllabus is what turns good engineers into visionary leaders. Here are three mind-bending books spanning artificial intelligence, human cognition, and science:",
-          books: [
-            { id: 'BK015', num: 1, title: 'Artificial Intelligence: A Modern Approach', author: 'Stuart Russell & Peter Norvig', coverUrl: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK028', num: 2, title: 'Sapiens: A Brief History of Humankind', author: 'Yuval Noah Harari', coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK029', num: 3, title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&auto=format&fit=crop&q=80' }
-          ],
-          followUp: "Shall I add any of these to your personal Wishlist for weekend leisure reading?"
-        }
-      ]);
-    } else {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `ai_${Date.now()}`,
-          sender: 'ai',
-          text: `Got it! I scoured the SRM Central Library database for "${query}". Here is what I discovered for you:`,
-          books: [
-            { id: 'BK004', num: 1, title: 'Design Patterns', author: 'Gamma, Helm, Johnson, Vlissides', coverUrl: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=200&auto=format&fit=crop&q=80' },
-            { id: 'BK008', num: 2, title: 'Clean Architecture', author: 'Robert C. Martin', coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&auto=format&fit=crop&q=80' }
-          ],
-          followUp: "Would you like me to help you issue this book or check shelf availability?"
-        }
-      ]);
-    }
-  };
-
   const handleAddBook = (book) => {
-    playSuccessChime();
-    setAddedIds(prev => [...prev, book.id]);
-    toast.success(`Lyra added "${book.title}" to your Wishlist! ✨`);
+    toggleWishlist(book.id);
   };
 
   const toggleVoice = () => {
@@ -387,7 +349,7 @@ export default function AIAssistant({ onNavigate = () => {} }) {
                 {msg.books && msg.books.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
                     {msg.books.map(b => {
-                      const isAdded = addedIds.includes(b.id);
+                      const isAdded = wishlist.includes(b.id);
                       return (
                         <div
                           key={b.id}
@@ -415,19 +377,22 @@ export default function AIAssistant({ onNavigate = () => {} }) {
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <button
-                              onClick={() => onNavigate('catalog')}
+                              onClick={() => borrowBook(b)}
                               style={{
                                 padding: '6px 14px',
                                 borderRadius: 6,
-                                border: '1px solid #e2e8f0',
-                                background: '#ffffff',
-                                color: '#0f172a',
+                                border: 'none',
+                                background: '#2563eb',
+                                color: '#ffffff',
                                 fontSize: 12,
-                                fontWeight: 600,
-                                cursor: 'pointer'
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4
                               }}
                             >
-                              View Book
+                              <span>Borrow Copy</span>
                             </button>
 
                             <button
@@ -447,7 +412,7 @@ export default function AIAssistant({ onNavigate = () => {} }) {
                               }}
                             >
                               {isAdded ? <Check size={13} /> : <Plus size={13} />}
-                              <span>{isAdded ? 'Added' : '+ Add'}</span>
+                              <span>{isAdded ? 'Wishlisted' : '+ Wishlist'}</span>
                             </button>
                           </div>
                         </div>
@@ -465,6 +430,20 @@ export default function AIAssistant({ onNavigate = () => {} }) {
             </div>
           );
         })}
+
+        {isThinking && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', animation: 'pulse 1.5s infinite' }}>
+            <img
+              src="/lyra_avatar.jpg"
+              alt="Lyra"
+              style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '2px solid #a855f7' }}
+            />
+            <div style={{ fontSize: 13, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #e9d5ff', padding: '8px 16px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Sparkles size={14} color="#a855f7" />
+              <span>Lyra is consulting the SRM Central Library stacks...</span>
+            </div>
+          </div>
+        )}
         <div ref={chatBottomRef} />
       </div>
 

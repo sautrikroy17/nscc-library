@@ -29,9 +29,11 @@ import {
 } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import BookCover from '../components/BookCover';
+import BookActionMenu from '../components/BookActionMenu';
 import { localStore } from '../data/localStore';
 import { INITIAL_BOOKS } from '../data/seedData';
 import { useAuth } from '../context/AuthContext';
+import { useLibrary } from '../context/LibraryContext';
 import { toast } from '../context/ToastContext';
 import { playClick, playSuccessChime, playReturnChime } from '../utils/audio';
 
@@ -42,8 +44,17 @@ export default function Catalog({
   initialTab = 'all' // 'all' | 'borrowings' | 'wishlist'
 }) {
   const { user } = useAuth();
-  const [booksList, setBooksList] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { 
+    books: contextBooks, 
+    borrowedBooks, 
+    borrowBook, 
+    returnBook, 
+    renewBook, 
+    wishlist, 
+    toggleWishlist 
+  } = useLibrary();
+  const booksList = (contextBooks && contextBooks.length > 0) ? contextBooks : INITIAL_BOOKS;
+  const [loading, setLoading] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   
@@ -84,52 +95,18 @@ export default function Catalog({
     description: '',
     cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80'
   });
-
-  // Wishlist state matching Screenshot 3 Bottom (5 items default)
-  const [wishlist, setWishlist] = useState(['BK004', 'BK003', 'BK005', 'BK026', 'BK015']);
-
-  // Borrowings state matching Screenshot 3 Top (3 items default)
-  const [borrowedItems, setBorrowedItems] = useState([
-    {
-      id: 'b1',
-      bookId: 'BK002',
-      title: 'Clean Code',
-      author: 'Robert C. Martin',
-      tags: ['Software Engineering', 'Best Practices'],
-      issue: '01 Sep 2025',
-      due: '15 Sep 2025',
-      dueText: 'Due in 2 days',
-      dueColor: '#ef4444',
-      dueBg: '#fef2f2',
-      cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80'
-    },
-    {
-      id: 'b2',
-      bookId: 'BK006',
-      title: 'Operating System Concepts',
-      author: 'Silberschatz, Galvin, Gagne',
-      tags: ['Operating Systems', 'Systems Programming'],
-      issue: '28 Aug 2025',
-      due: '12 Sep 2025',
-      dueText: 'Due in 5 days',
-      dueColor: '#d97706',
-      dueBg: '#fffbeb',
-      cover: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=300&auto=format&fit=crop&q=80'
-    },
-    {
-      id: 'b3',
-      bookId: 'BK007',
-      title: 'Database System Concepts',
-      author: 'Silberschatz, Korth, Sudarshan',
-      tags: ['Database', 'Data Management'],
-      issue: '20 Aug 2025',
-      due: '05 Sep 2025',
-      dueText: 'Due in 12 days',
-      dueColor: '#2563eb',
-      dueBg: '#eff6ff',
-      cover: 'https://images.unsplash.com/photo-1507842229452-710892015502?w=300&auto=format&fit=crop&q=80'
-    }
-  ]);
+  const [newBookForm, setNewBookForm] = useState({
+    title: '',
+    author: '',
+    isbn: '',
+    category: 'Computer Science',
+    publisher: '',
+    year: '2025',
+    copies: 5,
+    location: 'Central Library - R3, Shelf 02',
+    description: '',
+    cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80'
+  });
 
   const [borrowingsTab, setBorrowingsTab] = useState('current'); // 'current' | 'returned' | 'overdue'
   const [wishlistTab, setWishlistTab] = useState('all'); // 'all' | 'available' | 'unavailable'
@@ -137,21 +114,6 @@ export default function Catalog({
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
-
-  useEffect(() => {
-    try {
-      const stored = localStore.listBooks({ limit: 100 });
-      if (stored?.books && stored.books.length > 0) {
-        setBooksList(stored.books);
-      } else {
-        setBooksList(INITIAL_BOOKS);
-      }
-    } catch {
-      setBooksList(INITIAL_BOOKS);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   // Filter and sort books
   const effectiveSearch = (sideSearch || searchQuery || '').trim().toLowerCase();
@@ -212,77 +174,24 @@ export default function Catalog({
   const paginatedBooks = filteredBooks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleBorrowBook = (book) => {
-    playClick();
-    playSuccessChime();
-
-    // Decrement available copy
-    setBooksList(prev => prev.map(b => b.id === book.id ? { ...b, available_copies: Math.max(0, (b.available_copies ?? 2) - 1) } : b));
-    
-    // Add to student borrowed books
-    const newBorrow = {
-      id: `b_${Date.now()}`,
-      bookId: book.id,
-      title: book.title,
-      author: book.author,
-      tags: book.tags || ['General', book.category || 'Reference'],
-      issue: '13 Sep 2026',
-      due: '27 Sep 2026',
-      dueText: 'Due in 14 days',
-      dueColor: '#059669',
-      dueBg: '#ecfdf5',
-      cover: book.cover_url
-    };
-    setBorrowedItems(prev => [newBorrow, ...prev]);
-
-    // Create local transaction
-    try {
-      localStore.createTransaction({
-        book_id: book.id,
-        borrower_name: user?.name || 'Sautrik Roy',
-        borrower_reg: user?.reg_number || 'RA2511003010052',
-        borrower_dept: user?.department || 'CSE',
-        loan_days: 14,
-        type: 'borrow'
-      });
-    } catch {}
-
-    toast.success(`"${book.title}" borrowed successfully! Return due in 14 days.`);
+    borrowBook(book, 14, { name: user?.name || 'Sautrik Roy', reg: user?.reg_number || 'RA2511003010052' });
   };
 
   const handleReturnItem = (item) => {
-    playClick();
-    playReturnChime();
-
-    setBorrowedItems(prev => prev.filter(b => b.id !== item.id));
-    setBooksList(prev => prev.map(b => (b.id === item.bookId || b.title === item.title) ? { ...b, available_copies: (b.available_copies ?? 0) + 1 } : b));
-
-    toast.success(`"${item.title}" returned to Central Library Stacks. Outstanding fines: ₹0`);
+    returnBook(item);
   };
 
   const handleRenewItem = (item) => {
-    playClick();
-    playSuccessChime();
-    setBorrowedItems(prev => prev.map(b => b.id === item.id ? { ...b, dueText: 'Due in 28 days', dueColor: '#2563eb', dueBg: '#eff6ff' } : b));
-    toast.success(`"${item.title}" renewed! New return deadline extended by 14 days.`);
+    renewBook(item.bookId || item.id);
   };
 
   const handleRenewAllEligible = () => {
-    playClick();
-    playSuccessChime();
-    setBorrowedItems(prev => prev.map(b => ({ ...b, dueText: 'Due in 28 days', dueColor: '#2563eb', dueBg: '#eff6ff' })));
-    toast.success('All eligible borrowed books renewed successfully! Next due date: 11 Oct 2026');
-  };
-
-  const toggleWishlist = (bookId) => {
-    playClick();
-    if (wishlist.includes(bookId)) {
-      setWishlist(wishlist.filter(id => id !== bookId));
-      toast.info('Removed from your Wishlist');
-    } else {
-      playSuccessChime();
-      setWishlist([...wishlist, bookId]);
-      toast.success('Added to your Wishlist!');
+    if (borrowedBooks.length === 0) {
+      toast.info('No active borrowings to renew');
+      return;
     }
+    borrowedBooks.forEach(b => renewBook(b.bookId || b.id));
+    toast.success('All eligible borrowed books renewed successfully! (+14 days)');
   };
 
   const resetAllFilters = () => {
@@ -1199,7 +1108,7 @@ export default function Catalog({
         {/* Filter Tabs */}
         <div style={{ display: 'flex', gap: 8 }}>
           {[
-            { id: 'current', label: `Currently Borrowed (${borrowedItems.length})` },
+            { id: 'current', label: `Currently Borrowed (${borrowedBooks.length})` },
             { id: 'returned', label: 'Returned (12)' },
             { id: 'overdue', label: 'Overdue (0)' }
           ].map(tab => {
@@ -1231,14 +1140,21 @@ export default function Catalog({
           
           {/* Left Borrowings List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {borrowedItems.length === 0 ? (
+            {borrowedBooks.length === 0 ? (
               <div style={{ padding: '60px 20px', textAlign: 'center', background: '#ffffff', borderRadius: 14, border: '1px solid #e2e8f0', color: '#64748b' }}>
-                You have zero books currently checked out. Browse the catalog to borrow books!
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 6 }}>Zero Active Loans</div>
+                <div>You have no books currently checked out. Browse the catalog to borrow books!</div>
+                <button
+                  onClick={() => setActiveMainTab('catalog')}
+                  style={{ marginTop: 14, padding: '8px 18px', borderRadius: 8, background: '#2563eb', color: '#ffffff', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Explore Catalog
+                </button>
               </div>
             ) : (
-              borrowedItems.map(item => (
+              borrowedBooks.map(item => (
                 <div
-                  key={item.id}
+                  key={item.id || item.bookId}
                   style={{
                     background: '#ffffff',
                     border: '1px solid #e2e8f0',
@@ -1254,7 +1170,12 @@ export default function Catalog({
                   <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
                     {/* Cover */}
                     <div style={{ width: 50, height: 68, borderRadius: 6, overflow: 'hidden', flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}>
-                      <BookCover bookId={item.bookId} title={item.title} author={item.author} coverUrl={item.cover} />
+                      <img
+                        src={item.cover || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80'}
+                        alt={item.title}
+                        onError={e => { e.currentTarget.src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80'; }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
                     </div>
 
                     {/* Info */}
@@ -1264,7 +1185,7 @@ export default function Catalog({
                       
                       {/* Tags */}
                       <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                        {item.tags.map(t => (
+                        {(item.tags || ['Computer Science', 'Curriculum']).map(t => (
                           <span key={t} style={{ fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', padding: '2px 8px', borderRadius: 4 }}>
                             {t}
                           </span>
@@ -1277,12 +1198,12 @@ export default function Catalog({
                   <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                     <div style={{ fontSize: 12, textAlign: 'left' }}>
                       <div style={{ color: '#64748b' }}>Issue Date</div>
-                      <div style={{ fontWeight: 600, color: '#0f172a', marginTop: 2 }}>{item.issue}</div>
+                      <div style={{ fontWeight: 600, color: '#0f172a', marginTop: 2 }}>{item.issue || '13 Sep 2026'}</div>
                     </div>
 
                     <div style={{ fontSize: 12, textAlign: 'left' }}>
                       <div style={{ color: '#64748b' }}>Due Date</div>
-                      <div style={{ fontWeight: 600, color: '#0f172a', marginTop: 2 }}>{item.due}</div>
+                      <div style={{ fontWeight: 600, color: '#0f172a', marginTop: 2 }}>{item.due || '27 Sep 2026'}</div>
                     </div>
 
                     {/* Due Badge */}
@@ -1291,29 +1212,29 @@ export default function Catalog({
                       borderRadius: 6,
                       fontSize: 12,
                       fontWeight: 700,
-                      color: item.dueColor,
-                      background: item.dueBg,
+                      color: item.dueColor || '#059669',
+                      background: item.dueBg || '#ecfdf5',
                       whiteSpace: 'nowrap'
                     }}>
-                      {item.dueText}
+                      {item.dueText || 'Due in 14 days'}
                     </span>
 
                     {/* Action Buttons */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <button
-                        onClick={() => handleReturnItem(item)}
+                        onClick={() => returnBook(item)}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: 6,
-                          padding: '6px 14px',
+                          padding: '5px 14px',
                           borderRadius: 6,
+                          border: 'none',
                           background: '#0f172a',
                           color: '#ffffff',
                           fontSize: 12,
                           fontWeight: 600,
-                          border: 'none',
                           cursor: 'pointer'
                         }}
                       >
@@ -1322,7 +1243,7 @@ export default function Catalog({
                       </button>
 
                       <button
-                        onClick={() => handleRenewItem(item)}
+                        onClick={() => renewBook(item.bookId || item.id)}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1343,12 +1264,7 @@ export default function Catalog({
                       </button>
                     </div>
 
-                    <button
-                      onClick={() => toast.info(`Options for ${item.title}`)}
-                      style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
-                    >
-                      <MoreVertical size={16} />
-                    </button>
+                    <BookActionMenu book={item} isBorrowed={true} align="right" />
                   </div>
                 </div>
               ))
@@ -1380,7 +1296,7 @@ export default function Catalog({
                 <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#2563eb' }}>
                     <BookOpen size={16} />
-                    <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{borrowedItems.length}</span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{borrowedBooks.length}</span>
                   </div>
                   <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Currently Borrowed</div>
                 </div>
@@ -1396,7 +1312,7 @@ export default function Catalog({
                 <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #f1f5f9' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#059669' }}>
                     <ShieldCheck size={16} />
-                    <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>10</span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{10 + borrowedBooks.length}</span>
                   </div>
                   <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Total Borrowed</div>
                 </div>
@@ -2129,27 +2045,14 @@ export default function Catalog({
                     onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)'; }}
                   >
                     {/* 3 Dots Menu Button */}
-                    <button
-                      onClick={() => toast.info(`${book.title} (ISBN: ${book.isbn || 'N/A'}) - Shelf ${book.shelf_location || 'A-102'}`)}
-                      style={{
-                        position: 'absolute',
-                        top: 18,
-                        right: 18,
-                        zIndex: 10,
-                        background: 'rgba(255, 255, 255, 0.9)',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: 6,
-                        width: 24,
-                        height: 24,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#64748b',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <MoreVertical size={13} />
-                    </button>
+                    <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 10 }}>
+                      <BookActionMenu 
+                        book={book} 
+                        onViewDetails={setSelectedBook} 
+                        align="right" 
+                        buttonStyle={{ background: 'rgba(255, 255, 255, 0.9)', borderRadius: 6, border: '1px solid #e2e8f0', width: 24, height: 24 }}
+                      />
+                    </div>
 
                     {/* Book Cover Thumbnail with Spine */}
                     <div onClick={() => setSelectedBook(book)} style={{ cursor: 'pointer' }}>
@@ -2232,6 +2135,24 @@ export default function Catalog({
                             }}
                           >
                             Reserve
+                          </button>
+                        ) : borrowedBooks.some(b => b.bookId === book.id || b.id === book.id || b.title === book.title) ? (
+                          <button
+                            onClick={() => handleReturnItem(book)}
+                            title="Click to return book to stacks"
+                            style={{
+                              flex: 1,
+                              padding: '7px 0',
+                              borderRadius: 6,
+                              background: '#ecfdf5',
+                              color: '#059669',
+                              fontSize: 12,
+                              fontWeight: 700,
+                              border: '1px solid #a7f3d0',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            ✓ Borrowed (Return)
                           </button>
                         ) : (
                           <button

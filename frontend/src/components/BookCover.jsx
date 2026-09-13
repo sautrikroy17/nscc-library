@@ -285,9 +285,10 @@ export default function BookCover({ bookId, title, author, coverUrl, width = '10
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        padding: '10% 8%',
+        padding: '8% 6%',
         userSelect: 'none',
         aspectRatio: '3 / 4.2',
+        contain: 'paint',
         ...style
       }}
     >
@@ -333,17 +334,17 @@ export default function BookCover({ bookId, title, author, coverUrl, width = '10
 
       {artwork.coverStyle === 'os-concepts' && (
         <>
-          <div style={{ zIndex: 1 }}>
-            <div style={{ fontSize: '0.95rem', color: '#ffffff', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Operating System Concepts</div>
-            <div style={{ fontSize: '0.55rem', color: '#bfdbfe', marginTop: 2 }}>Silberschatz, Galvin, Gagne</div>
+          <div style={{ zIndex: 1, overflow: 'hidden' }}>
+            <div style={{ fontSize: 'clamp(0.6rem, 11%, 0.95rem)', lineHeight: 1.15, color: '#ffffff', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>Operating System Concepts</div>
+            <div style={{ fontSize: 'clamp(0.45rem, 7%, 0.55rem)', color: '#bfdbfe', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Silberschatz, Galvin, Gagne</div>
           </div>
-          {/* Architectural Dinosaur silhoutte abstract graphics */}
+          {/* Architectural Dinosaur silhouette abstract graphics */}
           <div style={{
             position: 'absolute',
             bottom: '15%',
             left: '10%',
             right: '10%',
-            height: '45%',
+            height: '40%',
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'space-around',
@@ -353,7 +354,7 @@ export default function BookCover({ bookId, title, author, coverUrl, width = '10
             <div style={{ width: '30%', height: '95%', background: '#60a5fa', borderRadius: '6px 6px 0 0', boxShadow: '0 0 15px rgba(96, 165, 250, 0.6)' }} />
             <div style={{ width: '25%', height: '60%', background: '#2563eb', borderRadius: '4px 4px 0 0' }} />
           </div>
-          <div style={{ zIndex: 1, display: 'flex', justifyContent: 'space-between', fontSize: '0.55rem', color: '#93c5fd', fontWeight: 700 }}>
+          <div style={{ zIndex: 1, display: 'flex', justifyContent: 'space-between', fontSize: 'clamp(0.42rem, 6%, 0.55rem)', color: '#93c5fd', fontWeight: 700 }}>
             <span>Wiley</span>
             <span>10th Edition</span>
           </div>
