@@ -137,6 +137,7 @@ export default function App() {
       case 'study':        return <StudyRoom />;
       case 'ai':           return <AIAssistant />;
       case 'settings':     return <AdminPanel defaultTab="settings" />;
+      case 'notifications': return <AdminPanel defaultTab="settings" initialSubTab="notifications" />;
       default:             return <Dashboard onNavigate={setActivePage} />;
     }
   };
@@ -259,11 +260,21 @@ export default function App() {
             </button>
 
             {/* User Profile Pill matching Mockup */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10
-            }}>
+            <div 
+              onClick={() => { playClick(); setActivePage('settings'); }}
+              title="View Profile & Settings"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: 8,
+                transition: 'background 120ms'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
               <img
                 src={isStudent ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80" : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"}
                 alt="Avatar"

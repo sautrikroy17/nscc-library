@@ -105,6 +105,18 @@ export default function Catalog({
   // Wishlist state
   const [wishlist, setWishlist] = useState(['BK004', 'BK008', 'BK009', 'BK012']);
 
+  // Borrowings & History state (Panel 8)
+  const [borrowedItems, setBorrowedItems] = useState([
+    { id: '1', book_id: 'BK002', title: 'Clean Code', issue: '01 Sep 2025', due: '15 Sep 2025', status: 'Due in 2 days', color: '#ef4444', bg: '#fef2f2' },
+    { id: '2', book_id: 'BK006', title: 'Operating System Concepts', issue: '28 Aug 2025', due: '12 Sep 2025', status: 'Due in 5 days', color: '#f59e0b', bg: '#fffbeb' },
+    { id: '3', book_id: 'BK007', title: 'Database System Concepts', issue: '20 Aug 2025', due: '05 Sep 2025', status: 'Due in 12 days', color: '#64748b', bg: '#f8fafc' }
+  ]);
+
+  const [historyItems, setHistoryItems] = useState([
+    { id: '4', book_id: 'BK005', title: 'Computer Networks', issue: '10 Aug 2025', returned: '24 Aug 2025', status: 'Returned', color: '#10b981', bg: '#ecfdf5' },
+    { id: '5', book_id: 'BK001', title: 'Introduction to Algorithms', issue: '15 Jul 2025', returned: '29 Jul 2025', status: 'Returned', color: '#10b981', bg: '#ecfdf5' }
+  ]);
+
   useEffect(() => {
     try {
       const localBooks = localStore.listBooks({ limit: 100 });
@@ -122,25 +134,42 @@ export default function Catalog({
   const handleBorrow = (book) => {
     playClick();
     playSuccessChime();
-    toast.success(`"${book.title}" borrowed successfully! Return due in 14 days.`);
-    setActiveLoans(prev => [
+    setBooksList(prev => prev.map(b => b.id === book.id ? { ...b, available_copies: Math.max(0, (b.available_copies ?? 2) - 1) } : b));
+    setBorrowedItems(prev => [
       {
-        id: `TXN_${Date.now()}`,
+        id: `loan_${Date.now()}`,
         book_id: book.id,
-        book_title: book.title,
-        issue_date: '13 Sep 2026',
-        due_date: '27 Sep 2026',
-        status: 'issued'
+        title: book.title,
+        issue: '13 Sep 2026',
+        due: '27 Sep 2026',
+        status: 'Due in 14 days',
+        color: '#10b981',
+        bg: '#ecfdf5'
       },
       ...prev
     ]);
+    toast.success(`"${book.title}" borrowed successfully! Return due in 14 days.`);
   };
 
-  const handleReturn = (txId, bookTitle) => {
+  const handleReturnItem = (item) => {
     playClick();
-    playSuccessChime();
-    toast.success(`"${bookTitle}" returned successfully! Thank you.`);
-    setActiveLoans(prev => prev.filter(t => t.id !== txId));
+    playReturnChime();
+    setBorrowedItems(prev => prev.filter(b => b.id !== item.id));
+    setHistoryItems(prev => [
+      {
+        id: `ret_${Date.now()}`,
+        book_id: item.book_id || item.id,
+        title: item.title,
+        issue: item.issue,
+        returned: '13 Sep 2026',
+        status: 'Returned',
+        color: '#10b981',
+        bg: '#ecfdf5'
+      },
+      ...prev
+    ]);
+    setBooksList(prev => prev.map(b => (b.id === item.book_id || b.title === item.title) ? { ...b, available_copies: (b.available_copies ?? 0) + 1 } : b));
+    toast.success(`"${item.title}" returned successfully! Fine assessment: ₹0`);
   };
 
   const toggleWishlist = (bookId) => {
@@ -155,16 +184,22 @@ export default function Catalog({
     }
   };
 
-  // Filtered books
+  // Filtered & Sorted books
   const filteredBooks = booksList.filter(book => {
-    const matchesSearch = !searchQuery || 
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = (searchQuery || '').toLowerCase();
+    const matchesSearch = !q || 
+      book.title.toLowerCase().includes(q) ||
+      book.author.toLowerCase().includes(q) ||
+      (book.isbn && book.isbn.toLowerCase().includes(q));
     const matchesCat = selectedCategory === 'All' || book.category === selectedCategory;
     const matchesAuthor = selectedAuthor === 'All' || book.author.toLowerCase().includes(selectedAuthor.toLowerCase());
     const matchesAvail = selectedAvailability === 'All' || 
       (selectedAvailability === 'Available' && (book.available_copies ?? 2) > 0);
     return matchesSearch && matchesCat && matchesAuthor && matchesAvail;
+  }).sort((a, b) => {
+    if (selectedSort === 'Title') return a.title.localeCompare(b.title);
+    if (selectedSort === 'Newest') return (b.published_year || 2024) - (a.published_year || 2024);
+    return 0; // Popular default
   });
 
   /* ═══════════════════════════════════════════════════════════
@@ -335,30 +370,120 @@ export default function Catalog({
               {/* Tabs: Overview, Details, Reviews, Related Books */}
               <div style={{ marginTop: 18, borderTop: '1px solid #f1f5f9', paddingTop: 18 }}>
                 <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid #e2e8f0', paddingBottom: 10 }}>
-                  {['Overview', 'Details', 'Reviews', 'Related Books'].map(tab => {
-                    const id = tab.toLowerCase().replace(' ', '_');
-                    const isActive = detailTab === id;
+                  {[
+                    { id: 'overview', label: 'Overview' },
+                    { id: 'details', label: 'Details' },
+                    { id: 'reviews', label: 'Reviews' },
+                    { id: 'related_books', label: 'Related Books' }
+                  ].map(tab => {
+                    const isActive = detailTab === tab.id;
                     return (
                       <button
-                        key={tab}
-                        onClick={() => setDetailTab(id)}
+                        key={tab.id}
+                        onClick={() => setDetailTab(tab.id)}
                         style={{
                           fontSize: 13,
                           fontWeight: isActive ? 700 : 500,
                           color: isActive ? '#0f172a' : '#64748b',
                           borderBottom: isActive ? '2px solid #0f172a' : '2px solid transparent',
                           paddingBottom: 8,
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          background: 'none',
+                          border: 'none'
                         }}
                       >
-                        {tab}
+                        {tab.label}
                       </button>
                     );
                   })}
                 </div>
 
-                <div style={{ paddingTop: 14, fontSize: 13.5, color: '#475569', lineHeight: 1.65 }}>
-                  {meta.desc}
+                <div style={{ paddingTop: 14 }}>
+                  {detailTab === 'overview' && (
+                    <div style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.65 }}>
+                      <p style={{ margin: '0 0 10px 0' }}>{meta.desc}</p>
+                      <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
+                        Curriculum relevance: Recommended syllabus reference for B.Tech Computer Science and IT semesters at SRM Institute of Science and Technology.
+                      </p>
+                    </div>
+                  )}
+
+                  {detailTab === 'details' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ color: '#64748b' }}>Full Title</span>
+                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{selectedBook.title}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ color: '#64748b' }}>Primary Author</span>
+                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{selectedBook.author}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ color: '#64748b' }}>ISBN-13</span>
+                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{meta.isbn}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ color: '#64748b' }}>Language</span>
+                        <span style={{ fontWeight: 600, color: '#0f172a' }}>English</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ color: '#64748b' }}>Print Length</span>
+                        <span style={{ fontWeight: 600, color: '#0f172a' }}>464 Pages</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ color: '#64748b' }}>Classification</span>
+                        <span style={{ fontWeight: 600, color: '#0f172a' }}>QA76.73 .J38 M37</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {detailTab === 'reviews' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {[
+                        { name: 'Dr. K. Ramanathan', role: 'Faculty, CSE Dept', rating: 5, date: '2 weeks ago', text: 'Essential reading for any software engineering student. Clear examples and principles that every graduate should master.' },
+                        { name: 'Ananya Iyer', role: '3rd Year B.Tech', rating: 5, date: 'Last month', text: 'Helped me immensely during technical interview preparations for core placement season!' },
+                        { name: 'Vignesh M.', role: '2nd Year CSE', rating: 4, date: '2 months ago', text: 'Great practical guidelines on refactoring and writing readable code.' }
+                      ].map((rev, i) => (
+                        <div key={i} style={{ padding: 12, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{rev.name} <span style={{ fontWeight: 400, color: '#64748b', fontSize: 11.5 }}>· {rev.role}</span></div>
+                            <span style={{ fontSize: 11, color: '#94a3b8' }}>{rev.date}</span>
+                          </div>
+                          <div style={{ fontSize: 12.5, color: '#475569', lineHeight: 1.5 }}>{rev.text}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {detailTab === 'related_books' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+                      {booksList.filter(b => b.id !== selectedBook.id).slice(0, 3).map(rb => (
+                        <div 
+                          key={rb.id}
+                          onClick={() => { playClick(); setSelectedBook(rb); }}
+                          style={{
+                            padding: 10,
+                            borderRadius: 8,
+                            border: '1px solid #e2e8f0',
+                            background: '#f8fafc',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            transition: 'transform 120ms'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                          onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+                        >
+                          <img
+                            src={rb.cover_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&auto=format&fit=crop&q=80'}
+                            alt={rb.title}
+                            style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 4, marginBottom: 8 }}
+                          />
+                          <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rb.title}</div>
+                          <div style={{ fontSize: 11, color: '#64748b' }}>{rb.author}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -372,113 +497,119 @@ export default function Catalog({
      SCREEN 7: MY WISHLIST VIEW (Panel 7 in Mockup)
      ═══════════════════════════════════════════════════════════ */
   if (initialTab === 'wishlist') {
-    const wishlistItems = [
-      {
-        id: 'BK004',
-        title: 'Design Patterns',
-        author: 'Gamma et al.',
-        date: '12 Aug 2025',
-        available: true,
-        cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 'BK008',
-        title: 'Artificial Intelligence',
-        author: 'Stuart Russell',
-        date: '5 Aug 2025',
-        available: true,
-        cover: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777b?w=300&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 'BK009',
-        title: 'Modern Web Development',
-        author: 'Brad Traversy',
-        date: '18 July 2025',
-        available: false,
-        cover: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=300&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 'BK012',
-        title: 'System Design',
-        author: 'Alex Xu',
-        date: '16 Jul 2025',
-        available: true,
-        cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300&auto=format&fit=crop&q=80'
-      }
-    ];
-
     return (
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>
-          My Wishlist
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+              My Wishlist
+            </h1>
+            <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+              Titles saved for future reading and research
+            </div>
+          </div>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: '#64748b' }}>
+            {wishlist.length} saved titles
+          </span>
+        </div>
 
         <div className="card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {wishlistItems.map(item => (
-            <div
-              key={item.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 18px',
-                borderRadius: 10,
-                border: '1px solid #f1f5f9',
-                background: '#ffffff',
-                transition: 'all 120ms'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#f1f5f9'; e.currentTarget.style.background = '#ffffff'; }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <img
-                  src={item.cover}
-                  alt={item.title}
-                  style={{ width: 44, height: 60, borderRadius: 4, objectFit: 'cover', border: '1px solid #e2e8f0' }}
-                />
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{item.title}</div>
-                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{item.author}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Added date {item.date}</div>
-                </div>
-              </div>
-
-              <div>
-                {item.available ? (
-                  <button
-                    onClick={() => { playClick(); playSuccessChime(); toast.success(`"${item.title}" borrowed successfully!`); }}
-                    style={{
-                      padding: '8px 22px',
-                      borderRadius: 8,
-                      background: '#111827',
-                      color: '#ffffff',
-                      fontWeight: 700,
-                      fontSize: 12.5,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Borrow
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => { playClick(); toast.info(`We will notify you when "${item.title}" becomes available.`); }}
-                    style={{
-                      padding: '8px 18px',
-                      borderRadius: 8,
-                      background: '#fffbeb',
-                      border: '1px solid #fde68a',
-                      color: '#d97706',
-                      fontWeight: 700,
-                      fontSize: 12.5,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Notify Me
-                  </button>
-                )}
-              </div>
+          {wishlist.length === 0 ? (
+            <div style={{ padding: '40px 0', textAlign: 'center', color: '#64748b', fontSize: 13.5 }}>
+              Your wishlist is empty. Browse books and click "Add to Wishlist" to save titles here!
             </div>
-          ))}
+          ) : (
+            booksList.filter(b => wishlist.includes(b.id)).map(item => {
+              const isAvail = (item.available_copies ?? 2) > 0;
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '14px 18px',
+                    borderRadius: 10,
+                    border: '1px solid #f1f5f9',
+                    background: '#ffffff',
+                    transition: 'all 120ms'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#f1f5f9'; e.currentTarget.style.background = '#ffffff'; }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <img
+                      src={item.cover_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80'}
+                      alt={item.title}
+                      style={{ width: 44, height: 60, borderRadius: 4, objectFit: 'cover', border: '1px solid #e2e8f0' }}
+                    />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{item.title}</div>
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{item.author} · Shelf: {item.shelf_location || 'A-102'}</div>
+                      <div style={{ fontSize: 11, color: isAvail ? '#16a34a' : '#ea580c', fontWeight: 600, marginTop: 4 }}>
+                        {isAvail ? `• ${item.available_copies ?? 2} copies in stock` : '• Checked out by readers'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {isAvail ? (
+                      <button
+                        onClick={() => {
+                          handleBorrow(item);
+                          setWishlist(prev => prev.filter(id => id !== item.id));
+                        }}
+                        style={{
+                          padding: '8px 22px',
+                          borderRadius: 8,
+                          background: '#111827',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: 12.5,
+                          cursor: 'pointer',
+                          border: 'none'
+                        }}
+                      >
+                        Borrow
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { playClick(); toast.info(`Reservation alert registered! We will notify you when "${item.title}" is returned.`); }}
+                        style={{
+                          padding: '8px 18px',
+                          borderRadius: 8,
+                          background: '#fffbeb',
+                          border: '1px solid #fde68a',
+                          color: '#d97706',
+                          fontWeight: 700,
+                          fontSize: 12.5,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Notify Me
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => toggleWishlist(item.id)}
+                      title="Remove from Wishlist"
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        color: '#64748b',
+                        fontSize: 12,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     );
@@ -543,67 +674,75 @@ export default function Catalog({
 
         {/* Table (Panel 8) */}
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Book</th>
-                <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Issue Date</th>
-                <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>
-                  {activeSubTab === 'borrowed' ? 'Due Date' : 'Return Date'}
-                </th>
-                <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Status</th>
-                <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(activeSubTab === 'borrowed' ? tableItems : historyItems).map(row => (
-                <tr key={row.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '16px 20px', fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>
-                    {row.title}
-                  </td>
-                  <td style={{ padding: '16px 20px', fontSize: 13, color: '#64748b' }}>
-                    {row.issue}
-                  </td>
-                  <td style={{ padding: '16px 20px', fontSize: 13, color: '#64748b' }}>
-                    {row.due || row.returned}
-                  </td>
-                  <td style={{ padding: '16px 20px' }}>
-                    <span style={{
-                      fontSize: 11.5,
-                      fontWeight: 600,
-                      color: row.color,
-                      background: row.bg,
-                      padding: '4px 10px',
-                      borderRadius: 6
-                    }}>
-                      {row.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '16px 20px' }}>
-                    {activeSubTab === 'borrowed' ? (
-                      <button
-                        onClick={() => handleReturn(row.id, row.title)}
-                        style={{
-                          padding: '6px 14px',
-                          borderRadius: 6,
-                          border: '1px solid #e2e8f0',
-                          background: '#ffffff',
-                          color: '#0f172a',
-                          fontWeight: 600,
-                          fontSize: 12,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Return
-                      </button>
-                    ) : (
-                      <span style={{ fontSize: 12, color: '#94a3b8' }}>Completed</span>
-                    )}
-                  </td>
+          {(activeSubTab === 'borrowed' ? borrowedItems : historyItems).length === 0 ? (
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b', fontSize: 13 }}>
+              {activeSubTab === 'borrowed' 
+                ? 'You currently have zero borrowed books. Browse library to issue titles!' 
+                : 'No returned loan history recorded yet.'}
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Book</th>
+                  <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Issue Date</th>
+                  <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>
+                    {activeSubTab === 'borrowed' ? 'Due Date' : 'Return Date'}
+                  </th>
+                  <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Status</th>
+                  <th style={{ padding: '14px 20px', fontSize: 12, fontWeight: 700, color: '#64748b' }}>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(activeSubTab === 'borrowed' ? borrowedItems : historyItems).map(row => (
+                  <tr key={row.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '16px 20px', fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>
+                      {row.title}
+                    </td>
+                    <td style={{ padding: '16px 20px', fontSize: 13, color: '#64748b' }}>
+                      {row.issue}
+                    </td>
+                    <td style={{ padding: '16px 20px', fontSize: 13, color: '#64748b' }}>
+                      {row.due || row.returned}
+                    </td>
+                    <td style={{ padding: '16px 20px' }}>
+                      <span style={{
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        color: row.color,
+                        background: row.bg,
+                        padding: '4px 10px',
+                        borderRadius: 6
+                      }}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '16px 20px' }}>
+                      {activeSubTab === 'borrowed' ? (
+                        <button
+                          onClick={() => handleReturnItem(row)}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: 6,
+                            border: '1px solid #e2e8f0',
+                            background: '#ffffff',
+                            color: '#0f172a',
+                            fontWeight: 600,
+                            fontSize: 12,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Return
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: 12, color: '#94a3b8' }}>Returned</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     );
@@ -746,7 +885,7 @@ export default function Catalog({
 
         {/* Book Count Pill */}
         <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-          248 Books Available
+          {filteredBooks.length} Books Available
         </div>
       </div>
 
@@ -757,7 +896,13 @@ export default function Catalog({
         gap: 20,
         marginTop: 4
       }}>
-        {filteredBooks.slice(0, 8).map(book => {
+        {filteredBooks.length === 0 ? (
+          <div style={{ gridColumn: '1 / -1', padding: '60px 0', textAlign: 'center', color: '#64748b' }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>No books matched your filter criteria</div>
+            <div style={{ fontSize: 13, marginTop: 4 }}>Try clearing the search query or selecting "All" in the filters</div>
+          </div>
+        ) : (
+          filteredBooks.slice(0, 24).map(book => {
           const isAvail = (book.available_copies ?? 2) > 0;
           return (
             <div
@@ -845,7 +990,7 @@ export default function Catalog({
               </button>
             </div>
           );
-        })}
+        }))}
       </div>
     </div>
   );

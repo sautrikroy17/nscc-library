@@ -564,20 +564,195 @@ function StudentManagement() {
 // ─────────────────────────────────────────────────────────────
 // Panel 13: Library Reports & Analytics
 // ─────────────────────────────────────────────────────────────
+const REPORT_METRICS = {
+  '7days': {
+    issues: '2,840',
+    issuesDiff: '+5.2%',
+    readers: '1,120',
+    readersDiff: '+3.1%',
+    returnRate: '97.1%',
+    overdueRate: '2.9%',
+    overdueCount: '18',
+    totalBooks: '12,482',
+    categories: [
+      { name: 'Computer Science', pct: 44, count: 1250, color: '#0f172a' },
+      { name: 'Electronics', pct: 24, count: 680, color: '#3b82f6' },
+      { name: 'Mechanical', pct: 18, count: 510, color: '#10b981' },
+      { name: 'Others', pct: 14, count: 400, color: '#f59e0b' }
+    ],
+    bars: [
+      { m: 'Mon', issued: 48, returned: 42 },
+      { m: 'Tue', issued: 64, returned: 58 },
+      { m: 'Wed', issued: 55, returned: 50 },
+      { m: 'Thu', issued: 78, returned: 72 },
+      { m: 'Fri', issued: 92, returned: 86 },
+      { m: 'Sat', issued: 36, returned: 34 },
+      { m: 'Sun', issued: 18, returned: 16 }
+    ]
+  },
+  '30days': {
+    issues: '12,482',
+    issuesDiff: '+14.2%',
+    readers: '3,421',
+    readersDiff: '+8.5%',
+    returnRate: '96.4%',
+    overdueRate: '3.6%',
+    overdueCount: '47',
+    totalBooks: '12,482',
+    categories: [
+      { name: 'Computer Science', pct: 42, count: 5242, color: '#0f172a' },
+      { name: 'Electronics', pct: 25, count: 3120, color: '#3b82f6' },
+      { name: 'Mechanical', pct: 18, count: 2246, color: '#10b981' },
+      { name: 'Others', pct: 15, count: 1874, color: '#f59e0b' }
+    ],
+    bars: [
+      { m: 'Apr', issued: 65, returned: 58 },
+      { m: 'May', issued: 82, returned: 75 },
+      { m: 'Jun', issued: 48, returned: 52 },
+      { m: 'Jul', issued: 70, returned: 64 },
+      { m: 'Aug', issued: 95, returned: 88 },
+      { m: 'Sep', issued: 110, returned: 98 }
+    ]
+  },
+  'semester': {
+    issues: '46,290',
+    issuesDiff: '+22.4%',
+    readers: '8,910',
+    readersDiff: '+12.8%',
+    returnRate: '94.8%',
+    overdueRate: '5.2%',
+    overdueCount: '142',
+    totalBooks: '12,482',
+    categories: [
+      { name: 'Computer Science', pct: 45, count: 5616, color: '#0f172a' },
+      { name: 'Electronics', pct: 23, count: 2870, color: '#3b82f6' },
+      { name: 'Mechanical', pct: 17, count: 2120, color: '#10b981' },
+      { name: 'Others', pct: 15, count: 1876, color: '#f59e0b' }
+    ],
+    bars: [
+      { m: 'Month 1', issued: 72, returned: 68 },
+      { m: 'Month 2', issued: 89, returned: 84 },
+      { m: 'Month 3', issued: 64, returned: 61 },
+      { m: 'Month 4', issued: 110, returned: 102 },
+      { m: 'Month 5', issued: 125, returned: 119 },
+      { m: 'Month 6', issued: 98, returned: 94 }
+    ]
+  },
+  'year': {
+    issues: '98,540',
+    issuesDiff: '+18.6%',
+    readers: '14,280',
+    readersDiff: '+15.4%',
+    returnRate: '95.5%',
+    overdueRate: '4.5%',
+    overdueCount: '280',
+    totalBooks: '12,482',
+    categories: [
+      { name: 'Computer Science', pct: 42, count: 5242, color: '#0f172a' },
+      { name: 'Electronics', pct: 25, count: 3120, color: '#3b82f6' },
+      { name: 'Mechanical', pct: 18, count: 2246, color: '#10b981' },
+      { name: 'Others', pct: 15, count: 1874, color: '#f59e0b' }
+    ],
+    bars: [
+      { m: '2023', issued: 78, returned: 72 },
+      { m: '2024', issued: 95, returned: 90 },
+      { m: '2025', issued: 115, returned: 108 },
+      { m: '2026', issued: 120, returned: 114 }
+    ]
+  }
+};
+
 function ReportsAnalytics() {
   const [dateRange, setDateRange] = useState('30days');
   const [reportType, setReportType] = useState('circulation');
+  const [hoveredBar, setHoveredBar] = useState(null);
+  const [hoveredCat, setHoveredCat] = useState(null);
+
+  const [finesList, setFinesList] = useState([
+    { id: 'F101', reg: 'RA2511003010112', name: 'Aarav Sharma', book: 'Clean Code', daysOverdue: 6, fine: 120, status: 'Pending' },
+    { id: 'F102', reg: 'RA2511003010098', name: 'Sneha Patil', book: 'Operating System Concepts', daysOverdue: 4, fine: 80, status: 'Pending' },
+    { id: 'F103', reg: 'RA2511003010245', name: 'Vikram Menon', book: 'Database System Concepts', daysOverdue: 9, fine: 180, status: 'Pending' },
+    { id: 'F104', reg: 'RA2511003010331', name: 'Rohan Gupta', book: 'Computer Networks', daysOverdue: 2, fine: 40, status: 'Paid' },
+    { id: 'F105', reg: 'RA2511003010419', name: 'Ananya Iyer', book: 'Artificial Intelligence', daysOverdue: 7, fine: 140, status: 'Pending' },
+  ]);
+
+  const handleCollectFine = (id, name, amount) => {
+    playCheckout();
+    setFinesList(prev => prev.map(f => f.id === id ? { ...f, status: 'Paid' } : f));
+    toast.success(`Collected ₹${amount} fine from ${name}`);
+  };
+
+  const handleWaiveFine = (id, name) => {
+    playClick();
+    setFinesList(prev => prev.map(f => f.id === id ? { ...f, status: 'Waived' } : f));
+    toast.info(`Fine waived for ${name} under institutional discretion`);
+  };
+
+  const data = REPORT_METRICS[dateRange] || REPORT_METRICS['30days'];
+  const maxBarVal = Math.max(...data.bars.flatMap(b => [b.issued, b.returned])) * 1.15;
 
   const handleExportCsv = () => {
     playClick();
-    exportData.csv({});
-    toast.success('Circulation report exported as CSV');
+    const csvRows = [
+      ['Metric', 'Value', 'Range', 'Report Type'],
+      ['Total Issues', data.issues, dateRange, reportType],
+      ['Active Readers', data.readers, dateRange, reportType],
+      ['Return Rate', data.returnRate, dateRange, reportType],
+      ['Overdue Rate', data.overdueRate, dateRange, reportType],
+      ['Delinquent Titles', data.overdueCount, dateRange, reportType],
+      [],
+      ['Category', 'Percentage', 'Volume Count'],
+      ...data.categories.map(c => [c.name, `${c.pct}%`, c.count]),
+      [],
+      ['Period', 'Issues', 'Returns'],
+      ...data.bars.map(b => [b.m, b.issued, b.returned])
+    ];
+
+    const csvContent = csvRows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `librax-${reportType}-report-${dateRange}-${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Circulation report (${dateRange}) downloaded as CSV`);
   };
 
   const handleExportExcel = () => {
     playClick();
-    exportData.excel({});
-    toast.success('Full institutional ledger exported as Excel');
+    const tsvRows = [
+      ['INSTITUTIONAL LIBRARY CIRCULATION REPORT', '', ''],
+      ['Generated On', new Date().toLocaleString(), ''],
+      ['Date Range', dateRange, ''],
+      ['Report Mode', reportType, ''],
+      [],
+      ['KEY PERFORMANCE METRIC', 'RECORDED STAT', 'GROWTH INDEX'],
+      ['Total Volumes Issued', data.issues, data.issuesDiff],
+      ['Active Student Readers', data.readers, data.readersDiff],
+      ['On-Time Return Rate', data.returnRate, 'Institutional Benchmark: 95%'],
+      ['Delinquent Overdue Rate', data.overdueRate, `${data.overdueCount} Flagged Accounts`],
+      [],
+      ['CATEGORY BREAKDOWN', 'PERCENT SHARE', 'STOCK VOLUMES'],
+      ...data.categories.map(c => [c.name, `${c.pct}%`, c.count]),
+      [],
+      ['TIMELINE ACTIVITY', 'CHECKOUTS', 'RETURNS'],
+      ...data.bars.map(b => [b.m, b.issued, b.returned])
+    ];
+
+    const tsvContent = tsvRows.map(r => r.join('\t')).join('\n');
+    const blob = new Blob([tsvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `librax-institutional-ledger-${dateRange}-${Date.now()}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Full institutional ledger (${dateRange}) downloaded as Excel`);
   };
 
   return (
@@ -589,7 +764,7 @@ function ReportsAnalytics() {
             Library Reports & Analytics
           </h1>
           <p style={{ fontSize: 13.5, color: '#64748b', margin: '4px 0 0' }}>
-            Comprehensive statistics and circulation metrics
+            Comprehensive statistics and circulation metrics for SRM IST Central Library
           </p>
         </div>
 
@@ -625,8 +800,8 @@ function ReportsAnalytics() {
           <span style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b' }}>Date Range:</span>
           <select
             value={dateRange}
-            onChange={e => setDateRange(e.target.value)}
-            style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 12.5, color: '#0f172a' }}
+            onChange={e => { playClick(); setDateRange(e.target.value); }}
+            style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 12.5, color: '#0f172a', fontWeight: 600, cursor: 'pointer', outline: 'none' }}
           >
             <option value="7days">Last 7 Days</option>
             <option value="30days">Last 30 Days</option>
@@ -639,44 +814,48 @@ function ReportsAnalytics() {
           <span style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b' }}>Report Type:</span>
           <select
             value={reportType}
-            onChange={e => setReportType(e.target.value)}
-            style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 12.5, color: '#0f172a' }}
+            onChange={e => { playClick(); setReportType(e.target.value); }}
+            style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 12.5, color: '#0f172a', fontWeight: 600, cursor: 'pointer', outline: 'none' }}
           >
             <option value="circulation">Circulation Summary</option>
             <option value="categories">Category Distribution</option>
             <option value="fines">Overdue & Fine Recovery</option>
           </select>
         </div>
+
+        <div style={{ marginLeft: 'auto', fontSize: 12, color: '#64748b' }}>
+          Showing verified institutional telemetry
+        </div>
       </div>
 
-      {/* 4 Analytics KPI Cards */}
+      {/* 4 Analytics KPI Cards (Dynamic) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
         <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '18px 20px' }}>
           <div style={{ fontSize: 11.5, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Total Issues</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>12,482</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>{data.issues}</div>
           <div style={{ fontSize: 11.5, color: '#16a34a', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <TrendingUp size={12} /> +14.2% from last month
+            <TrendingUp size={12} /> {data.issuesDiff} from previous
           </div>
         </div>
 
         <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '18px 20px' }}>
           <div style={{ fontSize: 11.5, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Active Readers</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>3,421</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>{data.readers}</div>
           <div style={{ fontSize: 11.5, color: '#16a34a', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <TrendingUp size={12} /> +8.5% active borrowers
+            <TrendingUp size={12} /> {data.readersDiff} active borrowers
           </div>
         </div>
 
         <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '18px 20px' }}>
           <div style={{ fontSize: 11.5, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Return Rate</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>96.4%</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>{data.returnRate}</div>
           <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 4 }}>On-time checkout recovery</div>
         </div>
 
         <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '18px 20px' }}>
           <div style={{ fontSize: 11.5, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Overdue Rate</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#ef4444', marginTop: 4 }}>3.6%</div>
-          <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 4 }}>47 delinquent titles</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: '#ef4444', marginTop: 4 }}>{data.overdueRate}</div>
+          <div style={{ fontSize: 11.5, color: '#ef4444', marginTop: 4 }}>{data.overdueCount} delinquent accounts</div>
         </div>
       </div>
 
@@ -684,77 +863,330 @@ function ReportsAnalytics() {
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.4fr)', gap: 24, marginBottom: 28 }}>
         {/* Left: Donut Chart - Books by Category */}
         <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 24 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 16px' }}>Books by Category</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>Books by Category</h3>
+            <span style={{ fontSize: 11.5, color: '#64748b' }}>Hover to inspect</span>
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', height: 180, marginBottom: 16 }}>
-            {/* SVG Donut */}
+            {/* SVG Donut with dynamic stroke dasharrays */}
             <svg width="170" height="170" viewBox="0 0 42 42">
-              <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#e2e8f0" strokeWidth="6" />
-              {/* Computer Science 42% */}
-              <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#0f172a" strokeWidth="6" strokeDasharray="42 58" strokeDashoffset="25" />
-              {/* Electronics 25% */}
-              <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#3b82f6" strokeWidth="6" strokeDasharray="25 75" strokeDashoffset="83" />
-              {/* Mechanical 18% */}
-              <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#10b981" strokeWidth="6" strokeDasharray="18 82" strokeDashoffset="58" />
-              {/* Others 15% */}
-              <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#f59e0b" strokeWidth="6" strokeDasharray="15 85" strokeDashoffset="40" />
+              <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#f1f5f9" strokeWidth="6" />
+              {/* Computer Science */}
+              <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#0f172a" strokeWidth="6" strokeDasharray={`${data.categories[0].pct} ${100 - data.categories[0].pct}`} strokeDashoffset="25" />
+              {/* Electronics */}
+              <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#3b82f6" strokeWidth="6" strokeDasharray={`${data.categories[1].pct} ${100 - data.categories[1].pct}`} strokeDashoffset={`${100 - data.categories[0].pct + 25}`} />
+              {/* Mechanical */}
+              <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#10b981" strokeWidth="6" strokeDasharray={`${data.categories[2].pct} ${100 - data.categories[2].pct}`} strokeDashoffset={`${100 - data.categories[0].pct - data.categories[1].pct + 25}`} />
+              {/* Others */}
+              <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#f59e0b" strokeWidth="6" strokeDasharray={`${data.categories[3].pct} ${100 - data.categories[3].pct}`} strokeDashoffset={`${100 - data.categories[0].pct - data.categories[1].pct - data.categories[2].pct + 25}`} />
             </svg>
-            <div style={{ position: 'absolute', textAlign: 'center' }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>12,482</div>
-              <div style={{ fontSize: 10.5, color: '#64748b' }}>Total Books</div>
+            <div style={{ position: 'absolute', textAlign: 'center', pointerEvents: 'none' }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
+                {hoveredCat ? `${hoveredCat.pct}%` : data.totalBooks}
+              </div>
+              <div style={{ fontSize: 10.5, color: '#64748b' }}>
+                {hoveredCat ? hoveredCat.name : 'Total Books'}
+              </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0f172a' }} /> Computer Science</span>
-              <span style={{ fontWeight: 700, color: '#0f172a' }}>42% (5,242)</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6' }} /> Electronics</span>
-              <span style={{ fontWeight: 700, color: '#0f172a' }}>25% (3,120)</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} /> Mechanical</span>
-              <span style={{ fontWeight: 700, color: '#0f172a' }}>18% (2,246)</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} /> Others</span>
-              <span style={{ fontWeight: 700, color: '#0f172a' }}>15% (1,874)</span>
-            </div>
+            {data.categories.map(cat => (
+              <div
+                key={cat.name}
+                onMouseEnter={() => setHoveredCat(cat)}
+                onMouseLeave={() => setHoveredCat(null)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  background: hoveredCat?.name === cat.name ? '#f8fafc' : 'transparent',
+                  cursor: 'pointer',
+                  transition: 'background 120ms'
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: cat.color }} />
+                  {cat.name}
+                </span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>
+                  {cat.pct}% ({cat.count.toLocaleString()})
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Right: Monthly Activity Multi-Bar Chart */}
-        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 24 }}>
+        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 24, position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>Monthly Activity (Issues vs. Returns)</h3>
+            <div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Circulation Activity ({dateRange})
+              </h3>
+              <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
+                Issues vs. Returns over the selected interval
+              </div>
+            </div>
             <div style={{ display: 'flex', gap: 12, fontSize: 11.5 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: '#0f172a' }} /> Issued</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: '#10b981' }} /> Returned</span>
             </div>
           </div>
 
-          {/* Bar Chart Bars */}
-          <div style={{ height: 210, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, paddingBottom: 24, borderBottom: '1px solid #f1f5f9' }}>
-            {[
-              { m: 'Apr', issued: 65, returned: 58 },
-              { m: 'May', issued: 82, returned: 75 },
-              { m: 'Jun', issued: 48, returned: 52 },
-              { m: 'Jul', issued: 70, returned: 64 },
-              { m: 'Aug', issued: 95, returned: 88 },
-              { m: 'Sep', issued: 110, returned: 98 },
-            ].map(col => (
-              <div key={col.m} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, height: '100%', justifyContent: 'flex-end' }}>
+          {/* Bar Chart Bars with Hover Tooltip */}
+          <div style={{ height: 210, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, paddingBottom: 24, borderBottom: '1px solid #f1f5f9', position: 'relative' }}>
+            {data.bars.map(col => (
+              <div 
+                key={col.m} 
+                onMouseEnter={() => setHoveredBar(col)}
+                onMouseLeave={() => setHoveredBar(null)}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, height: '100%', justifyContent: 'flex-end', position: 'relative', cursor: 'pointer' }}
+              >
+                {hoveredBar?.m === col.m && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 10,
+                    background: '#0f172a',
+                    color: '#ffffff',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    zIndex: 10,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }}>
+                    {col.m}: {col.issued} issues · {col.returned} returns
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: '100%' }}>
-                  <div style={{ width: 14, height: `${(col.issued / 120) * 100}%`, background: '#0f172a', borderRadius: '4px 4px 0 0' }} />
-                  <div style={{ width: 14, height: `${(col.returned / 120) * 100}%`, background: '#10b981', borderRadius: '4px 4px 0 0' }} />
+                  <div style={{
+                    width: 14,
+                    height: `${Math.min(100, Math.max(12, (col.issued / maxBarVal) * 100))}%`,
+                    background: '#0f172a',
+                    borderRadius: '4px 4px 0 0',
+                    transition: 'all 200ms'
+                  }} />
+                  <div style={{
+                    width: 14,
+                    height: `${Math.min(100, Math.max(12, (col.returned / maxBarVal) * 100))}%`,
+                    background: '#10b981',
+                    borderRadius: '4px 4px 0 0',
+                    transition: 'all 200ms'
+                  }} />
                 </div>
-                <span style={{ fontSize: 11.5, color: '#64748b' }}>{col.m}</span>
+                <span style={{ fontSize: 11.5, color: '#64748b', fontWeight: 600 }}>{col.m}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Dynamic Report Section based on reportType */}
+      {reportType === 'circulation' && (
+        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Top Borrowed Books Leaderboard ({dateRange})
+              </h3>
+              <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                Most requested catalog volumes and shelf utilization rates
+              </div>
+            </div>
+            <span style={{ fontSize: 11.5, fontWeight: 700, background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: 6 }}>
+              SRM IST Central Library
+            </span>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>RANK</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>BOOK & AUTHOR</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>CATEGORY</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>TIMES ISSUED</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>UTILIZATION</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>AVAILABILITY</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { rank: '#1', title: 'Clean Code: A Handbook of Agile Craftsmanship', author: 'Robert C. Martin', cat: 'Computer Science', count: 342, util: '98%', status: 'In Demand', badgeBg: '#ecfdf5', badgeCol: '#16a34a' },
+                { rank: '#2', title: 'Operating System Concepts (10th Edition)', author: 'Silberschatz & Galvin', cat: 'Computer Science', count: 298, util: '94%', status: 'In Demand', badgeBg: '#ecfdf5', badgeCol: '#16a34a' },
+                { rank: '#3', title: 'Introduction to Algorithms (CLRS)', author: 'Thomas H. Cormen', cat: 'Computer Science', count: 275, util: '91%', status: 'Active', badgeBg: '#f8fafc', badgeCol: '#334155' },
+                { rank: '#4', title: 'Database System Concepts', author: 'Abraham Silberschatz', cat: 'Computer Science', count: 214, util: '86%', status: 'Active', badgeBg: '#f8fafc', badgeCol: '#334155' },
+                { rank: '#5', title: 'Computer Networks: A Top-Down Approach', author: 'James F. Kurose', cat: 'Computer Science', count: 189, util: '82%', status: 'Active', badgeBg: '#f8fafc', badgeCol: '#334155' },
+                { rank: '#6', title: 'Digital Design & Computer Architecture', author: 'David Harris', cat: 'Electronics', count: 145, util: '76%', status: 'Available', badgeBg: '#f0fdf4', badgeCol: '#15803d' }
+              ].map(row => (
+                <tr key={row.rank} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '14px 20px', fontWeight: 800, color: '#0f172a' }}>{row.rank}</td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <div style={{ fontWeight: 700, color: '#0f172a' }}>{row.title}</div>
+                    <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>{row.author}</div>
+                  </td>
+                  <td style={{ padding: '14px 20px', color: '#475569' }}>{row.cat}</td>
+                  <td style={{ padding: '14px 20px', fontWeight: 700, color: '#0f172a' }}>{row.count} issues</td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 60, height: 6, background: '#f1f5f9', borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ width: row.util, height: '100%', background: '#0f172a', borderRadius: 3 }} />
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>{row.util}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 700, color: row.badgeCol, background: row.badgeBg, padding: '3px 8px', borderRadius: 6 }}>
+                      {row.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {reportType === 'categories' && (
+        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+              Category Stock & Turnover Telemetry
+            </h3>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+              Inventory distribution, checkout velocity, and active stack quotas
+            </div>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>DEPARTMENT</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>TOTAL VOLUMES</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>CATALOG SHARE</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>ACTIVE LOANS</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>CIRCULATION VELOCITY</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.categories.map(c => (
+                <tr key={c.name} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '14px 20px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: c.color }} />
+                    {c.name}
+                  </td>
+                  <td style={{ padding: '14px 20px', fontWeight: 700, color: '#0f172a' }}>{c.count.toLocaleString()} books</td>
+                  <td style={{ padding: '14px 20px', color: '#475569' }}>{c.pct}% of total stack</td>
+                  <td style={{ padding: '14px 20px', color: '#16a34a', fontWeight: 600 }}>{Math.round(c.count * 0.28).toLocaleString()} on loan</td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 700, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a', padding: '3px 8px', borderRadius: 6 }}>
+                      High Velocity ({Math.round(c.pct * 1.8)}% / mo)
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {reportType === 'fines' && (
+        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Overdue Penalties & Fine Recovery Ledger
+              </h3>
+              <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                Real-time collection management for delinquent book checkout accounts
+              </div>
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#b91c1c', background: '#fef2f2', padding: '6px 12px', borderRadius: 8 }}>
+              ₹20 / day institutional grace rate
+            </div>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>STUDENT</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>TITLE OVERDUE</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>DAYS OVERDUE</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>FINE ACCRUED</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>STATUS</th>
+                <th style={{ padding: '12px 20px', fontSize: 11.5, fontWeight: 700, color: '#64748b' }}>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {finesList.map(item => (
+                <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '14px 20px' }}>
+                    <div style={{ fontWeight: 700, color: '#0f172a' }}>{item.name}</div>
+                    <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>{item.reg}</div>
+                  </td>
+                  <td style={{ padding: '14px 20px', fontWeight: 600, color: '#334155' }}>{item.book}</td>
+                  <td style={{ padding: '14px 20px', color: '#ef4444', fontWeight: 700 }}>{item.daysOverdue} days</td>
+                  <td style={{ padding: '14px 20px', fontWeight: 800, color: '#0f172a' }}>₹{item.fine}</td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <span style={{
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      color: item.status === 'Paid' ? '#16a34a' : item.status === 'Waived' ? '#64748b' : '#ea580c',
+                      background: item.status === 'Paid' ? '#ecfdf5' : item.status === 'Waived' ? '#f1f5f9' : '#fffbeb',
+                      padding: '3px 8px',
+                      borderRadius: 6
+                    }}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '14px 20px' }}>
+                    {item.status === 'Pending' ? (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          onClick={() => handleCollectFine(item.id, item.name, item.fine)}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: 6,
+                            border: 'none',
+                            background: '#0f172a',
+                            color: '#ffffff',
+                            fontWeight: 600,
+                            fontSize: 12,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Collect
+                        </button>
+                        <button
+                          onClick={() => handleWaiveFine(item.id, item.name)}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            border: '1px solid #e2e8f0',
+                            background: '#ffffff',
+                            color: '#64748b',
+                            fontWeight: 600,
+                            fontSize: 12,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Waive
+                        </button>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 12, color: '#94a3b8' }}>Settled</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -762,9 +1194,14 @@ function ReportsAnalytics() {
 // ─────────────────────────────────────────────────────────────
 // Panel 15: Settings / Profile
 // ─────────────────────────────────────────────────────────────
-function SettingsProfile() {
+function SettingsProfile({ initialSubTab = 'profile' }) {
   const { user } = useAuth();
-  const [subTab, setSubTab] = useState('profile'); // 'profile' | 'notifications' | 'preferences' | 'security'
+  const [subTab, setSubTab] = useState(initialSubTab);
+
+  useEffect(() => {
+    if (initialSubTab) setSubTab(initialSubTab);
+  }, [initialSubTab]);
+
   const isStudent = user?.role === 'student';
 
   const [form, setForm] = useState({
@@ -1129,7 +1566,7 @@ function OverdueManagement() {
 // ─────────────────────────────────────────────────────────────
 // Master Admin Panel Component
 // ─────────────────────────────────────────────────────────────
-export default function AdminPanel({ defaultTab = 'students' }) {
+export default function AdminPanel({ defaultTab = 'students', initialSubTab = 'profile' }) {
   const [activeSection, setActiveSection] = useState(defaultTab);
   const [showAddBook, setShowAddBook] = useState(false);
 
@@ -1185,7 +1622,7 @@ export default function AdminPanel({ defaultTab = 'students' }) {
       {activeSection === 'reports' && <ReportsAnalytics />}
       {activeSection === 'add_book' && <AddBookForm onBookAdded={() => setActiveSection('students')} />}
       {activeSection === 'overdue' && <OverdueManagement />}
-      {activeSection === 'settings' && <SettingsProfile />}
+      {activeSection === 'settings' && <SettingsProfile initialSubTab={initialSubTab} />}
     </div>
   );
 }
