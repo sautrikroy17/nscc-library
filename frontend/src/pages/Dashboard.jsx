@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BookOpen, 
   Clock, 
@@ -49,8 +50,9 @@ export default function Dashboard({ onNavigate = () => {} }) {
   const greetingName = isLibrarian ? (user?.name || 'Librarian (LIB-SRM-042)') : (user?.name || 'Sautrik Roy');
 
   // Timeframe state for Librarian trend chart
-  const [trendPeriod, setTrendPeriod] = useState('week');
-  const [hoveredBar, setHoveredBar] = useState(null);
+  const [trendPeriod, setTrendPeriod] = useState('30');
+  const [hoveredTrendIdx, setHoveredTrendIdx] = useState(null);
+  const [hoveredStudentBar, setHoveredStudentBar] = useState(null);
   const [showHoursModal, setShowHoursModal] = useState(false);
   const [progressPeriod, setProgressPeriod] = useState('semester');
 
@@ -86,38 +88,9 @@ export default function Dashboard({ onNavigate = () => {} }) {
     }
   ];
 
-  // ── Librarian Issue/Return Trend Data across periods (Panel 9) ──
-  const TREND_DATA_SETS = {
-    week: [
-      { date: 'Aug 26', issued: 48, returned: 38 },
-      { date: 'Aug 29', issued: 72, returned: 54 },
-      { date: 'Sep 02', issued: 88, returned: 65 },
-      { date: 'Sep 05', issued: 64, returned: 70 },
-      { date: 'Sep 09', issued: 92, returned: 84 },
-      { date: 'Sep 12', issued: 78, returned: 68 }
-    ],
-    month: [
-      { date: 'Week 1', issued: 280, returned: 240 },
-      { date: 'Week 2', issued: 340, returned: 310 },
-      { date: 'Week 3', issued: 410, returned: 380 },
-      { date: 'Week 4', issued: 360, returned: 350 }
-    ],
-    semester: [
-      { date: 'Jun', issued: 820, returned: 780 },
-      { date: 'Jul', issued: 1140, returned: 1050 },
-      { date: 'Aug', issued: 1480, returned: 1390 },
-      { date: 'Sep', issued: 1284, returned: 1220 }
-    ]
-  };
-
-  const currentTrend = TREND_DATA_SETS[trendPeriod] || TREND_DATA_SETS.week;
-  const maxTrendVal = Math.max(...currentTrend.flatMap(d => [d.issued, d.returned])) * 1.15;
-
-  /* ═══════════════════════════════════════════════════════════
-     LIBRARIAN DASHBOARD (Panel 9)
-     ═══════════════════════════════════════════════════════════ */
-  if (isLibrarian) {
-    const trendData = [
+  // ── Librarian Issue/Return Trend Dynamic Datasets ──
+  const LIBRARIAN_TREND_DATA = {
+    '30': [
       { date: 'Aug 14', issued: 52, returned: 44 },
       { date: 'Aug 17', issued: 40, returned: 35 },
       { date: 'Aug 20', issued: 70, returned: 42 },
@@ -128,8 +101,88 @@ export default function Dashboard({ onNavigate = () => {} }) {
       { date: 'Sep 04', issued: 82, returned: 46 },
       { date: 'Sep 07', issued: 78, returned: 94 },
       { date: 'Sep 10', issued: 98, returned: 62 },
-      { date: 'Sep 13', issued: 75, returned: 50 },
-    ];
+      { date: 'Sep 13', issued: 75, returned: 50 }
+    ],
+    '7': [
+      { date: 'Sep 07', issued: 78, returned: 94 },
+      { date: 'Sep 08', issued: 64, returned: 58 },
+      { date: 'Sep 09', issued: 85, returned: 72 },
+      { date: 'Sep 10', issued: 98, returned: 62 },
+      { date: 'Sep 11', issued: 56, returned: 68 },
+      { date: 'Sep 12', issued: 72, returned: 65 },
+      { date: 'Sep 13', issued: 75, returned: 50 }
+    ],
+    '90': [
+      { date: 'Jun', issued: 420, returned: 380 },
+      { date: 'Jul', issued: 680, returned: 590 },
+      { date: 'Aug', issued: 940, returned: 860 },
+      { date: 'Sep', issued: 1284, returned: 1120 },
+      { date: 'Oct', issued: 820, returned: 750 },
+      { date: 'Nov', issued: 690, returned: 640 }
+    ],
+    'year': [
+      { date: 'Q1 Fall', issued: 2640, returned: 2380 },
+      { date: 'Q2 Winter', issued: 3150, returned: 2920 },
+      { date: 'Q3 Spring', issued: 3820, returned: 3510 },
+      { date: 'Q4 Summer', issued: 1890, returned: 1780 }
+    ]
+  };
+
+  // ── Student Reading Progress Datasets ──
+  const STUDENT_PROGRESS_CONFIG = {
+    semester: {
+      read: 12,
+      goal: 20,
+      percent: 60,
+      periodLabel: 'This Semester',
+      encouragement: "You're 8 books away from your semester goal!",
+      bars: [
+        { label: 'Jul', books: 2, detail: '2 books completed' },
+        { label: 'Aug', books: 3, detail: '3 books completed' },
+        { label: 'Sep', books: 4, detail: '4 books completed', active: true },
+        { label: 'Oct', books: 2, detail: '2 books planned' },
+        { label: 'Nov', books: 1, detail: '1 book planned' },
+        { label: 'Dec', books: 0, detail: 'Semester exam reading' }
+      ]
+    },
+    year: {
+      read: 24,
+      goal: 35,
+      percent: 69,
+      periodLabel: 'Full Academic Year',
+      encouragement: "You're 11 books away from your annual goal!",
+      bars: [
+        { label: 'Q1 Fall', books: 9, detail: '9 books (Foundations & Core)' },
+        { label: 'Q2 Winter', books: 8, detail: '8 books (Systems & Electives)', active: true },
+        { label: 'Q3 Spring', books: 5, detail: '5 books planned' },
+        { label: 'Q4 Summer', books: 2, detail: '2 books planned' }
+      ]
+    },
+    monthly: {
+      read: 4,
+      goal: 5,
+      percent: 80,
+      periodLabel: 'This Month (September)',
+      encouragement: "Only 1 book remaining for this month's target!",
+      bars: [
+        { label: 'Wk 1', books: 1, detail: '1 book: Clean Code' },
+        { label: 'Wk 2', books: 1, detail: '1 book: Pragmatic Programmer' },
+        { label: 'Wk 3', books: 2, detail: '2 books: Modern Web Dev', active: true },
+        { label: 'Wk 4', books: 0, detail: '1 target book remaining' }
+      ]
+    }
+  };
+
+  /* ═══════════════════════════════════════════════════════════
+     LIBRARIAN DASHBOARD (Panel 9)
+     ═══════════════════════════════════════════════════════════ */
+  if (isLibrarian) {
+    const activeTrend = LIBRARIAN_TREND_DATA[trendPeriod] || LIBRARIAN_TREND_DATA['30'];
+    const totalIssued = activeTrend.reduce((acc, cur) => acc + cur.issued, 0);
+    const totalReturned = activeTrend.reduce((acc, cur) => acc + cur.returned, 0);
+    const returnRate = totalIssued > 0 ? Math.round((totalReturned / totalIssued) * 100) : 0;
+    const maxVal = Math.max(...activeTrend.flatMap(d => [d.issued, d.returned]), 10);
+
 
     return (
       <div style={{ maxWidth: 1380, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 22 }}>
@@ -315,55 +368,174 @@ export default function Dashboard({ onNavigate = () => {} }) {
               </div>
 
               <select
+                value={trendPeriod}
+                onChange={e => { playClick(); setTrendPeriod(e.target.value); }}
                 style={{
-                  padding: '4px 8px',
-                  borderRadius: 6,
-                  border: '1px solid #e2e8f0',
-                  background: '#f8fafc',
-                  fontSize: 11.5,
-                  fontWeight: 600,
+                  padding: '5px 10px',
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                  background: '#ffffff',
+                  fontSize: 12,
+                  fontWeight: 700,
                   color: '#0f172a',
                   outline: 'none',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                  transition: 'all 150ms'
                 }}
               >
-                <option value="30">Last 30 Days ▾</option>
+                <option value="30">Last 30 Days</option>
                 <option value="7">Last 7 Days</option>
                 <option value="90">This Semester</option>
+                <option value="year">Full Academic Year</option>
               </select>
             </div>
 
-            {/* Legend */}
-            <div style={{ display: 'flex', gap: 14, marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: '#475569', fontWeight: 600 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 2, background: '#2563eb' }} />
-                <span>Issued</span>
+            {/* Legend & Summary Metrics */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+              <div style={{ display: 'flex', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: '#334155', fontWeight: 700 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#2563eb' }} />
+                  <span>Issued ({totalIssued.toLocaleString()})</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: '#334155', fontWeight: 700 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#10b981' }} />
+                  <span>Returned ({totalReturned.toLocaleString()})</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: '#475569', fontWeight: 600 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 2, background: '#10b981' }} />
-                <span>Returned</span>
-              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#059669', background: '#ecfdf5', padding: '2px 8px', borderRadius: 999, border: '1px solid #a7f3d0' }}>
+                {returnRate}% Return Rate
+              </span>
             </div>
 
-            {/* Bars */}
+            {/* Dynamic Hover Details Pill */}
             <div style={{
-              height: 200,
+              minHeight: 24,
+              marginBottom: 8,
+              fontSize: 11.5,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {hoveredTrendIdx !== null && activeTrend[hoveredTrendIdx] ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    background: '#0f172a',
+                    color: '#ffffff',
+                    padding: '3px 12px',
+                    borderRadius: 999,
+                    boxShadow: '0 4px 12px rgba(15,23,42,0.18)'
+                  }}
+                >
+                  <span style={{ color: '#93c5fd', fontWeight: 800 }}>{activeTrend[hoveredTrendIdx].date}:</span>
+                  <span style={{ color: '#60a5fa' }}>Issued {activeTrend[hoveredTrendIdx].issued}</span>
+                  <span style={{ color: '#64748b' }}>•</span>
+                  <span style={{ color: '#34d399' }}>Returned {activeTrend[hoveredTrendIdx].returned}</span>
+                  <span style={{
+                    fontSize: 10,
+                    background: activeTrend[hoveredTrendIdx].issued >= activeTrend[hoveredTrendIdx].returned ? 'rgba(59,130,246,0.3)' : 'rgba(16,185,129,0.3)',
+                    padding: '1px 6px',
+                    borderRadius: 4,
+                    color: '#ffffff'
+                  }}>
+                    {activeTrend[hoveredTrendIdx].issued >= activeTrend[hoveredTrendIdx].returned
+                      ? `+${activeTrend[hoveredTrendIdx].issued - activeTrend[hoveredTrendIdx].returned} Out`
+                      : `+${activeTrend[hoveredTrendIdx].returned - activeTrend[hoveredTrendIdx].issued} Returned`}
+                  </span>
+                </motion.div>
+              ) : (
+                <span style={{ color: '#94a3b8', fontSize: 11 }}>Hover over any bar to view exact circulation figures</span>
+              )}
+            </div>
+
+            {/* Animated Interactive Bars */}
+            <div style={{
+              position: 'relative',
+              height: 180,
               display: 'flex',
               alignItems: 'flex-end',
               justifyContent: 'space-between',
-              paddingBottom: 20,
+              paddingBottom: 16,
               borderBottom: '1px solid #f1f5f9',
-              gap: 8
+              gap: activeTrend.length > 8 ? 6 : 14
             }}>
-              {trendData.map(d => (
-                <div key={d.date} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 150 }}>
-                    <div style={{ width: 8, height: `${d.issued * 1.4}px`, background: '#2563eb', borderRadius: '2px 2px 0 0' }} title={`Issued: ${d.issued}`} />
-                    <div style={{ width: 8, height: `${d.returned * 1.4}px`, background: '#10b981', borderRadius: '2px 2px 0 0' }} title={`Returned: ${d.returned}`} />
+              {activeTrend.map((d, idx) => {
+                const issuedHeight = Math.max(8, (d.issued / maxVal) * 135);
+                const returnedHeight = Math.max(8, (d.returned / maxVal) * 135);
+                const isHovered = hoveredTrendIdx === idx;
+                const barWidth = activeTrend.length > 8 ? 8 : 14;
+
+                return (
+                  <div
+                    key={`${trendPeriod}-${d.date}`}
+                    onMouseEnter={() => setHoveredTrendIdx(idx)}
+                    onMouseLeave={() => setHoveredTrendIdx(null)}
+                    onClick={() => { playClick(); setHoveredTrendIdx(idx); }}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 6,
+                      flex: 1,
+                      cursor: 'pointer',
+                      background: isHovered ? 'rgba(37,99,235,0.04)' : 'transparent',
+                      borderRadius: 6,
+                      padding: '4px 2px',
+                      transition: 'background 150ms'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 135 }}>
+                      <motion.div
+                        key={`issued-${trendPeriod}-${d.date}`}
+                        initial={{ height: 0, opacity: 0.3 }}
+                        animate={{ height: issuedHeight, opacity: 1 }}
+                        transition={{ type: 'spring', damping: 16, stiffness: 130, delay: idx * 0.025 }}
+                        title={`${d.date} - Issued: ${d.issued}`}
+                        style={{
+                          width: barWidth,
+                          background: isHovered ? '#1d4ed8' : '#2563eb',
+                          borderRadius: '3px 3px 0 0',
+                          boxShadow: isHovered ? '0 0 10px rgba(37,99,235,0.55)' : 'none',
+                          transform: isHovered ? 'scaleY(1.05)' : 'scaleY(1)',
+                          transformOrigin: 'bottom',
+                          transition: 'background 150ms, box-shadow 150ms, transform 150ms'
+                        }}
+                      />
+                      <motion.div
+                        key={`returned-${trendPeriod}-${d.date}`}
+                        initial={{ height: 0, opacity: 0.3 }}
+                        animate={{ height: returnedHeight, opacity: 1 }}
+                        transition={{ type: 'spring', damping: 16, stiffness: 130, delay: idx * 0.025 + 0.03 }}
+                        title={`${d.date} - Returned: ${d.returned}`}
+                        style={{
+                          width: barWidth,
+                          background: isHovered ? '#059669' : '#10b981',
+                          borderRadius: '3px 3px 0 0',
+                          boxShadow: isHovered ? '0 0 10px rgba(16,185,129,0.55)' : 'none',
+                          transform: isHovered ? 'scaleY(1.05)' : 'scaleY(1)',
+                          transformOrigin: 'bottom',
+                          transition: 'background 150ms, box-shadow 150ms, transform 150ms'
+                        }}
+                      />
+                    </div>
+                    <span style={{
+                      fontSize: activeTrend.length > 8 ? 9 : 10,
+                      fontWeight: isHovered ? 800 : 500,
+                      color: isHovered ? '#0f172a' : '#94a3b8',
+                      whiteSpace: 'nowrap',
+                      transition: 'color 150ms'
+                    }}>
+                      {d.date}
+                    </span>
                   </div>
-                  <span style={{ fontSize: 9.5, color: '#94a3b8', whiteSpace: 'nowrap' }}>{d.date}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -1200,22 +1372,28 @@ export default function Dashboard({ onNavigate = () => {} }) {
         {/* Reading Progress */}
         <div className="card" style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>
-              Reading Progress
-            </h2>
+            <div>
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Reading Progress
+              </h2>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
+                {STUDENT_PROGRESS_CONFIG[progressPeriod]?.periodLabel || 'This Semester'}
+              </div>
+            </div>
             <select
               value={progressPeriod}
               onChange={e => { playClick(); setProgressPeriod(e.target.value); }}
               style={{
                 fontSize: 12,
                 fontWeight: 700,
-                color: '#475569',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                color: '#334155',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
                 padding: '4px 8px',
                 borderRadius: 6,
                 cursor: 'pointer',
-                outline: 'none'
+                outline: 'none',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
               }}
             >
               <option value="semester">This Semester</option>
@@ -1224,70 +1402,128 @@ export default function Dashboard({ onNavigate = () => {} }) {
             </select>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            {/* Donut Goal */}
-            <div style={{ position: 'relative', width: 90, height: 90, flexShrink: 0 }}>
-              <svg width="90" height="90" viewBox="0 0 36 36">
-                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f1f5f9" strokeWidth="4" />
-                <path 
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
-                  fill="none" 
-                  stroke="#10b981" 
-                  strokeWidth="4" 
-                  strokeDasharray={`${progressPeriod === 'year' ? '70, 100' : progressPeriod === 'monthly' ? '80, 100' : '60, 100'}`} 
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                <span style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>
-                  {progressPeriod === 'year' ? '24' : progressPeriod === 'monthly' ? '4' : '12'}
-                </span>
-                <span style={{ fontSize: 9, color: '#64748b', marginTop: 2 }}>
-                  of {progressPeriod === 'year' ? '35' : progressPeriod === 'monthly' ? '5' : '20'} goal
-                </span>
-              </div>
-            </div>
+          {(() => {
+            const currentProgress = STUDENT_PROGRESS_CONFIG[progressPeriod] || STUDENT_PROGRESS_CONFIG.semester;
+            const maxBooks = Math.max(...currentProgress.bars.map(b => b.books), 1);
 
-            {/* Monthly mini bars with explicit track height */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: 75, paddingBottom: 8, borderBottom: '1px solid #f1f5f9', gap: 6 }}>
-              {[
-                { m: 'Jul', books: 2, heightPx: 20 },
-                { m: 'Aug', books: 3, heightPx: 32 },
-                { m: 'Sep', books: 4, heightPx: 48, active: true },
-                { m: 'Oct', books: 2, heightPx: 24 },
-                { m: 'Nov', books: 3, heightPx: 36 },
-                { m: 'Dec', books: 2, heightPx: 22 },
-              ].map(b => (
-                <div key={b.m} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', gap: 6 }}>
-                  <div 
-                    title={`${b.m}: ${b.books} books read`}
-                    style={{ 
-                      width: 12, 
-                      height: `${b.heightPx}px`, 
-                      background: b.active ? '#10b981' : '#3b82f6', 
-                      borderRadius: '4px 4px 0 0',
-                      boxShadow: b.active ? '0 2px 6px rgba(16, 185, 129, 0.35)' : 'none',
-                      transition: 'all 200ms'
-                    }} 
-                  />
-                  <span style={{ fontSize: 10, fontWeight: b.active ? 800 : 500, color: b.active ? '#0f172a' : '#94a3b8' }}>
-                    {b.m}
-                  </span>
+            return (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  {/* Donut Goal with Framer Motion */}
+                  <div style={{ position: 'relative', width: 88, height: 88, flexShrink: 0 }}>
+                    <svg width="88" height="88" viewBox="0 0 36 36">
+                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f1f5f9" strokeWidth="4" />
+                      <motion.path 
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                        fill="none" 
+                        stroke="#10b981" 
+                        strokeWidth="4" 
+                        initial={{ strokeDasharray: '0, 100' }}
+                        animate={{ strokeDasharray: `${currentProgress.percent}, 100` }}
+                        transition={{ duration: 0.6, ease: 'easeOut' }}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={progressPeriod}
+                        initial={{ opacity: 0, scale: 0.85 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        transition={{ duration: 0.2 }}
+                        style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
+                      >
+                        <span style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>
+                          {currentProgress.read}
+                        </span>
+                        <span style={{ fontSize: 9, color: '#64748b', marginTop: 2 }}>
+                          of {currentProgress.goal} goal
+                        </span>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Dynamic mini bars with spring height animation and interactive hover tooltips */}
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: 75, paddingBottom: 6, borderBottom: '1px solid #f1f5f9', gap: 6 }}>
+                    {currentProgress.bars.map((b, idx) => {
+                      const barHeightPx = Math.max(10, (b.books / maxBooks) * 52);
+                      const isHovered = hoveredStudentBar === idx;
+
+                      return (
+                        <div
+                          key={`${progressPeriod}-${b.label}`}
+                          onMouseEnter={() => setHoveredStudentBar(idx)}
+                          onMouseLeave={() => setHoveredStudentBar(null)}
+                          onClick={() => { playClick(); setHoveredStudentBar(idx); }}
+                          style={{
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            height: '100%',
+                            justifyContent: 'flex-end',
+                            gap: 5,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <motion.div
+                            key={`bar-${progressPeriod}-${b.label}`}
+                            initial={{ height: 0, opacity: 0.2 }}
+                            animate={{ height: barHeightPx, opacity: 1 }}
+                            transition={{ type: 'spring', damping: 15, stiffness: 130, delay: idx * 0.04 }}
+                            title={`${b.label}: ${b.books} books · ${b.detail}`}
+                            style={{ 
+                              width: currentProgress.bars.length > 5 ? 10 : 14, 
+                              background: b.active ? '#10b981' : isHovered ? '#2563eb' : '#3b82f6', 
+                              borderRadius: '4px 4px 0 0',
+                              boxShadow: (b.active || isHovered) ? '0 2px 8px rgba(16, 185, 129, 0.4)' : 'none',
+                              transform: isHovered ? 'scaleY(1.08)' : 'scaleY(1)',
+                              transformOrigin: 'bottom',
+                              transition: 'background 150ms, box-shadow 150ms, transform 150ms'
+                            }} 
+                          />
+                          <span style={{
+                            fontSize: 10,
+                            fontWeight: b.active ? 800 : isHovered ? 700 : 500,
+                            color: b.active ? '#0f172a' : isHovered ? '#2563eb' : '#94a3b8',
+                            transition: 'color 150ms'
+                          }}>
+                            {b.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          <div style={{ marginTop: 14, fontSize: 12, color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, background: '#f0fdf4', padding: '8px 12px', borderRadius: 8 }}>
-            <Target size={14} /> 
-            <span>
-              {progressPeriod === 'year' 
-                ? "You're 11 books away from your annual goal!" 
-                : progressPeriod === 'monthly'
-                ? "Only 1 book remaining for this month's target!"
-                : "You're 8 books away from your semester goal!"}
-            </span>
-          </div>
+                {/* Hover Details Snippet */}
+                <div style={{ minHeight: 18, marginTop: 6, fontSize: 11, color: '#475569', textAlign: 'center', fontWeight: 600 }}>
+                  {hoveredStudentBar !== null && currentProgress.bars[hoveredStudentBar] ? (
+                    <span style={{ color: '#0f172a' }}>
+                      <strong>{currentProgress.bars[hoveredStudentBar].label}:</strong> {currentProgress.bars[hoveredStudentBar].books} books ({currentProgress.bars[hoveredStudentBar].detail})
+                    </span>
+                  ) : (
+                    <span style={{ color: '#94a3b8', fontSize: 10.5 }}>Click or hover over any interval to see reading breakdown</span>
+                  )}
+                </div>
+
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={progressPeriod}
+                    initial={{ opacity: 0, y: 3 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -3 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ marginTop: 8, fontSize: 12, color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, background: '#f0fdf4', padding: '8px 12px', borderRadius: 8, border: '1px solid #dcfce7' }}
+                  >
+                    <Target size={14} /> 
+                    <span>{currentProgress.encouragement}</span>
+                  </motion.div>
+                </AnimatePresence>
+              </>
+            );
+          })()}
         </div>
 
         {/* Inspirational Photo Card */}

@@ -52,9 +52,20 @@ export default function Scanner({ onNavigate = () => {} }) {
   const [activeCamera, setActiveCamera] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   
+  const defaultStudent = {
+    id: user?.id || 'st1',
+    name: user?.name || 'Sautrik Roy',
+    reg: user?.regNo || 'RA2511003010052',
+    dept: user?.department || 'CSE',
+    year: '2',
+    borrowed: borrowedBooks?.length || 4,
+    maxLimit: 7
+  };
+
   // Selected Student & Book
-  const [selectedStudent, setSelectedStudent] = useState(() => students?.[0] || {
-    id: 'st1', name: 'Sautrik Roy', reg: 'RA2511003010052', dept: 'CSE', year: '2', borrowed: 3, maxLimit: 7
+  const [selectedStudent, setSelectedStudent] = useState(() => {
+    if (!isLibrarian) return defaultStudent;
+    return students?.[0] || defaultStudent;
   });
   const [selectedBook, setSelectedBook] = useState(() => {
     return books?.find(b => b.id === 'BK002') || books?.[0] || INITIAL_BOOKS[0];
@@ -63,7 +74,6 @@ export default function Scanner({ onNavigate = () => {} }) {
   const [bookCondition, setBookCondition] = useState('Good');
   const [isCompleted, setIsCompleted] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [scannerTarget, setScannerTarget] = useState('student');
   const scannerRef = useRef(null);
 
   const startCamera = async () => {
@@ -147,36 +157,46 @@ export default function Scanner({ onNavigate = () => {} }) {
   const handleManualLookup = (e) => {
     e?.preventDefault();
     if (!manualQuery.trim()) {
-      toast.info('Please enter a Roll No. or ISBN to lookup');
+      toast.info('Please enter a Book Title, ISBN, or Book ID to lookup');
       return;
     }
     playClick();
     const q = manualQuery.trim().toLowerCase();
 
-    if (manualTab === 'student') {
+    // Check books first
+    const allBooks = books && books.length > 0 ? books : INITIAL_BOOKS;
+    const match = allBooks.find(b => 
+      b.title?.toLowerCase().includes(q) || 
+      b.isbn?.toLowerCase().includes(q) || 
+      b.id?.toLowerCase().includes(q)
+    );
+
+    if (match) {
+      playSuccessChime();
+      setSelectedBook(match);
+      setIsCompleted(false);
+      toast.success(`Book Found: ${match.title}`);
+      setManualQuery('');
+      return;
+    }
+
+    // Check if librarian is searching a student
+    if (isLibrarian) {
       const studentList = students && students.length > 0 ? students : [];
-      const match = studentList.find(s => s.reg?.toLowerCase().includes(q) || s.name?.toLowerCase().includes(q));
-      if (match) {
+      const matchStudent = studentList.find(s => 
+        s.reg?.toLowerCase().includes(q) || 
+        s.name?.toLowerCase().includes(q)
+      );
+      if (matchStudent) {
         playSuccessChime();
-        setSelectedStudent(match);
-        toast.success(`Student found: ${match.name} (${match.reg})`);
+        setSelectedStudent(matchStudent);
+        toast.success(`Borrower selected: ${matchStudent.name} (${matchStudent.reg})`);
         setManualQuery('');
-      } else {
-        toast.error(`No student record matching "${manualQuery}"`);
-      }
-    } else {
-      const allBooks = books && books.length > 0 ? books : INITIAL_BOOKS;
-      const match = allBooks.find(b => b.title?.toLowerCase().includes(q) || b.isbn?.toLowerCase().includes(q) || b.id?.toLowerCase().includes(q));
-      if (match) {
-        playSuccessChime();
-        setSelectedBook(match);
-        setIsCompleted(false);
-        toast.success(`Book found: ${match.title}`);
-        setManualQuery('');
-      } else {
-        toast.error(`No book title matching "${manualQuery}"`);
+        return;
       }
     }
+
+    toast.error(`No book or record matching "${manualQuery}"`);
   };
 
   const handleConfirmIssue = () => {
@@ -291,58 +311,47 @@ export default function Scanner({ onNavigate = () => {} }) {
             flexDirection: 'column',
             gap: 14
           }}>
-            {/* Viewfinder Target Switcher (Student ID Card vs Book Barcode) */}
+            {/* Viewfinder Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 2 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>Sensor Viewfinder</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a' }}>Sensor Viewfinder</span>
                 <span style={{
                   fontSize: 10.5,
                   fontWeight: 700,
-                  color: scannerTarget === 'student' ? '#1d4ed8' : '#059669',
-                  background: scannerTarget === 'student' ? '#eff6ff' : '#ecfdf5',
+                  color: activeCamera ? '#16a34a' : '#2563eb',
+                  background: activeCamera ? '#f0fdf4' : '#eff6ff',
                   padding: '2px 8px',
-                  borderRadius: 999
+                  borderRadius: 999,
+                  border: activeCamera ? '1px solid #bbf7d0' : '1px solid #bfdbfe'
                 }}>
-                  {scannerTarget === 'student' ? 'Aligning Student ID' : 'Aligning Book Barcode'}
+                  {activeCamera ? '● Live Camera Scanner' : '⚡ Ready to Scan'}
                 </span>
               </div>
 
-              <div style={{ display: 'flex', background: '#f1f5f9', padding: 2, borderRadius: 8, gap: 2 }}>
-                <button
-                  type="button"
-                  onClick={() => { playClick(); setScannerTarget('student'); }}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: 6,
-                    border: 'none',
-                    background: scannerTarget === 'student' ? '#0f172a' : 'transparent',
-                    color: scannerTarget === 'student' ? '#ffffff' : '#64748b',
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  💳 Student ID
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { playClick(); setScannerTarget('book'); }}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: 6,
-                    border: 'none',
-                    background: scannerTarget === 'book' ? '#0f172a' : 'transparent',
-                    color: scannerTarget === 'book' ? '#ffffff' : '#64748b',
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  📖 Book Barcode
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={activeCamera ? stopCamera : startCamera}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '5px 12px',
+                  borderRadius: 7,
+                  border: 'none',
+                  background: activeCamera ? '#ef4444' : '#0f172a',
+                  color: '#ffffff',
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'background 150ms'
+                }}
+              >
+                <Camera size={13} />
+                <span>{activeCamera ? 'Stop Camera' : 'Open Camera'}</span>
+              </button>
             </div>
 
+            {/* Direct Camera Viewfinder */}
             <div style={{
               position: 'relative',
               width: '100%',
@@ -358,221 +367,80 @@ export default function Scanner({ onNavigate = () => {} }) {
               <div id="qr-reader-container" style={{ width: '100%', height: '100%', display: activeCamera ? 'block' : 'none' }} />
 
               {!activeCamera && (
-                <>
-                  {scannerTarget === 'student' ? (
-                    <>
-                      {/* Authentic SRM IST Student Smart Card */}
-                      <div style={{
-                        position: 'relative',
-                        width: 260,
-                        height: 155,
-                        borderRadius: 12,
-                        background: 'linear-gradient(135deg, #09152e 0%, #1e3a8a 100%)',
-                        boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
-                        border: '1.5px solid rgba(56, 189, 248, 0.4)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        padding: '12px 14px',
-                        overflow: 'hidden'
-                      }}>
-                        {/* Watermark Logo Tint */}
-                        <div style={{
-                          position: 'absolute',
-                          right: -10,
-                          top: -10,
-                          width: 80,
-                          height: 80,
-                          borderRadius: '50%',
-                          background: 'radial-gradient(circle, rgba(56,189,248,0.15) 0%, transparent 70%)',
-                          pointerEvents: 'none'
-                        }} />
-
-                        {/* Card Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: 6 }}>
-                          <div>
-                            <div style={{ fontSize: 9, fontWeight: 800, color: '#38bdf8', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
-                              SRM Institute of Science & Tech
-                            </div>
-                            <div style={{ fontSize: 7.5, color: '#94a3b8', marginTop: 1 }}>
-                              Central Library · Student Smart Pass
-                            </div>
-                          </div>
-                          <div style={{
-                            width: 18,
-                            height: 14,
-                            borderRadius: 3,
-                            background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)',
-                            border: '1px solid #fef08a',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            <div style={{ width: 10, height: 8, border: '0.5px solid #78350f', borderRadius: 1 }} />
-                          </div>
-                        </div>
-
-                        {/* Student Info Body */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-                          <img
-                            src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80"
-                            alt="Student"
-                            style={{
-                              width: 42,
-                              height: 42,
-                              borderRadius: 6,
-                              objectFit: 'cover',
-                              border: '1.5px solid rgba(255,255,255,0.3)',
-                              flexShrink: 0
-                            }}
-                          />
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 800, color: '#ffffff', lineHeight: 1.1 }}>
-                              {selectedStudent?.name || 'Sautrik Roy'}
-                            </div>
-                            <div style={{ fontSize: 10, color: '#38bdf8', fontFamily: 'monospace', fontWeight: 700, marginTop: 2 }}>
-                              {selectedStudent?.reg || 'RA2511003010052'}
-                            </div>
-                            <div style={{ fontSize: 9, color: '#cbd5e1', marginTop: 1 }}>
-                              {selectedStudent?.dept || 'CSE'} · Year {selectedStudent?.year || '2'} · Quota: 7 Books
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Barcode Strip */}
-                        <div style={{ background: 'rgba(255,255,255,0.95)', padding: '2px 8px', borderRadius: 4, marginTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, height: 12, width: '90%' }}>
-                            {[2,1,3,1,1,2,3,1,2,1,1,3,2,1,2,1,3,1,1,2,3,1,2,1,1,2].map((w, i) => (
-                              <div key={i} style={{ width: w, height: '100%', background: '#0f172a' }} />
-                            ))}
-                          </div>
-                          <div style={{ fontSize: 7, fontFamily: 'monospace', color: '#0f172a', fontWeight: 800, letterSpacing: 0.8 }}>
-                            *{selectedStudent?.reg || 'RA2511003010052'}*
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Corner Reticle Brackets for Card */}
-                      <div style={{
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 16,
+                  textAlign: 'center',
+                  padding: 24,
+                  width: '100%'
+                }}>
+                  {/* Optical Barcode Target Reticle */}
+                  <div style={{
+                    position: 'relative',
+                    width: 240,
+                    height: 150,
+                    borderRadius: 12,
+                    border: '2px dashed rgba(56, 189, 248, 0.45)',
+                    background: 'rgba(15, 23, 42, 0.65)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                    overflow: 'hidden'
+                  }}>
+                    {/* Animated Scanning Laser Line */}
+                    <motion.div
+                      animate={{ top: ['8%', '88%', '8%'] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      style={{
                         position: 'absolute',
-                        width: 290,
-                        height: 185,
-                        border: '2px solid rgba(56, 189, 248, 0.85)',
-                        borderRadius: 14,
-                        pointerEvents: 'none',
-                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.45)'
-                      }}>
-                        {/* Animated Laser Beam */}
-                        <motion.div
-                          animate={{ top: ['8%', '86%', '8%'] }}
-                          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-                          style={{
-                            position: 'absolute',
-                            left: 0,
-                            width: '100%',
-                            height: 2,
-                            background: 'linear-gradient(90deg, transparent 0%, #38bdf8 50%, transparent 100%)',
-                            boxShadow: '0 0 12px #38bdf8'
-                          }}
-                        />
-                      </div>
+                        left: 0,
+                        width: '100%',
+                        height: 2,
+                        background: 'linear-gradient(90deg, transparent 0%, #38bdf8 50%, transparent 100%)',
+                        boxShadow: '0 0 12px #38bdf8'
+                      }}
+                    />
 
-                      <div style={{
-                        position: 'absolute',
-                        bottom: 12,
-                        padding: '5px 14px',
-                        borderRadius: 16,
-                        background: 'rgba(15, 23, 42, 0.85)',
-                        backdropFilter: 'blur(6px)',
-                        color: '#ffffff',
-                        fontSize: 11.5,
-                        fontWeight: 600,
-                        border: '1px solid rgba(255,255,255,0.1)'
-                      }}>
-                        Align Student ID Card in Viewfinder
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {/* Book Barcode Graphic */}
-                      <div style={{
-                        position: 'relative',
-                        width: 200,
-                        height: 210,
-                        borderRadius: 10,
-                        background: 'linear-gradient(135deg, #0a1128 0%, #1c2e4a 100%)',
-                        boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        padding: 14,
-                        textAlign: 'center'
-                      }}>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: '#ffffff' }}>SRM IST Central Library</div>
-                        <div style={{ fontSize: 9.5, color: '#94a3b8', marginTop: 2 }}>Physical Barcode & QR Sensor</div>
+                    <Barcode size={42} color="#38bdf8" />
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: '#f8fafc', marginTop: 8 }}>
+                      Optical Barcode & QR Sensor
+                    </div>
+                    <div style={{ fontSize: 9.5, color: '#94a3b8', marginTop: 2 }}>
+                      Align book barcode or QR code here
+                    </div>
+                  </div>
 
-                        {/* QR Code Graphic */}
-                        <div style={{
-                          marginTop: 14,
-                          padding: 8,
-                          background: '#ffffff',
-                          borderRadius: 8,
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-                        }}>
-                          <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=SRM-LIB-9780132350884`}
-                            alt="QR Code"
-                            style={{ width: 80, height: 80, display: 'block' }}
-                          />
-                          <div style={{ fontSize: 8, fontWeight: 700, color: '#0f172a', marginTop: 3 }}>
-                            {selectedBook?.id || 'BK002'} · {selectedBook?.title || 'CLEAN CODE'}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Corner Reticle Brackets for Book */}
-                      <div style={{
-                        position: 'absolute',
-                        width: 230,
-                        height: 230,
-                        border: '2px solid rgba(255, 255, 255, 0.85)',
-                        borderRadius: 14,
-                        pointerEvents: 'none',
-                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.45)'
-                      }}>
-                        {/* Animated Laser Beam */}
-                        <motion.div
-                          animate={{ top: ['10%', '88%', '10%'] }}
-                          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-                          style={{
-                            position: 'absolute',
-                            left: 0,
-                            width: '100%',
-                            height: 2,
-                            background: 'linear-gradient(90deg, transparent 0%, #38bdf8 50%, transparent 100%)',
-                            boxShadow: '0 0 10px #38bdf8'
-                          }}
-                        />
-                      </div>
-
-                      <div style={{
-                        position: 'absolute',
-                        bottom: 12,
-                        padding: '5px 14px',
-                        borderRadius: 16,
-                        background: 'rgba(15, 23, 42, 0.85)',
-                        backdropFilter: 'blur(6px)',
-                        color: '#ffffff',
-                        fontSize: 11.5,
-                        fontWeight: 600,
-                        border: '1px solid rgba(255,255,255,0.1)'
-                      }}>
-                        Align Book Barcode in Viewfinder
-                      </div>
-                    </>
-                  )}
-                </>
+                  <button
+                    type="button"
+                    onClick={startCamera}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '10px 22px',
+                      borderRadius: 10,
+                      background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                      color: '#ffffff',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(37,99,235,0.4)',
+                      transition: 'transform 120ms'
+                    }}
+                    onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+                    onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    <Camera size={16} />
+                    <span>Start Camera Scanner</span>
+                  </button>
+                </div>
               )}
             </div>
 
@@ -600,7 +468,7 @@ export default function Scanner({ onNavigate = () => {} }) {
               </button>
 
               <button
-                onClick={() => { playClick(); toast.info('Barcode upload sensor ready. You can test simulator below.'); }}
+                onClick={() => { playClick(); toast.info('Barcode simulator ready. Select any book chip below to scan.'); }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -624,49 +492,39 @@ export default function Scanner({ onNavigate = () => {} }) {
             {/* Instant Quick-Scan Sensor Triggers */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 4, borderTop: '1px solid #f1f5f9' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
-                Instant Barcode / RFID Sensors:
+                Instant Book Barcode Sensors:
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setScannerTarget('student');
-                    handleScannedCode('RA2511003010052');
-                  }}
-                  style={{ padding: '4px 10px', borderRadius: 6, background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: 11, fontWeight: 700, color: '#1d4ed8', cursor: 'pointer' }}
-                >
-                  💳 Sautrik Roy (ID Card)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setScannerTarget('book');
-                    handleScannedCode('Atomic Habits');
-                  }}
-                  style={{ padding: '4px 10px', borderRadius: 6, background: '#f8fafc', border: '1px solid #cbd5e1', fontSize: 11, fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}
-                >
-                  ⚡ Atomic Habits
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setScannerTarget('book');
-                    handleScannedCode('BK002');
-                  }}
-                  style={{ padding: '4px 10px', borderRadius: 6, background: '#f8fafc', border: '1px solid #cbd5e1', fontSize: 11, fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}
-                >
-                  ⚡ Clean Code
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setScannerTarget('book');
-                    handleScannedCode('BK006');
-                  }}
-                  style={{ padding: '4px 10px', borderRadius: 6, background: '#f8fafc', border: '1px solid #cbd5e1', fontSize: 11, fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}
-                >
-                  ⚡ OS Concepts
-                </button>
+                {[
+                  { id: 'BK002', label: 'Clean Code' },
+                  { id: 'BK011', label: 'Atomic Habits' },
+                  { id: 'BK006', label: 'OS Concepts' },
+                  { id: 'BK001', label: 'Algorithms CLRS' },
+                  { id: 'BK005', label: 'Computer Networks' },
+                  { id: 'BK004', label: 'Design Patterns' }
+                ].map(b => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => {
+                      playClick();
+                      handleScannedCode(b.id);
+                    }}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: 6,
+                      background: selectedBook?.id === b.id ? '#0f172a' : '#f8fafc',
+                      border: selectedBook?.id === b.id ? '1px solid #0f172a' : '1px solid #cbd5e1',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: selectedBook?.id === b.id ? '#ffffff' : '#0f172a',
+                      cursor: 'pointer',
+                      transition: 'all 120ms'
+                    }}
+                  >
+                    ⚡ {b.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -680,40 +538,10 @@ export default function Scanner({ onNavigate = () => {} }) {
             boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Manual Lookup / Quick Select</div>
-              {/* Sub tabs: Student ID vs Book ISBN */}
-              <div style={{ display: 'flex', gap: 4, background: '#f8fafc', padding: 2, borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                <button
-                  onClick={() => { playClick(); setManualTab('student'); }}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: 4,
-                    border: 'none',
-                    background: manualTab === 'student' ? '#0f172a' : 'transparent',
-                    color: manualTab === 'student' ? '#ffffff' : '#64748b',
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Student ID
-                </button>
-                <button
-                  onClick={() => { playClick(); setManualTab('book'); }}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: 4,
-                    border: 'none',
-                    background: manualTab === 'book' ? '#0f172a' : 'transparent',
-                    color: manualTab === 'book' ? '#ffffff' : '#64748b',
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Book ISBN
-                </button>
-              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Book Lookup & Quick Select</div>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', background: '#f8fafc', padding: '2px 8px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                ISBN / Title / ID
+              </span>
             </div>
 
             {/* Input & Lookup */}
@@ -731,7 +559,7 @@ export default function Scanner({ onNavigate = () => {} }) {
                 <Search size={15} color="#94a3b8" />
                 <input
                   type="text"
-                  placeholder={manualTab === 'student' ? 'Enter Student Roll No. (e.g. RA2511003010052)' : 'Enter Book ISBN or Title (e.g. 978-0132350884)'}
+                  placeholder="Enter Book Title, ISBN, or ID (e.g. Clean Code, BK002)"
                   value={manualQuery}
                   onChange={e => setManualQuery(e.target.value)}
                   style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 12.5, width: '100%', color: '#0f172a' }}
@@ -756,35 +584,37 @@ export default function Scanner({ onNavigate = () => {} }) {
 
             {/* Quick Click Demo Chips */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
-                  Quick Select Students:
+              {isLibrarian && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+                    Issue To Student Account:
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {(students || []).slice(0, 6).map(st => (
+                      <button
+                        key={st.id || st.reg}
+                        onClick={() => {
+                          playClick();
+                          setSelectedStudent(st);
+                          toast.info(`Selected Student: ${st.name}`);
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: 6,
+                          border: selectedStudent?.reg === st.reg ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                          background: selectedStudent?.reg === st.reg ? '#0f172a' : '#ffffff',
+                          color: selectedStudent?.reg === st.reg ? '#ffffff' : '#334155',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {st.name} ({st.dept || 'CSE'})
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {(students || []).slice(0, 6).map(st => (
-                    <button
-                      key={st.id || st.reg}
-                      onClick={() => {
-                        playClick();
-                        setSelectedStudent(st);
-                        toast.info(`Selected Student: ${st.name}`);
-                      }}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: 6,
-                        border: selectedStudent?.reg === st.reg ? '1px solid #0f172a' : '1px solid #e2e8f0',
-                        background: selectedStudent?.reg === st.reg ? '#0f172a' : '#ffffff',
-                        color: selectedStudent?.reg === st.reg ? '#ffffff' : '#334155',
-                        fontSize: 11,
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {st.name} ({st.dept || 'CSE'})
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
 
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
@@ -1013,12 +843,12 @@ export default function Scanner({ onNavigate = () => {} }) {
                 {isCompleted ? (
                   <>
                     <CheckCircle2 size={16} />
-                    <span>Issued Successfully to {selectedStudent?.name}</span>
+                    <span>{isLibrarian ? `Issued Successfully to ${selectedStudent?.name}` : 'Borrowed Successfully! Added to Your Account'}</span>
                   </>
                 ) : (
                   <>
                     <Check size={16} />
-                    <span>Confirm & Issue Book</span>
+                    <span>{isLibrarian ? 'Confirm & Issue Book' : 'Confirm & Borrow Book'}</span>
                   </>
                 )}
               </button>
@@ -1192,9 +1022,9 @@ export default function Scanner({ onNavigate = () => {} }) {
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13, color: '#475569' }}>
               <div>1. Switch between <strong>Issue Book</strong> and <strong>Return Book</strong> modes at the top.</div>
-              <div>2. Position the student ID card barcode or book ISBN in front of the camera, or enter the ID manually.</div>
-              <div>3. Verify the borrower quota and catalog copies available.</div>
-              <div>4. Click <strong>Confirm & Issue Book</strong> or <strong>Process Return</strong> to instantly record the ledger transaction!</div>
+              <div>2. Position the physical book barcode or QR code in front of the camera, or select from the quick simulator chips.</div>
+              <div>3. Verify the catalog availability and loan duration.</div>
+              <div>4. Click <strong>Confirm & Issue Book</strong> or <strong>Confirm & Return Book</strong> to instantly record the ledger transaction!</div>
             </div>
             <button
               onClick={() => setShowHowItWorks(false)}
