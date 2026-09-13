@@ -1,8 +1,5 @@
 # 📚 LibraX — Smart Library Management System
 
-DRIVE VIDEO LINK
-https://drive.google.com/file/d/1HEGVzVIv34snoS1e3fr0rxLiJNFqFi72/view?usp=sharing
-
 > **Newton School Coding Club (NSCC) · SRM IST**  
 > 🌐 **Live Production**:  [https://librax-library.vercel.app](https://librax-library.vercel.app)
 
